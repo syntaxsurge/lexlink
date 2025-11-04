@@ -13,7 +13,8 @@
     "lint:all": "pnpm run lint:fix && pnpm run lint && pnpm run format",
     "typecheck": "tsc --noEmit",
     "convex:dev": "npx convex dev",
-    "convex:deploy": "npx convex deploy -y"
+    "convex:deploy": "npx convex deploy -y",
+    "spg:create": "tsx scripts/create_spg_collection.ts"
   },
   "dependencies": {
     "@dfinity/agent": "^3.4.1",
