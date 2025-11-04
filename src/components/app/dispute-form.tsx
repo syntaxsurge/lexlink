@@ -77,7 +77,7 @@ export function DisputeForm({ ips }: DisputeFormProps) {
   }
 
   return (
-    <div className='rounded-xl border bg-card p-6'>
+    <div className='space-y-6'>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className='flex flex-col gap-4'
@@ -162,7 +162,7 @@ export function DisputeForm({ ips }: DisputeFormProps) {
         </div>
       </form>
       {result && (
-        <dl className='mt-6 space-y-3 rounded-lg border bg-muted/40 p-4 text-sm'>
+        <dl className='space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>Dispute ID</dt>
             <dd className='font-mono text-xs'>{result.disputeId}</dd>

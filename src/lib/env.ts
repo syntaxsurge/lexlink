@@ -8,10 +8,14 @@ const publicEnvSchema = z.object({
     .regex(
       /^DAG[0-9A-Za-z]{20,64}$/,
       'NEXT_PUBLIC_DAG_ADDRESS must be a DAG address'
-    )
+    ),
+  NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3),
+  NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: z.string().min(4)
 })
 
 const serverEnvSchema = z.object({
+  NEXTAUTH_URL: z.string().url(),
+  NEXTAUTH_SECRET: z.string().min(32),
   STORY_RPC_URL: z.string().url(),
   STORY_CHAIN_ID: z.coerce.number().default(1315),
   STORY_SPG_NFT_ADDRESS: z
@@ -69,10 +73,15 @@ function parseEnv() {
   const publicEnv = publicEnvSchema.parse({
     NEXT_PUBLIC_AENEID_RPC: process.env.NEXT_PUBLIC_AENEID_RPC,
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
-    NEXT_PUBLIC_DAG_ADDRESS: process.env.NEXT_PUBLIC_DAG_ADDRESS
+    NEXT_PUBLIC_DAG_ADDRESS: process.env.NEXT_PUBLIC_DAG_ADDRESS,
+    NEXT_PUBLIC_SITE_DOMAIN: process.env.NEXT_PUBLIC_SITE_DOMAIN,
+    NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID:
+      process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID
   })
 
   const serverEnv = serverEnvSchema.parse({
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     STORY_RPC_URL: process.env.STORY_RPC_URL,
     STORY_CHAIN_ID: process.env.STORY_CHAIN_ID,
     STORY_SPG_NFT_ADDRESS: process.env.STORY_SPG_NFT_ADDRESS,

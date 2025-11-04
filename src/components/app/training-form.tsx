@@ -61,7 +61,7 @@ export function TrainingForm({ ips }: TrainingFormProps) {
   }
 
   return (
-    <div className='rounded-xl border bg-card p-6'>
+    <div className='space-y-6'>
       <form
         onSubmit={form.handleSubmit(submit)}
         className='flex flex-col gap-4'
@@ -108,7 +108,7 @@ export function TrainingForm({ ips }: TrainingFormProps) {
         </div>
       </form>
       {result && (
-        <dl className='mt-6 space-y-3 rounded-lg border bg-muted/40 p-4 text-sm'>
+        <dl className='space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>Batch ID</dt>
             <dd className='break-all font-mono text-xs'>{result.batchId}</dd>

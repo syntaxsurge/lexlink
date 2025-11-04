@@ -18,6 +18,9 @@ LexLink is a production-ready, cross-protocol legaltech stack:
 - **Convex** stores operational mirrors (IP catalogue, license orders, evidence
   hashes, C2PA bundles, VC documents, and training batches) to power the
   dashboard.
+- **NextAuth + RainbowKit + Internet Identity** provide wallet-based operator
+  access and passwordless consumer sessions, with Convex-backed roles and a
+  full audit ledger.
 
 This repository contains the full end-to-end implementation for Days 2 and 3 of
 the build plan, ready to deploy without placeholders.
@@ -42,9 +45,16 @@ Create a `.env.local` file at the repository root using the template below. All
 values must point to real infrastructure—no placeholders remain in the code.
 
 ```dotenv
+# App + auth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="replace-with-64-char-secret"
+NEXT_PUBLIC_SITE_DOMAIN="localhost:3000"
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="wc_your_project_id"
+
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
 NEXT_PUBLIC_DAG_ADDRESS="DAG..."
+NEXT_PUBLIC_CONVEX_URL="https://<your-deployment>.convex.cloud"
 
 # Story Protocol signer
 STORY_RPC_URL="https://aeneid.storyrpc.io"
@@ -70,18 +80,37 @@ BTC_NETWORK="testnet"                                 # or "mainnet"
 # Verifiable credential issuer
 VC_ISSUER_DID="did:lexlink:issuer"
 VC_PRIVATE_KEY="0x..."
+
+# Convex deployment metadata
+CONVEX_URL="https://<your-deployment>.convex.cloud"
+CONVEX_DEPLOYMENT="<deployment-name>"
 ```
 
 ### How to obtain each env value (commands + links)
 
 Use this checklist to source every value in `.env.local`.
 
-1) Public RPCs (Story)
+1) App shell, auth, and Convex
+- `NEXTAUTH_URL`
+  - Local dev: `http://localhost:3000`
+  - Production: your deployed Vercel/Next URL
+- `NEXTAUTH_SECRET`
+  - Generate once: `openssl rand -hex 32`
+- `NEXT_PUBLIC_SITE_DOMAIN`
+  - Hostname the browser will use for SIWE domain checking (e.g. `localhost:3000` or `lexlink.app`)
+- `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
+  - Create a free project at https://cloud.walletconnect.com/
+- `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
+  - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
+- `CONVEX_DEPLOYMENT`
+  - Shown in the Convex dashboard under “Deployment name” (e.g. `main`)
+
+2) Public RPCs (Story)
 - `NEXT_PUBLIC_AENEID_RPC` and `STORY_RPC_URL`
   - Use Aeneid public RPC: `https://aeneid.storyrpc.io` (no change needed)
   - Deployed contracts: https://docs.story.foundation/developers/deployed-smart-contracts
 
-1) Story Protocol signer
+3) Story Protocol signer
 - `STORY_CHAIN_ID`
   - Aeneid = `1315` (no change needed)
 - `STORY_PRIVATE_KEY`
@@ -100,7 +129,7 @@ Use this checklist to source every value in `.env.local`.
   - Local dev: `http://localhost:3000/legal/pil`
   - PIL overview: https://docs.story.foundation/concepts/programmable-ip-license/overview
 
-1) ICP Bitcoin escrow canister
+4) ICP Bitcoin escrow canister
 - Install IC SDK (dfx):
   - macOS (Apple Silicon): `softwareupdate --install-rosetta`
   - Install: `sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"`
@@ -120,7 +149,7 @@ Use this checklist to source every value in `.env.local`.
   - Identity docs: https://internetcomputer.org/docs/current/developer-docs/getting-started/developer-identity
   - Test canister call (Playground): `dfx canister call --playground btc_escrow request_deposit_address '("order-1")'`
 
-1) Constellation IntegrationNet signer
+5) Constellation IntegrationNet signer
 - Install Stargazer Wallet (Chrome):
   - https://chromewebstore.google.com/detail/stargazer-wallet/pgiaagfkgcbnmiiolekcfmljdagdhlcm?pli=1
   - Switch to IntegrationNet; copy your DAG address (`CONSTELLATION_ADDRESS`)
@@ -180,7 +209,7 @@ pnpm convex:dev          # optional if you prefer local Convex
 pnpm dev
 ```
 
-Visit http://localhost:3000/app to access the console.
+Visit http://localhost:3000/signin, authenticate with either SIWE or Internet Identity, and you will be redirected into the protected `/app` console.
 
 ## 5. ICP canister (optional but recommended)
 
@@ -213,9 +242,10 @@ pnpm start
 ```
 .
 ├── src/app/app/actions.ts    # Server actions for Story, ICP, Constellation
-├── src/app/app/page.tsx      # Operational console (server component)
+├── src/app/app/              # Protected dashboard routes (overview, ip, licenses…)
 ├── src/components/app/       # Client-side forms for registration & sales
-├── src/lib/                  # Integrations (Story, ICP, Constellation, Convex)
+├── src/components/layout/    # AppShell + layout primitives
+├── src/lib/                  # Integrations (Story, ICP, Constellation, Convex, auth)
 ├── convex/                   # Convex schema and functions
 └── icp/                      # Motoko canister for Bitcoin escrow
 ```

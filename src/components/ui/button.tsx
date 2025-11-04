@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 
 export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   asChild?: boolean
-  variant?: 'default' | 'secondary' | 'ghost'
+  variant?: 'default' | 'secondary' | 'ghost' | 'outline'
   size?: 'default' | 'lg' | 'sm'
 }
 
@@ -16,7 +16,9 @@ const baseStyles =
 const variants: Record<NonNullable<ButtonProps['variant']>, string> = {
   default: 'bg-primary text-primary-foreground hover:bg-primary/90',
   secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  ghost: 'hover:bg-accent hover:text-accent-foreground'
+  ghost: 'hover:bg-accent hover:text-accent-foreground',
+  outline:
+    'border border-input bg-transparent hover:bg-muted hover:text-foreground'
 }
 
 const sizes: Record<NonNullable<ButtonProps['size']>, string> = {

@@ -1,117 +1,82 @@
-# LexLink YouTube Demo Script (7–8 minutes)
+# LexLink YouTube Demo Script (6 minutes)
 
-This script pairs voice‑over lines with on‑screen actions to showcase LexLink’s full MVP: Story Protocol licensing, ICP Bitcoin escrow, Constellation evidence, disputes, and the compliance dashboard. Sample inputs are provided verbatim to type during recording.
-
-—
-
-## Segment 1 — Cold open and value prop (0:00 – 0:30)
-
-1. On‑screen: Land on `/` (home). Slowly pan across the hero and feature cards.
-   - Voice‑over: “This is LexLink: a cross‑protocol legaltech app that lets creators register IP on Story, accept Bitcoin via ICP escrow, and anchor the evidence on Constellation.”
+This script matches the production build with authentication, shadcn UI, and the new audit trail. Each bullet is a beat: the first line is what to show on screen, the second line is the suggested voice-over.
 
 —
 
-## Segment 2 — Quick architecture flyover (0:30 – 1:00)
+## Segment 1 — Cold open (0:00 – 0:25)
+- On-screen: Landing page (`/`). Slowly pan across hero, highlight the "Launch Console" CTA.
+- Voice-over: “This is LexLink — Story Protocol licensing, ICP Bitcoin escrow, and Constellation audit trails in one console.”
 
-1. On‑screen: Show a simple diagram overlay (lower‑third) or scroll the highlights.
-   - Voice‑over: “Under the hood: Story Protocol handles licensing and royalties, an ICP canister issues per‑order Bitcoin deposit addresses and attestations, and Constellation IntegrationNet stores audit hashes. Convex powers the dashboard mirrors.”
+## Segment 2 — Identity choice (0:25 – 0:55)
+- On-screen: Navigate to `/signin`. Call out the two cards (SIWE + Internet Identity).
+- Voice-over: “Operators authenticate with Sign-In with Ethereum via RainbowKit and NextAuth. Buyers or reviewers can sign in passwordlessly with Internet Identity.”
+- On-screen: Click `Connect Wallet`, sign the SIWE prompt in RainbowKit.
+- Voice-over: “The SIWE signature lands us in the protected `/app` routes.”
 
-—
+## Segment 3 — Dashboard tour (0:55 – 1:35)
+- On-screen: Overview page shows the new AppShell – sidebar, KPI cards, pending invoices, disputes, and audit log.
+- Voice-over: “Everything is gated behind middleware. The overview pulls Story, ICP, Constellation, and Convex mirrors into one place.”
+- Call out the “Recent Audit Activity” card – scroll the payload JSON.
+- Voice-over: “Every privileged action writes to Convex events so compliance teams can replay the history.”
 
-## Segment 3 — Register an IP on Story (1:00 – 2:30)
+## Segment 4 — Register IP asset (1:35 – 2:10)
+- On-screen: Click `IP Registry` in the sidebar. Fill the form with the sample data below.
+  - Title: `Midnight Marriage`
+  - Created At: `2025-02-15T12:00:00Z`
+  - Description: `An AI-assisted house track; commercial licensing enabled.`
+  - Cover Image URL: `https://cdn2.suno.ai/image_large_8bcba6bc-3f60-4921-b148-f32a59086a4c.jpeg`
+  - Media URL: `https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3`
+  - Media Type: `audio/mpeg`
+  - License Price: `250000`
+  - Royalty BPS: `1000`
+  - Creator Name: `LexLink Demo`
+  - Creator Wallet: `0x1111111111111111111111111111111111111111`
+  - IP Metadata URI: `https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8`
+  - NFT Metadata URI: `https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8`
+- Voice-over: “We mint an SPG NFT, attach PIL terms, and mirror the asset into Convex. The audit log now shows `ip_asset.registered`.”
+- On-screen: Highlight the success panel with IP ID, token ID, and license terms ID.
 
-1. On‑screen: Click “Open the Console” → `/app`. In the Register IP card, type exactly:
-   - Title: `Midnight Marriage`
-   - Description: `An AI‑assisted house track; commercial licensing enabled.`
-   - Created At: `2025-02-15T12:00:00Z`
-   - Cover Image URL: `https://cdn2.suno.ai/image_large_8bcba6bc-3f60-4921-b148-f32a59086a4c.jpeg`
-   - Media URL: `https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3`
-   - Media Type (MIME): `audio/mpeg`
-   - License Price (sats): `250000`
-   - Royalty (BPS): `1000` (10%)
-   - Creator Name: `LexLink Demo`
-   - Creator Wallet: `0x1111111111111111111111111111111111111111`
-   - IP Metadata URI: `https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8`
-   - NFT Metadata URI: `https://ipfs.io/ipfs/QmSamy4zqP91X42k6wS7kLJQVzuYJuW2EN94couPaq82A8`
-2. Click “Register IP Asset”.
-   - Voice‑over: “LexLink mints an SPG NFT, registers it as an IP Asset, attaches PIL terms with a 10% revenue share, and mirrors the record into Convex.”
-3. On‑screen: Show the result with IP ID, Token ID, and License Terms ID. Copy the IP ID (you’ll need it later).
+## Segment 5 — Allocate Bitcoin invoice (2:10 – 2:45)
+- On-screen: Switch to `Licenses`. In “Generate Bitcoin License Order” pick the new IP, set Buyer Wallet `0x2222…2222`.
+- Voice-over: “The ICP canister returns a dedicated P2WPKH address per order.”
+- On-screen: Show the generated order ID and deposit address. Copy the order ID for the next step.
+- Voice-over: “Notice the audit trail entry `license.order_created`.”
 
-—
+## Segment 6 — Finalize sale (2:45 – 3:40)
+- On-screen: In “Finalize Sale & Mint License,” choose the pending order. Paste a real or pre-recorded tBTC txid, and set License Receiver `0x3333…3333`.
+- Voice-over: “ICP verifies the UTXO, Story mints the license token, Constellation anchors the heartbeat, and we issue a C2PA bundle plus VC.”
+- On-screen: Scroll the result panel, download the C2PA and VC files, and open StoryScan + Constellation explorers in new tabs.
+- Voice-over: “Compliance jumps to 100. Recent activity shows `license.sale_completed` with payload hashes.”
 
-## Segment 4 — Create a Bitcoin license order (2:30 – 3:15)
+## Segment 7 — Log training batch (3:40 – 4:10)
+- On-screen: Navigate to `Training`. Select the same IP, enter `150` units, click `Record Training Batch`.
+- Voice-over: “Each batch emits an IntegrationNet transaction and boosts the compliance score.”
+- On-screen: Highlight the table entry and the corresponding audit event `training.batch_recorded`.
 
-1. On‑screen: In the “Generate BTC Invoice” card, select the IP you just registered.
-2. Type exactly:
-   - Buyer Wallet Address: `0x2222222222222222222222222222222222222222`
-3. Click “Generate BTC Invoice”.
-   - Voice‑over: “The ICP canister returns a dedicated P2WPKH testnet address bound to this order ID.”
-4. On‑screen: Show the Order ID and Bitcoin deposit address. Copy the deposit address.
+## Segment 8 — Raise dispute (4:10 – 4:40)
+- On-screen: Go to `Disputes`. Select the IP, choose tag `IMPROPER_USAGE`, set Evidence CID `ipfs://bafkreihdwdcej3m2vxxevidencelexlinkdemo`, Liveness `259200`, Bond `0`.
+- Voice-over: “Disputes are routed to Story’s UMA module, and the evidence hash hits Constellation for anchoring.”
+- On-screen: Show the ledger row with dispute ID, status, and Constellation tx.
 
-—
+## Segment 9 — Compliance ledger & roles (4:40 – 5:20)
+- On-screen: Open `Compliance` to show the full audit trail table. Scroll through a couple of payloads.
+- Voice-over: “The compliance tab is the single ledger. Every action includes actor address/principal, resource ID, and payload JSON.”
+- On-screen: Navigate to `Settings`. Point out the current session info and the operators table (if logged in as operator).
+- Voice-over: “Roles live in Convex. Operators can promote creators or viewers; viewers authenticate with Internet Identity without a wallet.”
 
-## Segment 5 — Simulate payment and finalize the sale (3:15 – 4:45)
+## Segment 10 — Internet Identity cameo (5:20 – 5:45)
+- On-screen: Sign out via the header, click `Sign in with Internet Identity`. Complete the II flow (can use Playground tenant).
+- Voice-over: “Internet Identity users land with viewer permissions. They can still inspect compliance data without touching operator tooling.”
 
-1. On‑screen: Show a testnet wallet sending 0.0025 BTC to the address, or paste a prepared tBTC txid.
-   - Example txid placeholder to paste: `a3b5f9c2d1e4f6a7b8c9d0e1f2a3b4c5d6e7f8090a1b2c3d4e5f6789abcdef01`
-2. In the “Finalize Sale” card, set:
-   - Pending Order: select the new order
-   - Bitcoin Transaction Hash: paste the txid above
-   - License Receiver: `0x3333333333333333333333333333333333333333`
-3. Click “Finalize Sale”.
-   - Voice‑over: “The canister verifies the UTXO and emits a signed attestation. LexLink mints a Story License Token to the buyer and anchors a heartbeat on Constellation.”
-4. On‑screen: Show the result panel:
-   - License Token ID: (copy)
-   - Attestation Hash: (copy)
-   - Constellation Tx: (copy)
-
-—
-
-## Segment 6 — Compliance dashboard & evidence (4:45 – 5:30)
-
-1. On‑screen: Scroll to “Completed Licenses”. Highlight Story IP ID, Bitcoin txid, attestation hash, and Constellation tx.
-   - Voice‑over: “Auditors can correlate license mint, BTC payment attestation, and the Constellation heartbeat in one place.”
-2. Optional: Open the Aeneid explorer and paste the IP ID.
-
-—
-
-## Segment 7 — Dispute flow (UMA policy) (5:30 – 6:30)
-
-1. On‑screen: In Dispute card, select the same IP.
-2. Type exactly:
-   - Dispute Tag: `IMPROPER_USAGE`
-   - Evidence CID or URL: `ipfs://bafkreihdwdcej3m2vxxevidencelexlinkdemo`
-   - Liveness (seconds): `259200`
-   - Bond (WIP smallest units): `0`
-3. Click “Raise Dispute”.
-   - Voice‑over: “We submit a UMA‑backed dispute on Story. The evidence hash is also logged to Constellation for independent timestamping.”
-4. On‑screen: Show the new Dispute History row with IDs and hashes.
+## Segment 11 — Wrap (5:45 – 6:00)
+- On-screen: Return to dashboard, briefly show the KPI cards updating in real time.
+- Voice-over: “LexLink unifies Story licensing, ICP Bitcoin escrow, Constellation evidence, and compliance-ready audit trails. All production-ready, no placeholders.”
 
 —
 
-## Segment 8 — Legal page and playbook (6:30 – 7:15)
-
-1. On‑screen: Open `/legal/pil` and scroll.
-   - Voice‑over: “Every IP references a human‑readable PIL URI hosted by the app. The on‑chain template remains authoritative.”
-2. On‑screen: Open `/playbook`.
-   - Voice‑over: “The Playbook summarizes architecture, flows, and commands for reviewers and collaborators.”
-
-—
-
-## Segment 9 — Wrap‑up (7:15 – 8:00)
-
-1. On‑screen: Return to `/`.
-   - Voice‑over: “That’s LexLink—Story licensing, ICP Bitcoin escrow, and Constellation evidence in one workflow. Links to the repo, canister, and testnets are in the description. Thanks for watching.”
-
-—
-
-### Lower‑third callouts (optional)
-- “Story (Aeneid), ICP (Playground), Constellation (IntegrationNet)”
-- “License Token minted → Evidence anchored”
-- “All testnet — no funds required”
-
-### Optional B‑roll ideas
-- Constellation IntegrationNet faucet GET request
-- Aeneid explorer page of the IP ID
-- ICP canister `request_deposit_address` in terminal
-
+## Appendix: quick-reference URLs
+- StoryScan: `https://aeneid.storyscan.io/`
+- IntegrationNet Explorer: `https://explorer.mainnet.constellationnetwork.io/`
+- Bitcoin testnet explorer: `https://mempool.space/testnet/`
+- Internet Identity docs: `https://internetcomputer.org/internet-identity`

@@ -62,5 +62,27 @@ export default defineSchema({
         createdAt: v.number()
     })
         .index('by_batchId', ['batchId'])
-        .index('by_ipId', ['ipId'])
+        .index('by_ipId', ['ipId']),
+    users: defineTable({
+        address: v.optional(v.string()),
+        principal: v.optional(v.string()),
+        role: v.union(v.literal('operator'), v.literal('creator'), v.literal('viewer')),
+        createdAt: v.number()
+    })
+        .index('by_address', ['address'])
+        .index('by_principal', ['principal']),
+    events: defineTable({
+        eventId: v.string(),
+        actorAddress: v.optional(v.string()),
+        actorPrincipal: v.optional(v.string()),
+        action: v.string(),
+        resourceId: v.optional(v.string()),
+        payload: v.string(),
+        createdAt: v.number()
+    })
+        .index('by_eventId', ['eventId'])
+        .index('by_actorAddress', ['actorAddress'])
+        .index('by_actorPrincipal', ['actorPrincipal'])
+        .index('by_action', ['action'])
+        .index('by_resourceId', ['resourceId'])
 });
