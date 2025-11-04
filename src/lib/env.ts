@@ -2,7 +2,13 @@ import { z } from 'zod'
 
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_AENEID_RPC: z.string().url(),
-  NEXT_PUBLIC_CONVEX_URL: z.string().url().optional()
+  NEXT_PUBLIC_CONVEX_URL: z.string().url().optional(),
+  NEXT_PUBLIC_DAG_ADDRESS: z
+    .string()
+    .regex(
+      /^DAG[0-9A-Za-z]{20,64}$/,
+      'NEXT_PUBLIC_DAG_ADDRESS must be a DAG address'
+    )
 })
 
 const serverEnvSchema = z.object({
@@ -40,13 +46,20 @@ const serverEnvSchema = z.object({
   // Use a tolerant validator: starts with DAG and contains alphanumerics of reasonable length.
   CONSTELLATION_ADDRESS: z
     .string()
-    .regex(/^DAG[0-9A-Za-z]{20,64}$/, 'CONSTELLATION_ADDRESS must be a DAG address'),
+    .regex(
+      /^DAG[0-9A-Za-z]{20,64}$/,
+      'CONSTELLATION_ADDRESS must be a DAG address'
+    ),
   CONSTELLATION_BE_URL: z.string().url(),
   CONSTELLATION_L0_URL: z.string().url(),
   CONSTELLATION_L1_URL: z.string().url(),
   CONVEX_URL: z.string().url(),
   CONVEX_DEPLOYMENT: z.string(),
-  BTC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet')
+  BTC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
+  VC_ISSUER_DID: z.string().min(4),
+  VC_PRIVATE_KEY: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{64}$/, 'VC_PRIVATE_KEY must be a 32-byte hex string')
 })
 
 type PublicEnv = z.infer<typeof publicEnvSchema>
@@ -55,7 +68,8 @@ type ServerEnv = z.infer<typeof serverEnvSchema>
 function parseEnv() {
   const publicEnv = publicEnvSchema.parse({
     NEXT_PUBLIC_AENEID_RPC: process.env.NEXT_PUBLIC_AENEID_RPC,
-    NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL
+    NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
+    NEXT_PUBLIC_DAG_ADDRESS: process.env.NEXT_PUBLIC_DAG_ADDRESS
   })
 
   const serverEnv = serverEnvSchema.parse({
@@ -67,7 +81,8 @@ function parseEnv() {
     STORY_PIL_URI: process.env.STORY_PIL_URI,
     ICP_HOST: process.env.ICP_HOST,
     ICP_ESCROW_CANISTER_ID: process.env.ICP_ESCROW_CANISTER_ID,
-    ICP_IDENTITY_PEM_PATH: process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
+    ICP_IDENTITY_PEM_PATH:
+      process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
     CONSTELLATION_PRIVATE_KEY: process.env.CONSTELLATION_PRIVATE_KEY,
     CONSTELLATION_ADDRESS: process.env.CONSTELLATION_ADDRESS,
     CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
@@ -75,7 +90,9 @@ function parseEnv() {
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
-    BTC_NETWORK: process.env.BTC_NETWORK
+    BTC_NETWORK: process.env.BTC_NETWORK,
+    VC_ISSUER_DID: process.env.VC_ISSUER_DID,
+    VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY
   })
 
   return { publicEnv, serverEnv }

@@ -26,7 +26,13 @@ export const insert = mutationGeneric({
     creatorAddress: v.string(),
     priceSats: v.number(),
     royaltyBps: v.number(),
-    licenseTermsId: v.string()
+    licenseTermsId: v.string(),
+    description: v.string(),
+    imageUrl: v.string(),
+    mediaUrl: v.string(),
+    mediaType: v.string(),
+    ipMetadataUri: v.string(),
+    nftMetadataUri: v.string()
   },
   handler: async (ctx, args) => {
     await ctx.db.insert('ips', {

@@ -4,9 +4,11 @@ import crypto from 'node:crypto'
 
 import { DisputeTargetTag } from '@story-protocol/core-sdk'
 
+import { createLicenseArchive } from '@/lib/c2pa'
 import { publishEvidence } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
+import { sha256Hex } from '@/lib/hash'
 import {
   requestDepositAddress,
   confirmPayment,
@@ -17,6 +19,7 @@ import {
   getDefaultLicenseTerms,
   getDefaultLicensingConfig
 } from '@/lib/story'
+import { generateLicenseCredential } from '@/lib/vc'
 
 export type IpRecord = {
   ipId: string
@@ -25,7 +28,13 @@ export type IpRecord = {
   priceSats: number
   royaltyBps: number
   licenseTermsId: string
+  description: string
   createdAt: number
+  imageUrl: string
+  mediaUrl: string
+  mediaType: string
+  ipMetadataUri: string
+  nftMetadataUri: string
 }
 
 export type LicenseRecord = {
@@ -40,6 +49,13 @@ export type LicenseRecord = {
   licenseTermsId: string
   status: string
   createdAt: number
+  contentHash: string
+  c2paHash: string
+  c2paArchive: string
+  vcDocument: string
+  vcHash: string
+  complianceScore: number
+  trainingUnits: number
 }
 
 export type DisputeRecord = {
@@ -53,6 +69,15 @@ export type DisputeRecord = {
   status: string
   livenessSeconds: number
   bond: number
+  createdAt: number
+}
+
+export type TrainingBatchRecord = {
+  batchId: string
+  ipId: string
+  units: number
+  evidenceHash: string
+  constellationTx: string
   createdAt: number
 }
 
@@ -99,6 +124,28 @@ async function hashFromUrl(url: string): Promise<`0x${string}`> {
     .update(Buffer.from(arrayBuffer))
     .digest('hex')
   return `0x${hash}` as const
+}
+
+function calculateComplianceScore({
+  hasPayment,
+  hasLicenseToken,
+  hasConstellationEvidence,
+  hasC2paArchive,
+  trainingUnits
+}: {
+  hasPayment: boolean
+  hasLicenseToken: boolean
+  hasConstellationEvidence: boolean
+  hasC2paArchive: boolean
+  trainingUnits: number
+}) {
+  let score = 0
+  if (hasPayment) score += 25
+  if (hasLicenseToken) score += 25
+  if (hasC2paArchive) score += 25
+  if (hasConstellationEvidence) score += 25
+  const trainingBonus = Math.min(25, trainingUnits)
+  return Math.min(100, score + trainingBonus)
 }
 
 export async function registerIpAsset(payload: RegisterIpPayload) {
@@ -149,7 +196,13 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     creatorAddress: payload.creators[0]?.address ?? env.STORY_SPG_NFT_ADDRESS,
     priceSats: payload.priceSats,
     royaltyBps: payload.royaltyBps,
-    licenseTermsId: registerResponse.licenseTermsIds[0].toString()
+    licenseTermsId: registerResponse.licenseTermsIds[0].toString(),
+    description: payload.description,
+    imageUrl: payload.imageUrl,
+    mediaUrl: payload.mediaUrl,
+    mediaType: payload.mediaType,
+    ipMetadataUri: payload.ipMetadataUri,
+    nftMetadataUri: payload.nftMetadataUri
   })
 
   return {
@@ -213,8 +266,17 @@ export async function completeLicenseSale({
     throw new Error('License order not found')
   }
 
+  const ip = (await convex.query('ipAssets:getById' as any, {
+    ipId: order.ipId
+  })) as IpRecord | null
+  if (!ip) {
+    throw new Error('Associated IP asset not found')
+  }
+
   await confirmPayment(orderId, btcTxId)
   const attestationJson = await fetchAttestation(orderId)
+  const attestation = JSON.parse(attestationJson)
+  const attestationHash = sha256Hex(attestationJson)
 
   const storyClient = getStoryClient()
   const mintResponse = await storyClient.license.mintLicenseTokens({
@@ -231,26 +293,88 @@ export async function completeLicenseSale({
     throw new Error('Failed to mint license token on Story Protocol')
   }
 
-  const attestationHash = `0x${crypto
-    .createHash('sha256')
-    .update(attestationJson)
-    .digest('hex')}`
+  const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
 
-  const constellationTx = await publishEvidence(attestationHash)
+  const mediaResponse = await fetch(ip.mediaUrl)
+  if (!mediaResponse.ok) {
+    throw new Error(
+      `Failed to fetch media for IP: ${mediaResponse.status} ${mediaResponse.statusText}`
+    )
+  }
+  const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer())
+  const contentHash = sha256Hex(mediaBuffer)
+
+  const evidencePayload = JSON.stringify({
+    kind: 'LICENSE_COMPLETED',
+    orderId,
+    ipId: order.ipId,
+    licenseTokenId,
+    btcTxId,
+    attestationHash,
+    contentHash,
+    timestamp: Date.now()
+  })
+  const evidenceHash = sha256Hex(evidencePayload)
+  const constellationTx = await publishEvidence(evidenceHash)
+
+  const archive = await createLicenseArchive({
+    assetBuffer: mediaBuffer,
+    assetFileName:
+      new URL(ip.mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
+    storyLicenseId: licenseTokenId,
+    btcTxId,
+    constellationTx,
+    attestationHash,
+    contentHash,
+    licenseTokenId
+  })
+
+  const vc = await generateLicenseCredential({
+    subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
+    storyLicenseId: licenseTokenId,
+    btcTxId,
+    constellationTx,
+    contentHash,
+    attestationHash
+  })
+  const vcJson = JSON.stringify(vc.document, null, 2)
+
+  const complianceScore = calculateComplianceScore({
+    hasPayment: true,
+    hasLicenseToken: true,
+    hasConstellationEvidence: Boolean(constellationTx),
+    hasC2paArchive: Boolean(archive.archiveBase64),
+    trainingUnits: 0
+  })
 
   await convex.mutation('licenses:markCompleted' as any, {
     orderId,
     btcTxId,
     attestationHash,
     constellationTx,
-    tokenOnChainId: mintResponse.licenseTokenIds[0].toString()
+    tokenOnChainId: licenseTokenId,
+    contentHash,
+    c2paHash: archive.archiveHash,
+    c2paArchive: archive.archiveBase64,
+    vcDocument: vcJson,
+    vcHash: vc.hash,
+    complianceScore
   })
 
   return {
-    licenseTokenId: mintResponse.licenseTokenIds[0].toString(),
-    attestation: JSON.parse(attestationJson),
+    licenseTokenId,
+    attestation,
     attestationHash,
-    constellationTx
+    constellationTx,
+    contentHash,
+    complianceScore,
+    c2paArchive: {
+      base64: archive.archiveBase64,
+      fileName: archive.suggestedFileName,
+      hash: archive.archiveHash
+    },
+    vcDocument: vcJson,
+    vcHash: vc.hash
   }
 }
 
@@ -293,10 +417,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     timestamp: Date.now()
   })
 
-  const evidenceHash = `0x${crypto
-    .createHash('sha256')
-    .update(evidencePayload)
-    .digest('hex')}`
+  const evidenceHash = sha256Hex(evidencePayload)
 
   const constellationTx = await publishEvidence(evidenceHash)
 
@@ -324,17 +445,88 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
 
 export async function loadDashboardData() {
   const convex = getConvexClient()
-  const [ipsRaw, licensesRaw, disputesRaw] = await Promise.all([
+  const [ipsRaw, licensesRaw, disputesRaw, trainingRaw] = await Promise.all([
     convex.query('ipAssets:list' as any, {}),
     convex.query('licenses:list' as any, {}),
-    convex.query('disputes:list' as any, {})
+    convex.query('disputes:list' as any, {}),
+    convex.query('trainingBatches:list' as any, {})
   ])
 
   return {
     ips: ipsRaw as IpRecord[],
     licenses: licensesRaw as LicenseRecord[],
-    disputes: disputesRaw as DisputeRecord[]
+    disputes: disputesRaw as DisputeRecord[],
+    trainingBatches: trainingRaw as TrainingBatchRecord[]
   }
 }
+
+export async function recordTrainingBatch({
+  ipId,
+  units
+}: {
+  ipId: string
+  units: number
+}) {
+  if (units <= 0) {
+    throw new Error('Training units must be positive')
+  }
+
+  const convex = getConvexClient()
+  const ip = (await convex.query('ipAssets:getById' as any, {
+    ipId
+  })) as IpRecord | null
+
+  if (!ip) {
+    throw new Error('IP asset not found')
+  }
+
+  const batchId = crypto.randomUUID()
+  const payload = JSON.stringify({
+    kind: 'TRAINING_BATCH',
+    ipId,
+    batchId,
+    units,
+    timestamp: Date.now()
+  })
+  const evidenceHash = sha256Hex(payload)
+  const constellationTx = await publishEvidence(evidenceHash)
+
+  await convex.mutation('trainingBatches:insert' as any, {
+    batchId,
+    ipId,
+    units,
+    evidenceHash,
+    constellationTx
+  })
+
+  const licensesForIp = (await convex.query('licenses:listByIp' as any, {
+    ipId
+  })) as LicenseRecord[]
+
+  for (const license of licensesForIp) {
+    const nextTrainingUnits = license.trainingUnits + units
+    const nextScore = calculateComplianceScore({
+      hasPayment: Boolean(license.btcTxId),
+      hasLicenseToken: Boolean(license.tokenOnChainId),
+      hasConstellationEvidence: Boolean(license.constellationTx),
+      hasC2paArchive: Boolean(license.c2paArchive),
+      trainingUnits: nextTrainingUnits
+    })
+
+    await convex.mutation('licenses:setTrainingMetrics' as any, {
+      orderId: license.orderId,
+      trainingUnits: nextTrainingUnits,
+      complianceScore: nextScore
+    })
+  }
+
+  return {
+    batchId,
+    constellationTx,
+    evidenceHash
+  }
+}
+
+export { DisputeTargetTag }
 
 // Note: do not export non-function values from a `use server` module.

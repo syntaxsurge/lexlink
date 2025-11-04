@@ -21,6 +21,7 @@ export default [
       '**/coverage/**',
       '**/out/**',
       '**/public/**',
+      'icp/.dfx/**',
       '**/artifacts/**',
       '**/contracts/**',
       '**/cache/**',

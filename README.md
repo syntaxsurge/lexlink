@@ -9,9 +9,15 @@ LexLink is a production-ready, cross-protocol legaltech stack:
   emits signed attestations.
 - **Constellation IntegrationNet** receives an on-ledger heartbeat for every
   completed license sale so auditors can correlate Story transactions with
-  Bitcoin settlements.
+  Bitcoin settlements and AI training batches.
+- **C2PA passport + VC issuance** produce a downloadable archive containing a
+  manifest that references the Story license token, Bitcoin payment, and
+  Constellation proof along with a signed Ed25519 verifiable credential.
+- **AI Training Meter** records metered micro-payments, anchors each batch to
+  IntegrationNet, and automatically increases the license compliance score.
 - **Convex** stores operational mirrors (IP catalogue, license orders, evidence
-  hashes) to power the dashboard.
+  hashes, C2PA bundles, VC documents, and training batches) to power the
+  dashboard.
 
 This repository contains the full end-to-end implementation for Days 2 and 3 of
 the build plan, ready to deploy without placeholders.
@@ -38,7 +44,7 @@ values must point to real infrastructure—no placeholders remain in the code.
 ```dotenv
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
-NEXT_PUBLIC_CONVEX_URL="https://<your-convex-deployment>.convex.cloud"
+NEXT_PUBLIC_DAG_ADDRESS="DAG..."
 
 # Story Protocol signer
 STORY_RPC_URL="https://aeneid.storyrpc.io"
@@ -61,26 +67,21 @@ CONSTELLATION_L0_URL="https://l0-lb-integrationnet.constellationnetwork.io"
 CONSTELLATION_L1_URL="https://l1-lb-integrationnet.constellationnetwork.io"
 BTC_NETWORK="testnet"                                 # or "mainnet"
 
-# Convex
-CONVEX_URL="https://<your-convex-deployment>.convex.cloud"
-CONVEX_DEPLOYMENT="<deployment-name>"
+# Verifiable credential issuer
+VC_ISSUER_DID="did:lexlink:issuer"
+VC_PRIVATE_KEY="0x..."
 ```
 
 ### How to obtain each env value (commands + links)
 
 Use this checklist to source every value in `.env.local`.
 
-1) Public RPCs (Story / Convex)
+1) Public RPCs (Story)
 - `NEXT_PUBLIC_AENEID_RPC` and `STORY_RPC_URL`
   - Use Aeneid public RPC: `https://aeneid.storyrpc.io` (no change needed)
   - Deployed contracts: https://docs.story.foundation/developers/deployed-smart-contracts
-- `NEXT_PUBLIC_CONVEX_URL` / `CONVEX_URL`
-  - From a Convex deployment: `npx convex deploy` then copy the deployment URL
-  - Convex docs: https://docs.convex.dev/home
-- `CONVEX_DEPLOYMENT`
-  - The name shown when you deploy via `npx convex deploy` (e.g., `dev`)
 
-2) Story Protocol signer
+1) Story Protocol signer
 - `STORY_CHAIN_ID`
   - Aeneid = `1315` (no change needed)
 - `STORY_PRIVATE_KEY`
@@ -99,7 +100,7 @@ Use this checklist to source every value in `.env.local`.
   - Local dev: `http://localhost:3000/legal/pil`
   - PIL overview: https://docs.story.foundation/concepts/programmable-ip-license/overview
 
-3) ICP Bitcoin escrow canister
+1) ICP Bitcoin escrow canister
 - Install IC SDK (dfx):
   - macOS (Apple Silicon): `softwareupdate --install-rosetta`
   - Install: `sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"`
@@ -119,7 +120,7 @@ Use this checklist to source every value in `.env.local`.
   - Identity docs: https://internetcomputer.org/docs/current/developer-docs/getting-started/developer-identity
   - Test canister call (Playground): `dfx canister call --playground btc_escrow request_deposit_address '("order-1")'`
 
-4) Constellation IntegrationNet signer
+1) Constellation IntegrationNet signer
 - Install Stargazer Wallet (Chrome):
   - https://chromewebstore.google.com/detail/stargazer-wallet/pgiaagfkgcbnmiiolekcfmljdagdhlcm?pli=1
   - Switch to IntegrationNet; copy your DAG address (`CONSTELLATION_ADDRESS`)
@@ -131,11 +132,6 @@ Use this checklist to source every value in `.env.local`.
   - `CONSTELLATION_L0_URL=https://l0-lb-integrationnet.constellationnetwork.io`
   - `CONSTELLATION_L1_URL=https://l1-lb-integrationnet.constellationnetwork.io`
 - `BTC_NETWORK` should remain `testnet` for free testing
-
-5) Convex
-- `CONVEX_URL` / `CONVEX_DEPLOYMENT`
-  - Initialize & deploy: `npx convex deploy`
-  - Copy the URL and deployment name into the env
 
 Sanity checks
 - Story: `pnpm spg:create` returns a valid `spgNftContract`
@@ -162,6 +158,11 @@ Sanity checks
 
 - The private key controls the DAG address used for evidence pulses. Fund the
   account on IntegrationNet via the public faucet.
+- Set both `CONSTELLATION_ADDRESS` and `NEXT_PUBLIC_DAG_ADDRESS` to the same
+  IntegrationNet address so the dashboard can render deep links without
+  exposing the signing key.
+- `VC_ISSUER_DID` and `VC_PRIVATE_KEY` sign the verifiable credentials that
+  accompany each license passport. Use a dedicated Ed25519 key pair for demos.
 
 ### Convex configuration
 
@@ -237,14 +238,20 @@ pnpm lint
    dedicated address and records the order in Convex.
 3. **Buyer pays in BTC** – Once the transaction is visible (the operator copies
    the txid), `completeLicenseSale` requests the canister to verify UTXOs, mints
-   a Story license token to the buyer, hashes the attestation, and publishes a
-   heartbeat transaction to Constellation IntegrationNet.
-4. **Compliance dashboard** – Every completed order shows the Story IP ID,
-   Bitcoin txid, Constellation tx hash, and the SHA-256 attestation hash for
-   auditors.
-5. **Raise disputes** – Operators can submit UMA-backed disputes against any
+   a Story license token to the buyer, hashes the attestation, posts an evidence
+   transaction on IntegrationNet, and computes the SHA-256 content hash.
+4. **C2PA & VC issuance** – The same action produces a downloadable C2PA bundle
+   and a signed Ed25519 verifiable credential. Both are stored in Convex and
+   exposed through the dashboard.
+5. **Compliance dashboard** – Every completed order shows the Story IP ID,
+   Bitcoin txid, Constellation tx hash, attestation hash, compliance score, and
+   training units with one-click downloads for the C2PA archive and VC payload.
+6. **Raise disputes** – Operators can submit UMA-backed disputes against any
    registered IP, log the evidence hash to Constellation, and track the status
    inside the console for downstream compliance teams.
+7. **Meter AI training** – The `/train` console records streamed micro-payments,
+   anchors each batch to IntegrationNet, and increments the compliance bonus
+   (capped at +25 points).
 
 ## 10. Deploying to production
 

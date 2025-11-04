@@ -9,7 +9,13 @@ export default defineSchema({
     priceSats: v.number(),
     royaltyBps: v.number(),
     licenseTermsId: v.string(),
-    createdAt: v.number()
+    description: v.string(),
+    createdAt: v.number(),
+    imageUrl: v.string(),
+    mediaUrl: v.string(),
+    mediaType: v.string(),
+    ipMetadataUri: v.string(),
+    nftMetadataUri: v.string()
   }).index('by_ipId', ['ipId']),
   licenses: defineTable({
     orderId: v.string(),
@@ -22,7 +28,14 @@ export default defineSchema({
     tokenOnChainId: v.string(),
     licenseTermsId: v.string(),
     status: v.string(),
-    createdAt: v.number()
+    createdAt: v.number(),
+    contentHash: v.string(),
+    c2paHash: v.string(),
+    c2paArchive: v.string(),
+    vcDocument: v.string(),
+    vcHash: v.string(),
+    complianceScore: v.number(),
+    trainingUnits: v.number()
   })
     .index('by_orderId', ['orderId'])
     .index('by_ipId', ['ipId']),
@@ -40,5 +53,15 @@ export default defineSchema({
     createdAt: v.number()
   })
     .index('by_disputeId', ['disputeId'])
+    .index('by_ipId', ['ipId']),
+  trainingBatches: defineTable({
+    batchId: v.string(),
+    ipId: v.string(),
+    units: v.number(),
+    evidenceHash: v.string(),
+    constellationTx: v.string(),
+    createdAt: v.number()
+  })
+    .index('by_batchId', ['batchId'])
     .index('by_ipId', ['ipId'])
 })

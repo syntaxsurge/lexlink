@@ -42,7 +42,11 @@ async function main() {
   const mintOpen = (process.env.SPG_MINT_OPEN ?? 'true') === 'true'
 
   const account = privateKeyToAccount(pk)
-  const client = StoryClient.newClient({ chainId: 'aeneid', transport: http(rpcUrl), account })
+  const client = StoryClient.newClient({
+    chainId: 'aeneid',
+    transport: http(rpcUrl),
+    account
+  })
 
   console.log('Creating SPG NFT collection...')
   const nft = (client as any).nftClient
@@ -57,13 +61,19 @@ async function main() {
     mintOpen
   })
 
-  console.log(JSON.stringify({
-    spgNftContract: result.spgNftContract,
-    txHash: result.txHash
-  }, null, 2))
+  console.log(
+    JSON.stringify(
+      {
+        spgNftContract: result.spgNftContract,
+        txHash: result.txHash
+      },
+      null,
+      2
+    )
+  )
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err)
   process.exit(1)
 })

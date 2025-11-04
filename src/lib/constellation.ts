@@ -7,7 +7,9 @@ import { env } from '@/lib/env'
  * If dag4 or WASM is unavailable at runtime, it returns a synthetic tx id so
  * the UI continues to function without crashing.
  */
-export async function publishEvidence(_hash: string) {
+const LOCAL_STORAGE_NAMESPACE = 'lexlink-evidence'
+
+export async function publishEvidence(evidenceHash: string) {
   try {
     const { dag4 } = await import('@stardust-collective/dag4')
     const { LocalStorage } = await import('node-localstorage')
@@ -47,6 +49,16 @@ export async function publishEvidence(_hash: string) {
 
     const submittedHash = await dag4.network.postTransaction(transaction)
     await account.waitForCheckPointAccepted(submittedHash)
+    if (typeof localStorage !== 'undefined') {
+      const key = `${LOCAL_STORAGE_NAMESPACE}:${submittedHash ?? txHash}`
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          evidenceHash,
+          recordedAt: new Date().toISOString()
+        })
+      )
+    }
     return submittedHash ?? txHash
   } catch (err) {
     console.warn('Constellation evidence publishing skipped:', err)

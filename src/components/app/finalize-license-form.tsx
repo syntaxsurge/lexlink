@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { Buffer } from 'buffer'
+
+import { useMemo, useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
@@ -21,12 +23,23 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+type FinalizeResult = {
+  licenseTokenId: string
+  attestationHash: string
+  constellationTx: string
+  contentHash: string
+  complianceScore: number
+  c2paArchive: {
+    base64: string
+    fileName: string
+    hash: string
+  }
+  vcDocument: string
+  vcHash: string
+}
+
 export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
-  const [result, setResult] = useState<null | {
-    licenseTokenId: string
-    attestationHash: string
-    constellationTx: string
-  }>(null)
+  const [result, setResult] = useState<FinalizeResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -52,6 +65,19 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
       }
     })
   }
+
+  const c2paHref = useMemo(() => {
+    if (!result) return ''
+    return `data:application/zip;base64,${result.c2paArchive.base64}`
+  }, [result])
+
+  const vcHref = useMemo(() => {
+    if (!result) return ''
+    return `data:application/json;base64,${Buffer.from(
+      result.vcDocument,
+      'utf-8'
+    ).toString('base64')}`
+  }, [result])
 
   return (
     <div className='rounded-xl border bg-card p-6'>
@@ -128,6 +154,47 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
             <dd className='break-all font-mono text-xs'>
               {result.constellationTx}
             </dd>
+          </div>
+          <div className='flex flex-col gap-1'>
+            <dt className='font-semibold text-muted-foreground'>
+              Content Hash
+            </dt>
+            <dd className='break-all font-mono text-xs'>
+              {result.contentHash}
+            </dd>
+          </div>
+          <div className='flex flex-col gap-1'>
+            <dt className='font-semibold text-muted-foreground'>
+              Compliance Score
+            </dt>
+            <dd className='font-semibold'>{result.complianceScore}/100</dd>
+          </div>
+          <div className='flex flex-col gap-1'>
+            <dt className='font-semibold text-muted-foreground'>
+              C2PA Bundle Hash
+            </dt>
+            <dd className='break-all font-mono text-xs'>
+              {result.c2paArchive.hash}
+            </dd>
+          </div>
+          <div className='flex flex-col gap-1'>
+            <dt className='font-semibold text-muted-foreground'>VC Hash</dt>
+            <dd className='break-all font-mono text-xs'>{result.vcHash}</dd>
+          </div>
+          <div className='flex flex-wrap gap-2 pt-2'>
+            <Button asChild size='sm' variant='secondary'>
+              <a href={c2paHref} download={result.c2paArchive.fileName}>
+                Download C2PA Package
+              </a>
+            </Button>
+            <Button asChild size='sm' variant='secondary'>
+              <a
+                href={vcHref}
+                download={`lexlink-license-vc-${result.licenseTokenId}.json`}
+              >
+                Download VC
+              </a>
+            </Button>
           </div>
         </dl>
       )}

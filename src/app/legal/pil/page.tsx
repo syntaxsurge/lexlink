@@ -2,7 +2,7 @@ export const dynamic = 'force-static'
 
 export default function PilPage() {
   return (
-    <main className="prose prose-neutral max-w-3xl px-6 py-12 dark:prose-invert">
+    <main className='prose prose-neutral dark:prose-invert max-w-3xl px-6 py-12'>
       <h1>LexLink Programmable IP License (PIL) Terms</h1>
       <p>
         This page provides a human‑readable reference URI for the Programmable
@@ -16,17 +16,17 @@ export default function PilPage() {
       <h2>Template</h2>
       <ul>
         <li>
-          License Template: Story PIL (<a
-            href="https://docs.story.foundation/concepts/programmable-ip-license/overview"
-            target="_blank"
+          License Template: Story PIL (
+          <a
+            href='https://docs.story.foundation/concepts/programmable-ip-license/overview'
+            target='_blank'
           >
             overview
           </a>
           )
         </li>
         <li>
-          Template Contract (Aeneid):
-          0x2E896b0b2Fdb7457499B56AAaA4AE55BCB4Cd316
+          Template Contract (Aeneid): 0x2E896b0b2Fdb7457499B56AAaA4AE55BCB4Cd316
         </li>
       </ul>
 
@@ -106,4 +106,3 @@ export default function PilPage() {
     </main>
   )
 }
-

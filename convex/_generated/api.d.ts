@@ -9,8 +9,12 @@
  */
 
 import type * as disputes from "../disputes.js";
+import type * as dist_ipAssets from "../dist/ipAssets.js";
+import type * as dist_licenses from "../dist/licenses.js";
+import type * as dist_trainingBatches from "../dist/trainingBatches.js";
 import type * as ipAssets from "../ipAssets.js";
 import type * as licenses from "../licenses.js";
+import type * as trainingBatches from "../trainingBatches.js";
 
 import type {
   ApiFromModules,
@@ -28,8 +32,12 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   disputes: typeof disputes;
+  "dist/ipAssets": typeof dist_ipAssets;
+  "dist/licenses": typeof dist_licenses;
+  "dist/trainingBatches": typeof dist_trainingBatches;
   ipAssets: typeof ipAssets;
   licenses: typeof licenses;
+  trainingBatches: typeof trainingBatches;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

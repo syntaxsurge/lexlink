@@ -1,0 +1,34 @@
+import { mutationGeneric, queryGeneric } from 'convex/server';
+import { v } from 'convex/values';
+export const listByIp = queryGeneric({
+    args: { ipId: v.string() },
+    handler: async (ctx, args) => {
+        const batches = await ctx.db
+            .query('trainingBatches')
+            .withIndex('by_ipId', q => q.eq('ipId', args.ipId))
+            .collect();
+        return batches.sort((a, b) => b.createdAt - a.createdAt);
+    }
+});
+export const insert = mutationGeneric({
+    args: {
+        batchId: v.string(),
+        ipId: v.string(),
+        units: v.number(),
+        evidenceHash: v.string(),
+        constellationTx: v.string()
+    },
+    handler: async (ctx, args) => {
+        await ctx.db.insert('trainingBatches', {
+            ...args,
+            createdAt: Date.now()
+        });
+    }
+});
+export const list = queryGeneric({
+    args: {},
+    handler: async (ctx) => {
+        const batches = await ctx.db.query('trainingBatches').collect();
+        return batches.sort((a, b) => b.createdAt - a.createdAt);
+    }
+});
