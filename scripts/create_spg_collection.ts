@@ -45,7 +45,8 @@ async function main() {
   const client = StoryClient.newClient({ chainId: 'aeneid', transport: http(rpcUrl), account })
 
   console.log('Creating SPG NFT collection...')
-  const result = await client.nft.createNFTCollection({
+  const nft = (client as any).nftClient
+  const result = await nft.createNFTCollection({
     name,
     symbol,
     baseURI,
@@ -66,4 +67,3 @@ main().catch((err) => {
   console.error(err)
   process.exit(1)
 })
-
