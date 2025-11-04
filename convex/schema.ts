@@ -1,42 +1,43 @@
 import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
 
 export default defineSchema({
   ips: defineTable({
-    ipId: 'string',
-    title: 'string',
-    creatorAddress: 'string',
-    priceSats: 'number',
-    royaltyBps: 'number',
-    licenseTermsId: 'string',
-    createdAt: 'number'
+    ipId: v.string(),
+    title: v.string(),
+    creatorAddress: v.string(),
+    priceSats: v.number(),
+    royaltyBps: v.number(),
+    licenseTermsId: v.string(),
+    createdAt: v.number()
   }).index('by_ipId', ['ipId']),
   licenses: defineTable({
-    orderId: 'string',
-    ipId: 'string',
-    buyer: 'string',
-    btcAddress: 'string',
-    btcTxId: 'string',
-    attestationHash: 'string',
-    constellationTx: 'string',
-    tokenOnChainId: 'string',
-    licenseTermsId: 'string',
-    status: 'string',
-    createdAt: 'number'
+    orderId: v.string(),
+    ipId: v.string(),
+    buyer: v.string(),
+    btcAddress: v.string(),
+    btcTxId: v.string(),
+    attestationHash: v.string(),
+    constellationTx: v.string(),
+    tokenOnChainId: v.string(),
+    licenseTermsId: v.string(),
+    status: v.string(),
+    createdAt: v.number()
   })
     .index('by_orderId', ['orderId'])
     .index('by_ipId', ['ipId']),
   disputes: defineTable({
-    disputeId: 'string',
-    ipId: 'string',
-    targetTag: 'string',
-    evidenceCid: 'string',
-    txHash: 'string',
-    evidenceHash: 'string',
-    constellationTx: 'string',
-    status: 'string',
-    livenessSeconds: 'number',
-    bond: 'number',
-    createdAt: 'number'
+    disputeId: v.string(),
+    ipId: v.string(),
+    targetTag: v.string(),
+    evidenceCid: v.string(),
+    txHash: v.string(),
+    evidenceHash: v.string(),
+    constellationTx: v.string(),
+    status: v.string(),
+    livenessSeconds: v.number(),
+    bond: v.number(),
+    createdAt: v.number()
   })
     .index('by_disputeId', ['disputeId'])
     .index('by_ipId', ['ipId'])
