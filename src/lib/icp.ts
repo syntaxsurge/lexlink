@@ -1,4 +1,6 @@
 import { Buffer } from 'node:buffer'
+import fs from 'node:fs'
+import path from 'node:path'
 
 import { Actor, HttpAgent } from '@dfinity/agent'
 import { IDL } from '@dfinity/candid'
@@ -14,7 +16,17 @@ type EscrowActor = {
 
 let cachedActor: EscrowActor | null = null
 
-function deriveSecretKeyFromPem(pem: string): Uint8Array {
+function loadPemContent(pemOrPath: string): string {
+  const raw = pemOrPath.trim()
+  // If it looks like inline PEM content, return as-is
+  if (raw.includes('BEGIN') && raw.includes('PRIVATE KEY')) return raw
+  // Otherwise, treat as a filesystem path (relative or absolute)
+  const resolved = path.isAbsolute(raw) ? raw : path.join(process.cwd(), raw)
+  return fs.readFileSync(resolved, 'utf8')
+}
+
+function deriveSecretKeyFromPem(pemOrPath: string): Uint8Array {
+  const pem = loadPemContent(pemOrPath)
   const lines = pem
     .trim()
     .split(/\r?\n/)
