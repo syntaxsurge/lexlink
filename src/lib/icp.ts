@@ -42,7 +42,10 @@ function deriveSecretKeyFromPem(pemOrPath: string): Uint8Array {
 }
 
 function getIdentity() {
-  const secretKey = deriveSecretKeyFromPem(env.ICP_IDENTITY_PEM)
+  const secretKey = deriveSecretKeyFromPem(
+    // Support new path-oriented variable with backward compatibility
+    (env as any).ICP_IDENTITY_PEM_PATH ?? (env as any).ICP_IDENTITY_PEM
+  )
   return Ed25519KeyIdentity.fromSecretKey(secretKey)
 }
 

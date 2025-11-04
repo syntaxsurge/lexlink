@@ -29,7 +29,7 @@ const serverEnvSchema = z.object({
   STORY_PIL_URI: z.string().url(),
   ICP_HOST: z.string().url(),
   ICP_ESCROW_CANISTER_ID: z.string(),
-  ICP_IDENTITY_PEM: z.string().min(1),
+  ICP_IDENTITY_PEM_PATH: z.string().min(1).default('icp/icp_identity.pem'),
   CONSTELLATION_PRIVATE_KEY: z
     .string()
     .regex(
@@ -68,7 +68,7 @@ function parseEnv() {
     STORY_PIL_URI: process.env.STORY_PIL_URI,
     ICP_HOST: process.env.ICP_HOST,
     ICP_ESCROW_CANISTER_ID: process.env.ICP_ESCROW_CANISTER_ID,
-    ICP_IDENTITY_PEM: process.env.ICP_IDENTITY_PEM,
+    ICP_IDENTITY_PEM_PATH: process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
     CONSTELLATION_PRIVATE_KEY: process.env.CONSTELLATION_PRIVATE_KEY,
     CONSTELLATION_ADDRESS: process.env.CONSTELLATION_ADDRESS,
     CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,

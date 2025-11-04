@@ -51,7 +51,7 @@ STORY_PIL_URI="https://example.com/pil.json"
 # ICP Bitcoin escrow canister
 ICP_HOST="https://icp0.io"                           # or local replica
 ICP_ESCROW_CANISTER_ID="<canister-id>"
-ICP_IDENTITY_PEM="-----BEGIN PRIVATE KEY-----..."
+ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
 
 # Constellation IntegrationNet signer
 CONSTELLATION_PRIVATE_KEY="0x..."
@@ -78,7 +78,7 @@ CONVEX_DEPLOYMENT="<deployment-name>"
 - The canister expects an ECDSA key with the name `lexlink-btc`. On mainnet,
   file a boundary node proposal; locally, run `dfx identity get-principal` and
   enable ECDSA signing in `dfx.json`.
-- `ICP_IDENTITY_PEM` is parsed directly; the key must correspond to the
+- `ICP_IDENTITY_PEM_PATH` can be a filesystem path (default shown) or inline PEM content; the key must correspond to the
   controller of the escrow canister.
 
 ### Constellation configuration
