@@ -36,12 +36,11 @@ const serverEnvSchema = z.object({
       /^0x[0-9a-fA-F]{64}$/,
       'CONSTELLATION_PRIVATE_KEY must be a hex string'
     ),
+  // DAG addresses are Base58-like strings prefixed with "DAG"; lengths can vary by implementation.
+  // Use a tolerant validator: starts with DAG and contains alphanumerics of reasonable length.
   CONSTELLATION_ADDRESS: z
     .string()
-    .regex(
-      /^DAG[a-zA-Z0-9]{35}$/,
-      'CONSTELLATION_ADDRESS must be a DAG address'
-    ),
+    .regex(/^DAG[0-9A-Za-z]{20,64}$/, 'CONSTELLATION_ADDRESS must be a DAG address'),
   CONSTELLATION_BE_URL: z.string().url(),
   CONSTELLATION_L0_URL: z.string().url(),
   CONSTELLATION_L1_URL: z.string().url(),
