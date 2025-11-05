@@ -72,6 +72,8 @@ export default async function LicensesPage() {
   const paymentMode = await readPaymentMode()
 
   const isCkbtcDefault = paymentMode === 'ckbtc'
+  const isBtcMode = (mode?: string | null) => mode !== 'ckbtc'
+
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)
   )
@@ -79,7 +81,7 @@ export default async function LicensesPage() {
     order => order.status === 'finalized'
   )
   const manualFinalizeOrders = pendingOrders.filter(
-    order => order.paymentMode === 'btc' && order.status !== 'pending'
+    order => isBtcMode(order.paymentMode) && order.status !== 'pending'
   )
 
   const orderCardDescription = isCkbtcDefault
@@ -169,7 +171,7 @@ export default async function LicensesPage() {
                 const txUrl = order.btcTxId
                   ? `${base}/tx/${order.btcTxId}`
                   : undefined
-                const modeLabel = order.paymentMode === 'btc' ? 'BTC' : 'ckBTC'
+                const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -209,7 +211,7 @@ export default async function LicensesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {order.paymentMode === 'ckbtc' ? (
+                      {!isBtcMode(order.paymentMode) ? (
                         <Link
                           href={`/pay/${order.orderId}`}
                           className='text-xs text-primary underline-offset-4 hover:underline'
@@ -238,7 +240,7 @@ export default async function LicensesPage() {
                       )}
                     </TableCell>
                     <TableCell className='flex justify-end gap-2'>
-                      {simulateEnabled && order.paymentMode === 'btc' && (
+                      {simulateEnabled && isBtcMode(order.paymentMode) && (
                         <form action={simulateAction} className='inline-flex'>
                           <input type='hidden' name='orderId' value={order.orderId} />
                           <Button type='submit' variant='ghost' size='sm'>
@@ -292,7 +294,7 @@ export default async function LicensesPage() {
               )}
               {finalizedOrders.map(order => {
                 const base = explorerBase(order.network)
-                const modeLabel = order.paymentMode === 'btc' ? 'BTC' : 'ckBTC'
+                const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -325,7 +327,7 @@ export default async function LicensesPage() {
                       )}
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.paymentMode === 'ckbtc' && order.ckbtcMintedSats
+                      {!isBtcMode(order.paymentMode) && order.ckbtcMintedSats
                         ? order.ckbtcMintedSats.toLocaleString()
                         : '—'}
                     </TableCell>

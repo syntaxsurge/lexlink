@@ -24,7 +24,7 @@ export default async function PayInvoicePage({
     notFound()
   }
 
-  const isCkbtc = invoice.paymentMode !== 'btc'
+  const isCkbtc = invoice.paymentMode === 'ckbtc'
 
   return (
     <div className='mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10'>

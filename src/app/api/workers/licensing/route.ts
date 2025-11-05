@@ -109,7 +109,7 @@ export async function GET() {
         continue
       }
 
-      const paymentMode: 'ckbtc' | 'btc' = order.paymentMode === 'btc' ? 'btc' : 'ckbtc'
+      const paymentMode: 'ckbtc' | 'btc' = order.paymentMode === 'ckbtc' ? 'ckbtc' : 'btc'
 
       if (paymentMode === 'ckbtc') {
         try {

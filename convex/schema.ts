@@ -24,7 +24,7 @@ export default defineSchema({
     btcAddress: v.string(),
     network: v.optional(v.string()),
     amountSats: v.optional(v.number()),
-    paymentMode: v.string(),
+    paymentMode: v.optional(v.string()),
     ckbtcSubaccount: v.optional(v.string()),
     ckbtcMintedSats: v.optional(v.number()),
     ckbtcBlockIndex: v.optional(v.number()),

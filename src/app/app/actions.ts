@@ -212,7 +212,7 @@ function resolveCandidateAssetUrls(source: string): string[] {
 }
 
 function normalizePaymentMode(value?: string | null): PaymentMode {
-  return value === 'btc' ? 'btc' : 'ckbtc'
+  return value === 'ckbtc' ? 'ckbtc' : 'btc'
 }
 
 function calculateComplianceScore({
