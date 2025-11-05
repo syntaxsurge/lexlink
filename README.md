@@ -108,6 +108,34 @@ Use this checklist to source every value in `.env.local`.
   - Server-side configuration for the ICP escrow canister (production / staging)
 - `NEXT_PUBLIC_ICP_HOST` / `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID`
   - Optional overrides that allow pointing the frontend at a local replica without redefining server envs (useful when `dfx start` is running on `http://127.0.0.1:4943`)
+
+#### Local ICP escrow canister workflow (dfx)
+
+```bash
+# Restart replica on a clean slate
+dfx stop
+dfx start --clean --background
+
+# Configure key + Bitcoin adapter before deploying
+export BITCOIN_PROVIDER="https://btc-testnet-api.icp0.io"
+export ECDSA_KEY_NAME="dfx_test_key"
+
+# Deploy the escrow canister
+dfx deploy btc_escrow
+
+# Sanity checks
+dfx canister call btc_escrow version
+dfx canister call btc_escrow request_deposit_address '("invoice-demo")'
+
+# Point LexLink at the local canister
+export NEXT_PUBLIC_ICP_HOST="http://127.0.0.1:4943"
+export NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
+export ICP_HOST="http://127.0.0.1:4943"
+export ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
+export ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
+```
+
+If `request_deposit_address` rejects with “Requested unknown threshold key”, confirm that `ECDSA_KEY_NAME` matches a key supported by the environment (`dfx_test_key` on a local replica, `test_key_1` / `key_1` on IC subnets).
 - `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
   - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
 - `CONVEX_DEPLOYMENT`
