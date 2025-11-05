@@ -1,15 +1,12 @@
 import './globals.css'
+import '@/polyfills/server-globals'
 
 import { Inter } from 'next/font/google'
 
 import type { Metadata } from 'next'
-import { SessionProvider } from 'next-auth/react'
 
-import { AppProviders } from '@/app/providers'
-import { SiweAuthProvider } from '@/components/auth/siwe-auth-provider'
+import { Providers } from '@/components/providers'
 import { SiteHeader } from '@/components/site-header'
-import { ThemeProvider } from '@/components/theme-provider'
-import { Toaster } from '@/components/ui/sonner-toaster'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,17 +24,10 @@ export default function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
-        <SessionProvider>
-          <AppProviders>
-            <SiweAuthProvider>
-              <ThemeProvider>
-                <SiteHeader />
-                <main className='container-edge py-6'>{children}</main>
-                <Toaster />
-              </ThemeProvider>
-            </SiweAuthProvider>
-          </AppProviders>
-        </SessionProvider>
+        <Providers>
+          <SiteHeader />
+          <main className='container-edge py-6'>{children}</main>
+        </Providers>
       </body>
     </html>
   )

@@ -17,8 +17,11 @@ const publicEnvSchema = z.object({
 })
 
 const serverEnvSchema = z.object({
-  NEXTAUTH_URL: z.string().url(),
-  NEXTAUTH_SECRET: z.string().min(32),
+  NEXTAUTH_URL: z.string().url().default('http://localhost:3000'),
+  NEXTAUTH_SECRET: z
+    .string()
+    .min(32)
+    .default('dev-secret-lexlink-nextauth-0000000000000000'),
   STORY_RPC_URL: z.string().url(),
   STORY_CHAIN_ID: z.coerce.number().default(1315),
   STORY_SPG_NFT_ADDRESS: z

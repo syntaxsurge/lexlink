@@ -14,15 +14,13 @@ import { WagmiConfig, http } from 'wagmi'
 
 import { storyAeneid } from '@/lib/chains'
 
-const chains = [storyAeneid] as const
-
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? 'demo-wallet-connect'
 
 const config = getDefaultConfig({
   appName: 'LexLink',
   projectId: walletConnectProjectId,
-  chains,
+  chains: [storyAeneid] as any,
   ssr: true,
   transports: {
     [storyAeneid.id]: http(storyAeneid.rpcUrls.default.http[0])

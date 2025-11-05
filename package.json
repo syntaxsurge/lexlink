@@ -66,6 +66,14 @@
     "ws": "^8.18.0",
     "zod": "^3.22.4"
   },
+  "pnpm": {
+    "overrides": {
+      "viem": "2.38.6",
+      "@wagmi/core": "2.22.1",
+      "@gemini-wallet/core>viem": "2.38.6",
+      "porto>viem": "2.38.6"
+    }
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@next/eslint-plugin-next": "^15.5.2",
