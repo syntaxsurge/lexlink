@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { readPaymentMode } from '@/lib/payment-mode'
 
 const MAINNET_MEMPOOL = 'https://mempool.space'
 const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
@@ -68,7 +69,9 @@ function explorerBase(network?: string) {
 
 export default async function LicensesPage() {
   const { ips, licenses } = await loadDashboardData()
+  const paymentMode = await readPaymentMode()
 
+  const isCkbtcDefault = paymentMode === 'ckbtc'
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)
   )
@@ -76,6 +79,13 @@ export default async function LicensesPage() {
     order => order.status === 'finalized'
   )
   const manualFinalizeOrders = pendingOrders.filter(order => order.status !== 'pending')
+
+  const orderCardDescription = isCkbtcDefault
+    ? 'Allocates a ckBTC deposit address via the ICP minter for instant UX.'
+    : 'Derives a native Bitcoin address via threshold-ECDSA for on-chain settlement.'
+  const finalizeCardDescription = isCkbtcDefault
+    ? 'Calls update_balance on the ckBTC minter, then mints Story & Constellation artifacts.'
+    : 'Confirm the Bitcoin transaction, mint a Story license token, and anchor Constellation evidence.'
 
   const simulateEnabled = process.env.NODE_ENV !== 'production'
 
@@ -93,23 +103,17 @@ export default async function LicensesPage() {
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card className='border-border/60 bg-card/60'>
           <CardHeader>
-            <CardTitle>Generate Bitcoin License Order</CardTitle>
-            <CardDescription>
-              Derives a dedicated P2WPKH deposit address via the escrow canister
-              and records the pending order.
-            </CardDescription>
+            <CardTitle>Generate License Order</CardTitle>
+            <CardDescription>{orderCardDescription}</CardDescription>
           </CardHeader>
           <CardContent>
-            <LicenseOrderForm ips={ips} />
+            <LicenseOrderForm ips={ips} paymentMode={paymentMode} />
           </CardContent>
         </Card>
         <Card className='border-border/60 bg-card/60'>
           <CardHeader>
             <CardTitle>Finalize Sale &amp; Mint License</CardTitle>
-            <CardDescription>
-              Confirm the Bitcoin transaction, mint a Story license token, and
-              anchor Constellation evidence.
-            </CardDescription>
+            <CardDescription>{finalizeCardDescription}</CardDescription>
           </CardHeader>
           <CardContent>
             <FinalizeLicenseForm orders={manualFinalizeOrders} />
@@ -119,7 +123,7 @@ export default async function LicensesPage() {
 
       <Card className='border-border/60 bg-card/60'>
         <CardHeader>
-          <CardTitle>Pending Invoices</CardTitle>
+          <CardTitle>Pending Payments</CardTitle>
           <CardDescription>
             Copy deposit addresses, monitor confirmations, or finalize manually
             once funds land.
@@ -133,6 +137,7 @@ export default async function LicensesPage() {
                 <TableHead>IP</TableHead>
                 <TableHead>Buyer</TableHead>
                 <TableHead>Amount (BTC)</TableHead>
+                <TableHead>Mode</TableHead>
                 <TableHead>Deposit Address</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className='text-right'>Actions</TableHead>
@@ -142,7 +147,7 @@ export default async function LicensesPage() {
               {pendingOrders.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={8}
                     className='text-center text-sm text-muted-foreground'
                   >
                     No invoices waiting on Bitcoin settlement.
@@ -155,6 +160,7 @@ export default async function LicensesPage() {
                 const txUrl = order.btcTxId
                   ? `${base}/tx/${order.btcTxId}`
                   : undefined
+                const modeLabel = order.paymentMode === 'btc' ? 'BTC' : 'ckBTC'
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -167,6 +173,9 @@ export default async function LicensesPage() {
                       {order.buyer.slice(0, 10)}…
                     </TableCell>
                     <TableCell>{formatBtc(order.amountSats)}</TableCell>
+                    <TableCell>
+                      <Badge variant='outline'>{modeLabel}</Badge>
+                    </TableCell>
                     <TableCell>
                       <div className='flex flex-col'>
                         <span className='font-mono text-xs'>{order.btcAddress}</span>
@@ -238,8 +247,10 @@ export default async function LicensesPage() {
                 <TableHead>Order</TableHead>
                 <TableHead>IP</TableHead>
                 <TableHead>Buyer</TableHead>
+                <TableHead>Mode</TableHead>
                 <TableHead>License Token</TableHead>
                 <TableHead>Bitcoin Tx</TableHead>
+                <TableHead>Minted (sats)</TableHead>
                 <TableHead>Constellation Tx</TableHead>
                 <TableHead>Compliance</TableHead>
                 <TableHead>Updated</TableHead>
@@ -249,7 +260,7 @@ export default async function LicensesPage() {
               {finalizedOrders.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={10}
                     className='text-center text-sm text-muted-foreground'
                   >
                     No finalized licenses yet.
@@ -258,6 +269,7 @@ export default async function LicensesPage() {
               )}
               {finalizedOrders.map(order => {
                 const base = explorerBase(order.network)
+                const modeLabel = order.paymentMode === 'btc' ? 'BTC' : 'ckBTC'
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -268,6 +280,9 @@ export default async function LicensesPage() {
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
                       {order.buyer.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant='outline'>{modeLabel}</Badge>
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
                       {order.tokenOnChainId || '—'}
@@ -285,6 +300,11 @@ export default async function LicensesPage() {
                       ) : (
                         '—'
                       )}
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.paymentMode === 'ckbtc' && order.ckbtcMintedSats
+                        ? order.ckbtcMintedSats.toLocaleString()
+                        : '—'}
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
                       {order.constellationTx ? (

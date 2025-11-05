@@ -13,8 +13,15 @@ import { sha256Hex } from '@/lib/hash'
 import {
   requestDepositAddress,
   confirmPayment,
-  fetchAttestation
+  fetchAttestation,
+  settleCkbtc
 } from '@/lib/icp'
+import {
+  readPaymentMode,
+  getDefaultPaymentMode,
+  setPaymentModeCookie,
+  type PaymentMode
+} from '@/lib/payment-mode'
 import {
   getStoryClient,
   getDefaultLicenseTerms,
@@ -45,6 +52,10 @@ export type LicenseRecord = {
   btcAddress: string
   network?: string
   amountSats?: number
+  paymentMode?: string
+  ckbtcSubaccount?: string
+  ckbtcMintedSats?: number
+  ckbtcBlockIndex?: number
   btcTxId: string
   attestationHash: string
   constellationTx: string
@@ -197,6 +208,10 @@ function resolveCandidateAssetUrls(source: string): string[] {
   }
 
   return Array.from(candidates)
+}
+
+function normalizePaymentMode(value?: string | null): PaymentMode {
+  return value === 'btc' ? 'btc' : 'ckbtc'
 }
 
 function calculateComplianceScore({
@@ -352,15 +367,18 @@ export async function createLicenseOrder({
   }
 
   const amountSats = ipRecord.priceSats
-  const network = env.BTC_NETWORK
+  const paymentMode = await readPaymentMode()
+  const network =
+    paymentMode === 'ckbtc' ? `ckbtc-${env.BTC_NETWORK}` : env.BTC_NETWORK
 
   let btcAddress: string
   try {
-    const invoice = await requestDepositAddress(orderId)
+    const invoice = await requestDepositAddress(orderId, paymentMode)
     btcAddress = invoice.address
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unknown escrow canister error'
+    const lowered = message.toLowerCase()
     if (message.includes('Requested unknown threshold key')) {
       throw new Error(
         'Escrow canister rejected the ECDSA request. Ensure your canister uses the `dfx_test_key` (local) or the appropriate subnet key via `ECDSA_KEY_NAME`.'
@@ -369,6 +387,11 @@ export async function createLicenseOrder({
     if (message.includes('canister_not_found')) {
       throw new Error(
         'ICP escrow canister not found. Verify ICP_ESCROW_CANISTER_ID and ICP_HOST point to a deployed canister before generating invoices.'
+      )
+    }
+    if (lowered.includes('ckbtc') && lowered.includes('not configured')) {
+      throw new Error(
+        'ckBTC minter missing or unavailable. Set CKBTC_MINTER_CANISTER_ID when PAYMENT_MODE=ckbtc.'
       )
     }
     throw new Error(`Failed to allocate deposit address: ${message}`)
@@ -381,7 +404,9 @@ export async function createLicenseOrder({
     btcAddress,
     licenseTermsId,
     amountSats,
-    network
+    network,
+    paymentMode,
+    ckbtcSubaccount: undefined
   })
 
   await recordEvent({
@@ -393,12 +418,13 @@ export async function createLicenseOrder({
       buyer,
       btcAddress,
       amountSats,
-      network
+      network,
+      paymentMode
     },
     resourceId: orderId
   })
 
-  return { orderId, btcAddress }
+  return { orderId, btcAddress, paymentMode }
 }
 
 export async function simulateLicenseFunding({
@@ -435,21 +461,30 @@ export async function simulateLicenseFunding({
 type FinalizeOrderArgs = {
   order: LicenseRecord
   ip: IpRecord
-  btcTxId: string
+  paymentReference: string
   receiver: `0x${string}`
   actor: SessionActor
   convex: ReturnType<typeof getConvexClient>
+  paymentMode: PaymentMode
+  minted?: {
+    sats: number
+    blockIndex?: number
+  }
 }
 
 async function finalizeOrder({
   order,
   ip,
-  btcTxId,
+  paymentReference,
   receiver,
   actor,
-  convex
+  convex,
+  paymentMode,
+  minted
 }: FinalizeOrderArgs) {
-  await confirmPayment(order.orderId, btcTxId)
+  if (paymentMode === 'btc') {
+    await confirmPayment(order.orderId, paymentReference)
+  }
   const attestationJson = await fetchAttestation(order.orderId)
   const attestation = JSON.parse(attestationJson)
   const attestationHash = sha256Hex(attestationJson)
@@ -485,7 +520,7 @@ async function finalizeOrder({
     orderId: order.orderId,
     ipId: order.ipId,
     licenseTokenId,
-    btcTxId,
+    btcTxId: paymentReference,
     attestationHash,
     contentHash,
     timestamp: Date.now()
@@ -498,7 +533,7 @@ async function finalizeOrder({
     assetFileName:
       new URL(ip.mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
     storyLicenseId: licenseTokenId,
-    btcTxId,
+    btcTxId: paymentReference,
     constellationTx,
     attestationHash,
     contentHash,
@@ -508,7 +543,7 @@ async function finalizeOrder({
   const vc = await generateLicenseCredential({
     subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
     storyLicenseId: licenseTokenId,
-    btcTxId,
+    btcTxId: paymentReference,
     constellationTx,
     contentHash,
     attestationHash
@@ -525,7 +560,7 @@ async function finalizeOrder({
 
   await convex.mutation('licenses:markCompleted' as any, {
     orderId: order.orderId,
-    btcTxId,
+    btcTxId: paymentReference,
     attestationHash,
     constellationTx,
     tokenOnChainId: licenseTokenId,
@@ -534,7 +569,9 @@ async function finalizeOrder({
     c2paArchive: archive.archiveBase64,
     vcDocument: vcJson,
     vcHash: vc.hash,
-    complianceScore
+    complianceScore,
+    ckbtcMintedSats: minted?.sats,
+    ckbtcBlockIndex: minted?.blockIndex
   })
 
   await recordEvent({
@@ -543,18 +580,32 @@ async function finalizeOrder({
     payload: {
       orderId: order.orderId,
       ipId: order.ipId,
-      btcTxId,
+      btcTxId: paymentReference,
       constellationTx,
-      licenseTokenId
+      licenseTokenId,
+      paymentMode,
+      ckbtcMintedSats: minted?.sats,
+      ckbtcBlockIndex: minted?.blockIndex
     },
     resourceId: order.orderId
   })
 
   return {
     licenseTokenId,
+    attestation,
     attestationHash,
     constellationTx,
-    complianceScore
+    complianceScore,
+    contentHash,
+    c2paArchive: {
+      base64: archive.archiveBase64,
+      hash: archive.archiveHash,
+      fileName: archive.suggestedFileName
+    },
+    vcDocument: vcJson,
+    vcHash: vc.hash,
+    paymentReference,
+    minted
   }
 }
 
@@ -564,7 +615,7 @@ export async function completeLicenseSale({
   receiver
 }: {
   orderId: string
-  btcTxId: string
+  btcTxId?: string
   receiver: `0x${string}`
 }) {
   const actor = await requireRole(['operator'])
@@ -584,123 +635,61 @@ export async function completeLicenseSale({
     throw new Error('Associated IP asset not found')
   }
 
-  await confirmPayment(orderId, btcTxId)
-  const attestationJson = await fetchAttestation(orderId)
-  const attestation = JSON.parse(attestationJson)
-  const attestationHash = sha256Hex(attestationJson)
+  const paymentMode = normalizePaymentMode(order.paymentMode)
+  let paymentReference = btcTxId ?? ''
+  let minted:
+    | {
+        sats: number
+        blockIndex?: number
+      }
+    | undefined
 
-  const storyClient = getStoryClient()
-  const mintResponse = await storyClient.license.mintLicenseTokens({
-    licensorIpId: order.ipId as `0x${string}`,
-    licenseTermsId: BigInt(order.licenseTermsId),
-    licenseTemplate: env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`,
-    amount: 1,
+  if (paymentMode === 'btc') {
+    if (!paymentReference) {
+      throw new Error('Provide a Bitcoin transaction hash for BTC mode finalization')
+    }
+  } else {
+    const settlement = await settleCkbtc(orderId)
+    const mintedSats = Number(settlement.minted)
+    const mintedBlockIndex = Number(settlement.blockIndex)
+    minted = {
+      sats: mintedSats,
+      blockIndex: Number.isNaN(mintedBlockIndex) ? undefined : mintedBlockIndex
+    }
+    const fallbackBlockIndex =
+      typeof minted.blockIndex === 'number' && !Number.isNaN(minted.blockIndex)
+        ? minted.blockIndex
+        : 0
+    paymentReference =
+      settlement.txids && settlement.txids.length > 0
+        ? settlement.txids
+        : `ckbtc-block-${fallbackBlockIndex}`
+  }
+
+  const result = await finalizeOrder({
+    order,
+    ip,
+    paymentReference,
     receiver,
-    maxMintingFee: 0,
-    maxRevenueShare: 100_000_000
-  })
-
-  if (!mintResponse.licenseTokenIds?.length) {
-    throw new Error('Failed to mint license token on Story Protocol')
-  }
-
-  const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
-
-  const mediaResponse = await fetch(ip.mediaUrl)
-  if (!mediaResponse.ok) {
-    throw new Error(
-      `Failed to fetch media for IP: ${mediaResponse.status} ${mediaResponse.statusText}`
-    )
-  }
-  const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer())
-  const contentHash = sha256Hex(mediaBuffer)
-
-  const evidencePayload = JSON.stringify({
-    kind: 'LICENSE_COMPLETED',
-    orderId,
-    ipId: order.ipId,
-    licenseTokenId,
-    btcTxId,
-    attestationHash,
-    contentHash,
-    timestamp: Date.now()
-  })
-  const evidenceHash = sha256Hex(evidencePayload)
-  const constellationTx = await publishEvidence(evidenceHash)
-
-  const archive = await createLicenseArchive({
-    assetBuffer: mediaBuffer,
-    assetFileName:
-      new URL(ip.mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
-    storyLicenseId: licenseTokenId,
-    btcTxId,
-    constellationTx,
-    attestationHash,
-    contentHash,
-    licenseTokenId
-  })
-
-  const vc = await generateLicenseCredential({
-    subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
-    storyLicenseId: licenseTokenId,
-    btcTxId,
-    constellationTx,
-    contentHash,
-    attestationHash
-  })
-  const vcJson = JSON.stringify(vc.document, null, 2)
-
-  const complianceScore = calculateComplianceScore({
-    hasPayment: true,
-    hasLicenseToken: true,
-    hasConstellationEvidence: Boolean(constellationTx),
-    hasC2paArchive: Boolean(archive.archiveBase64),
-    trainingUnits: 0
-  })
-
-  await convex.mutation('licenses:markCompleted' as any, {
-    orderId,
-    btcTxId,
-    attestationHash,
-    constellationTx,
-    tokenOnChainId: licenseTokenId,
-    contentHash,
-    c2paHash: archive.archiveHash,
-    c2paArchive: archive.archiveBase64,
-    vcDocument: vcJson,
-    vcHash: vc.hash,
-    complianceScore
-  })
-
-  await recordEvent({
     actor,
-    action: 'license.sale_completed',
-    payload: {
-      orderId,
-      ipId: order.ipId,
-      licenseTokenId,
-      btcTxId,
-      attestationHash,
-      constellationTx,
-      complianceScore
-    },
-    resourceId: orderId
+    convex,
+    paymentMode,
+    minted
   })
 
   return {
-    licenseTokenId,
-    attestation,
-    attestationHash,
-    constellationTx,
-    contentHash,
-    complianceScore,
-    c2paArchive: {
-      base64: archive.archiveBase64,
-      fileName: archive.suggestedFileName,
-      hash: archive.archiveHash
-    },
-    vcDocument: vcJson,
-    vcHash: vc.hash
+    licenseTokenId: result.licenseTokenId,
+    attestation: result.attestation,
+    attestationHash: result.attestationHash,
+    constellationTx: result.constellationTx,
+    contentHash: result.contentHash,
+    complianceScore: result.complianceScore,
+    c2paArchive: result.c2paArchive,
+    vcDocument: result.vcDocument,
+    vcHash: result.vcHash,
+    paymentMode,
+    ckbtcMintedSats: minted?.sats,
+    ckbtcBlockIndex: minted?.blockIndex
   }
 }
 
@@ -958,13 +947,31 @@ export async function loadAuditTrail(limit = 50): Promise<AuditEventRecord[]> {
   }))
 }
 
+export async function updatePaymentModeSetting(mode: PaymentMode) {
+  const actor = await requireRole(['operator'])
+  await setPaymentModeCookie(mode)
+
+  await recordEvent({
+    actor,
+    action: 'settings.payment_mode_updated',
+    payload: {
+      mode,
+      defaultMode: getDefaultPaymentMode()
+    }
+  })
+
+  return {
+    mode
+  }
+}
+
 export async function completeLicenseSaleSystem({
   orderId,
   btcTxId,
   receiver
 }: {
   orderId: string
-  btcTxId: string
+  btcTxId?: string
   receiver: `0x${string}`
 }) {
   const convex = getConvexClient()
@@ -983,6 +990,37 @@ export async function completeLicenseSaleSystem({
     throw new Error('Associated IP asset not found')
   }
 
+  const paymentMode = normalizePaymentMode(order.paymentMode)
+  let paymentReference = btcTxId ?? ''
+  let minted:
+    | {
+        sats: number
+        blockIndex?: number
+      }
+    | undefined
+
+  if (paymentMode === 'btc') {
+    if (!paymentReference) {
+      throw new Error('Provide a Bitcoin transaction hash for BTC mode finalization')
+    }
+  } else {
+    const settlement = await settleCkbtc(orderId)
+    const mintedSats = Number(settlement.minted)
+    const blockIndexNumber = Number(settlement.blockIndex)
+    minted = {
+      sats: mintedSats,
+      blockIndex: Number.isNaN(blockIndexNumber) ? undefined : blockIndexNumber
+    }
+    const fallbackBlockIndex =
+      typeof minted.blockIndex === 'number' && !Number.isNaN(minted.blockIndex)
+        ? minted.blockIndex
+        : 0
+    paymentReference =
+      settlement.txids && settlement.txids.length > 0
+        ? settlement.txids
+        : `ckbtc-block-${fallbackBlockIndex}`
+  }
+
   const systemActor: SessionActor = {
     principal: 'system@lexlink',
     role: 'operator'
@@ -991,9 +1029,11 @@ export async function completeLicenseSaleSystem({
   return finalizeOrder({
     order,
     ip,
-    btcTxId,
+    paymentReference,
     receiver,
     actor: systemActor,
-    convex
+    convex,
+    paymentMode,
+    minted
   })
 }

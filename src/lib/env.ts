@@ -21,6 +21,7 @@ const serverEnvSchema = z.object({
     .string()
     .min(32)
     .default('dev-secret-lexlink-nextauth-0000000000000000'),
+  PAYMENT_MODE: z.enum(['ckbtc', 'btc']).default('ckbtc'),
   STORY_RPC_URL: z.string().url(),
   STORY_CHAIN_ID: z.coerce.number().default(1315),
   STORY_SPG_NFT_ADDRESS: z
@@ -62,6 +63,8 @@ const serverEnvSchema = z.object({
   CONSTELLATION_BE_URL: z.string().url(),
   CONSTELLATION_L0_URL: z.string().url(),
   CONSTELLATION_L1_URL: z.string().url(),
+  CKBTC_MINTER_CANISTER_ID: z.string().optional(),
+  CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   CONVEX_URL: z.string().url(),
   CONVEX_DEPLOYMENT: z.string(),
   BTC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
@@ -90,6 +93,7 @@ function parseEnv() {
   const serverEnv = serverEnvSchema.parse({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    PAYMENT_MODE: process.env.PAYMENT_MODE,
     STORY_RPC_URL: process.env.STORY_RPC_URL,
     STORY_CHAIN_ID: process.env.STORY_CHAIN_ID,
     STORY_SPG_NFT_ADDRESS: process.env.STORY_SPG_NFT_ADDRESS,
@@ -107,6 +111,8 @@ function parseEnv() {
     CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
     CONSTELLATION_L0_URL: process.env.CONSTELLATION_L0_URL,
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
+    CKBTC_MINTER_CANISTER_ID: process.env.CKBTC_MINTER_CANISTER_ID,
+    CKBTC_LEDGER_CANISTER_ID: process.env.CKBTC_LEDGER_CANISTER_ID,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     BTC_NETWORK: process.env.BTC_NETWORK,

@@ -117,7 +117,7 @@ export default async function OverviewPage() {
         />
         <MetricCard
           title='Open Licenses'
-          hint='Awaiting Bitcoin settlement'
+          hint='Awaiting settlement completion'
           value={pendingOrders.length.toString()}
         />
         <MetricCard
@@ -136,9 +136,9 @@ export default async function OverviewPage() {
         <Card className='border-border/60 bg-card/60'>
           <CardHeader className='flex flex-row items-center justify-between'>
             <div>
-              <CardTitle>Pending Bitcoin Invoices</CardTitle>
+              <CardTitle>Pending License Payments</CardTitle>
               <CardDescription>
-                Orders waiting for funds or confirmations. Click through to the
+                Orders waiting for ckBTC minting or Bitcoin confirmations. Click through to the
                 Licenses page for full controls.
               </CardDescription>
             </div>

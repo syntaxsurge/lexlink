@@ -1,6 +1,8 @@
 import { getServerSession } from 'next-auth'
 
 import { loadUsers } from '@/app/app/actions'
+import { getDefaultPaymentMode, readPaymentMode } from '@/lib/payment-mode'
+import { PaymentModeToggle } from '@/components/settings/payment-mode-toggle'
 import { UsersTable } from '@/components/settings/users-table'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -20,6 +22,8 @@ export default async function SettingsPage() {
 
   const isOperator = session.role === 'operator'
   const users = isOperator ? await loadUsers() : []
+  const currentMode = await readPaymentMode()
+  const defaultMode = getDefaultPaymentMode()
 
   return (
     <div className='space-y-6'>
@@ -50,6 +54,23 @@ export default async function SettingsPage() {
           </p>
         </CardContent>
       </Card>
+
+      {isOperator && (
+        <Card className='border-border/60 bg-card/60'>
+          <CardHeader>
+            <CardTitle>Payment Mode</CardTitle>
+            <CardDescription>
+              Toggle between consumer-friendly ckBTC settlement and raw Bitcoin infrastructure flow.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PaymentModeToggle
+              currentMode={currentMode}
+              defaultMode={defaultMode}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {isOperator && (
         <Card className='border-border/60 bg-card/60'>

@@ -48,7 +48,9 @@ export const insert = mutationGeneric({
     btcAddress: v.string(),
     licenseTermsId: v.string(),
     amountSats: v.number(),
-    network: v.string()
+    network: v.string(),
+    paymentMode: v.string(),
+    ckbtcSubaccount: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const now = Date.now()
@@ -67,6 +69,8 @@ export const insert = mutationGeneric({
       trainingUnits: 0,
       status: 'pending',
       confirmations: 0,
+      ckbtcMintedSats: undefined,
+      ckbtcBlockIndex: undefined,
       createdAt: now,
       updatedAt: now,
       fundedAt: undefined,
@@ -87,7 +91,9 @@ export const markCompleted = mutationGeneric({
     c2paArchive: v.string(),
     vcDocument: v.string(),
     vcHash: v.string(),
-    complianceScore: v.number()
+    complianceScore: v.number(),
+    ckbtcMintedSats: v.optional(v.number()),
+    ckbtcBlockIndex: v.optional(v.number())
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -110,6 +116,8 @@ export const markCompleted = mutationGeneric({
       vcDocument: args.vcDocument,
       vcHash: args.vcHash,
       complianceScore: args.complianceScore,
+      ckbtcMintedSats: args.ckbtcMintedSats ?? license.ckbtcMintedSats,
+      ckbtcBlockIndex: args.ckbtcBlockIndex ?? license.ckbtcBlockIndex,
       status: 'finalized',
       finalizedAt: Date.now(),
       updatedAt: Date.now()

@@ -109,6 +109,25 @@ export async function GET() {
         continue
       }
 
+      const paymentMode: 'ckbtc' | 'btc' = order.paymentMode === 'btc' ? 'btc' : 'ckbtc'
+
+      if (paymentMode === 'ckbtc') {
+        try {
+          await completeLicenseSaleSystem({
+            orderId: order.orderId,
+            receiver: order.buyer as `0x${string}`
+          })
+          logs.push({ orderId: order.orderId, mode: 'ckbtc', finalized: true })
+        } catch (error) {
+          logs.push({
+            orderId: order.orderId,
+            mode: 'ckbtc',
+            note: (error as Error).message
+          })
+        }
+        continue
+      }
+
       const network: Network = order.network === 'mainnet' ? 'mainnet' : 'testnet'
       const funding = await fetchFundingStatus(order.btcAddress, network)
 

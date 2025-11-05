@@ -7,9 +7,11 @@ import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { createLicenseOrder, type IpRecord } from '@/app/app/actions'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { PaymentMode } from '@/lib/payment-mode'
 
 const schema = z.object({
   ipKey: z.string().min(1, 'Choose an IP asset'),
@@ -25,12 +27,14 @@ type FormValues = z.infer<typeof schema>
 
 export interface LicenseOrderFormProps {
   ips: IpRecord[]
+  paymentMode: PaymentMode
 }
 
-export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
+export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
   const [result, setResult] = useState<{
     orderId: string
     btcAddress: string
+    paymentMode: PaymentMode
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -41,6 +45,11 @@ export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
 
   const selectedIpId = form.watch('ipKey')
   const selectedIp = ips.find(ip => ip.ipId === selectedIpId)
+  const modeIsCkbtc = paymentMode === 'ckbtc'
+  const buttonLabel = modeIsCkbtc ? 'Allocate ckBTC Deposit' : 'Generate BTC Invoice'
+  const helperCopy = modeIsCkbtc
+    ? 'Mints ckBTC to the escrow canister via update_balance for instant finality.'
+    : 'Derives a threshold-ECDSA P2WPKH address and waits for Bitcoin confirmations.'
 
   const onSubmit = (values: FormValues) => {
     setError(null)
@@ -68,6 +77,16 @@ export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
 
   return (
     <div className='space-y-6'>
+      <div className='flex items-center justify-between rounded-lg border border-border/60 bg-muted/20 p-3 text-sm'>
+        <div className='space-y-1'>
+          <p className='text-xs uppercase text-muted-foreground'>Payment mode</p>
+          <p className='font-medium'>
+            {modeIsCkbtc ? 'ckBTC – demo friendly' : 'Native Bitcoin – infrastructure track'}
+          </p>
+          <p className='text-xs text-muted-foreground'>{helperCopy}</p>
+        </div>
+        <Badge variant='outline'>{modeIsCkbtc ? 'ckBTC' : 'BTC'}</Badge>
+      </div>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className='flex flex-col gap-4'
@@ -115,23 +134,39 @@ export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
         </div>
         <div className='flex items-center gap-3'>
           <Button type='submit' disabled={isPending || !ips.length}>
-            {isPending ? 'Allocating address…' : 'Generate BTC Invoice'}
+            {isPending ? 'Allocating address…' : buttonLabel}
           </Button>
           {error && <span className='text-sm text-destructive'>{error}</span>}
         </div>
       </form>
       {result && (
         <dl className='space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
-          <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>Order ID</dt>
-            <dd className='break-all font-mono text-xs'>{result.orderId}</dd>
-          </div>
-          <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>
-              Bitcoin Deposit Address
-            </dt>
-            <dd className='break-all font-mono text-xs'>{result.btcAddress}</dd>
-          </div>
+          {(() => {
+            const resultModeIsCkbtc = result.paymentMode === 'ckbtc'
+            return (
+              <>
+                <div className='flex flex-col gap-1'>
+                  <dt className='font-semibold text-muted-foreground'>Mode</dt>
+                  <dd className='font-mono text-xs'>{result.paymentMode}</dd>
+                </div>
+                <div className='flex flex-col gap-1'>
+                  <dt className='font-semibold text-muted-foreground'>Order ID</dt>
+                  <dd className='break-all font-mono text-xs'>{result.orderId}</dd>
+                </div>
+                <div className='flex flex-col gap-1'>
+                  <dt className='font-semibold text-muted-foreground'>
+                    {resultModeIsCkbtc ? 'ckBTC Deposit Address' : 'Bitcoin Deposit Address'}
+                  </dt>
+                  <dd className='break-all font-mono text-xs'>{result.btcAddress}</dd>
+                </div>
+                {resultModeIsCkbtc && (
+                  <div className='text-xs text-muted-foreground'>
+                    Funds land in the ckBTC minter. The worker polls update_balance and finalizes automatically once minted.
+                  </div>
+                )}
+              </>
+            )
+          })()}
         </dl>
       )}
     </div>

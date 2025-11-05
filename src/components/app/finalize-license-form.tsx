@@ -12,10 +12,11 @@ import { completeLicenseSale, type LicenseRecord } from '@/app/app/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { PaymentMode } from '@/lib/payment-mode'
 
 const schema = z.object({
   orderId: z.string().min(1),
-  btcTxId: z.string().min(6),
+  btcTxId: z.string().optional(),
   receiver: z
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, 'Receiver must be an 0x-prefixed address')
@@ -29,6 +30,9 @@ type FinalizeResult = {
   constellationTx: string
   contentHash: string
   complianceScore: number
+  paymentMode: PaymentMode
+  ckbtcMintedSats?: number
+  ckbtcBlockIndex?: number
   c2paArchive: {
     base64: string
     fileName: string
@@ -61,6 +65,11 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
   const onSubmit = (values: FormValues) => {
     setError(null)
     setResult(null)
+    const requiresTxId = selectedOrder?.paymentMode !== 'ckbtc'
+    if (requiresTxId && !values.btcTxId) {
+      setError('Provide a Bitcoin transaction hash for native BTC orders')
+      return
+    }
     startTransition(async () => {
       try {
         const response = await completeLicenseSale({
@@ -116,15 +125,21 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
             </p>
           )}
         </div>
-        <div className='space-y-2'>
-          <Label htmlFor='btcTxId'>Bitcoin Transaction Hash</Label>
-          <Input id='btcTxId' {...form.register('btcTxId')} />
-          {form.formState.errors.btcTxId && (
-            <p className='text-sm text-destructive'>
-              {form.formState.errors.btcTxId.message}
-            </p>
-          )}
-        </div>
+        {selectedOrder?.paymentMode !== 'ckbtc' ? (
+          <div className='space-y-2'>
+            <Label htmlFor='btcTxId'>Bitcoin Transaction Hash</Label>
+            <Input id='btcTxId' {...form.register('btcTxId')} />
+            {form.formState.errors.btcTxId && (
+              <p className='text-sm text-destructive'>
+                {form.formState.errors.btcTxId.message}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className='rounded-lg border border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground'>
+            ckBTC orders poll the minter directly. Submit without a transaction hash once the deposit is made.
+          </div>
+        )}
         <div className='space-y-2'>
           <Label htmlFor='receiver'>License Receiver</Label>
           <Input id='receiver' {...form.register('receiver')} />
@@ -143,6 +158,10 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
       </form>
       {result && (
         <dl className='space-y-3 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
+          <div className='flex flex-col gap-1'>
+            <dt className='font-semibold text-muted-foreground'>Mode</dt>
+            <dd className='font-mono text-xs'>{result.paymentMode}</dd>
+          </div>
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>
               License Token ID
@@ -179,6 +198,16 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
             </dt>
             <dd className='font-semibold'>{result.complianceScore}/100</dd>
           </div>
+          {result.paymentMode === 'ckbtc' && (
+            <div className='flex flex-col gap-1'>
+              <dt className='font-semibold text-muted-foreground'>Minted Amount</dt>
+              <dd className='font-mono text-xs'>
+                {result.ckbtcMintedSats
+                  ? `${result.ckbtcMintedSats.toLocaleString()} sats`
+                  : '—'}
+              </dd>
+            </div>
+          )}
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>
               C2PA Bundle Hash
