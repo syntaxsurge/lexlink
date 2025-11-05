@@ -10,7 +10,9 @@ const publicEnvSchema = z.object({
       'NEXT_PUBLIC_DAG_ADDRESS must be a DAG address'
     ),
   NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000'),
-  NEXT_PUBLIC_STORY_NETWORK: z.enum(['aeneid', 'mainnet']).default('aeneid')
+  NEXT_PUBLIC_STORY_NETWORK: z.enum(['aeneid', 'mainnet']).default('aeneid'),
+  NEXT_PUBLIC_ICP_HOST: z.string().url().optional(),
+  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional()
 })
 
 const serverEnvSchema = z.object({
@@ -78,7 +80,10 @@ function parseEnv() {
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     NEXT_PUBLIC_DAG_ADDRESS: process.env.NEXT_PUBLIC_DAG_ADDRESS,
     NEXT_PUBLIC_SITE_DOMAIN: process.env.NEXT_PUBLIC_SITE_DOMAIN,
-    NEXT_PUBLIC_STORY_NETWORK: process.env.NEXT_PUBLIC_STORY_NETWORK
+    NEXT_PUBLIC_STORY_NETWORK: process.env.NEXT_PUBLIC_STORY_NETWORK,
+    NEXT_PUBLIC_ICP_HOST: process.env.NEXT_PUBLIC_ICP_HOST,
+    NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID:
+      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   })
 
   const serverEnv = serverEnvSchema.parse({
@@ -90,8 +95,10 @@ function parseEnv() {
     STORY_LICENSE_TEMPLATE_ADDRESS: process.env.STORY_LICENSE_TEMPLATE_ADDRESS,
     STORY_PRIVATE_KEY: process.env.STORY_PRIVATE_KEY,
     STORY_PIL_URI: process.env.STORY_PIL_URI,
-    ICP_HOST: process.env.ICP_HOST,
-    ICP_ESCROW_CANISTER_ID: process.env.ICP_ESCROW_CANISTER_ID,
+    ICP_HOST: process.env.ICP_HOST ?? process.env.NEXT_PUBLIC_ICP_HOST,
+    ICP_ESCROW_CANISTER_ID:
+      process.env.ICP_ESCROW_CANISTER_ID ??
+      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID,
     ICP_IDENTITY_PEM_PATH:
       process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
     CONSTELLATION_PRIVATE_KEY: process.env.CONSTELLATION_PRIVATE_KEY,
