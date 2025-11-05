@@ -22,6 +22,7 @@ type EscrowActor = {
 }
 
 let cachedActor: EscrowActor | null = null
+let cachedIdentity: Ed25519KeyIdentity | null = null
 
 function loadPemContent(pemOrPath: string): string {
   const raw = pemOrPath.trim()
@@ -48,12 +49,16 @@ function deriveSecretKeyFromPem(pemOrPath: string): Uint8Array {
   return new Uint8Array(der.slice(-32))
 }
 
-function getIdentity() {
+export function loadIcpIdentity() {
+  if (cachedIdentity) {
+    return cachedIdentity
+  }
   const secretKey = deriveSecretKeyFromPem(
     // Support new path-oriented variable with backward compatibility
     (env as any).ICP_IDENTITY_PEM_PATH ?? (env as any).ICP_IDENTITY_PEM
   )
-  return Ed25519KeyIdentity.fromSecretKey(secretKey)
+  cachedIdentity = Ed25519KeyIdentity.fromSecretKey(secretKey)
+  return cachedIdentity
 }
 
 const idlFactory = (idl: { IDL: typeof IDL }) => {
@@ -84,7 +89,7 @@ async function getActor(): Promise<EscrowActor> {
 
   const agent = new HttpAgent({
     host: env.ICP_HOST,
-    identity: getIdentity()
+    identity: loadIcpIdentity()
   })
 
   if (

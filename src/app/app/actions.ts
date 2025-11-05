@@ -18,6 +18,7 @@ import {
   requestDepositAddress,
   confirmPayment,
   fetchAttestation,
+  loadIcpIdentity,
   settleCkbtc
 } from '@/lib/icp'
 import {
@@ -421,8 +422,10 @@ export async function mintOperatorTopUp() {
   const actor = await requireRole(['operator', 'creator'])
 
   try {
+    const identity = loadIcpIdentity()
     const response = await updateMinterDepositBalance({
-      owner: actor.principal
+      owner: actor.principal,
+      identity
     })
 
     let pending = false
