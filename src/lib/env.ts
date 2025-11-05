@@ -9,9 +9,7 @@ const CKBTC_CANISTER_DEFAULTS = {
   }
 } satisfies Record<'ckbtc-mainnet' | 'ckbtc-testnet', { ledger: string }>
 
-const DEPRECATED_TESTNET_LEDGER_IDS = new Set([
-  'mxzaz-hqaaa-aaaar-qaada-cai'
-])
+const DEPRECATED_TESTNET_LEDGER_IDS = new Set(['mxzaz-hqaaa-aaaar-qaada-cai'])
 
 const publicEnvSchema = z.object({
   NEXT_PUBLIC_AENEID_RPC: z.string().url(),
@@ -81,6 +79,9 @@ const serverEnvSchema = z.object({
   CONSTELLATION_BE_URL: z.string().url(),
   CONSTELLATION_L0_URL: z.string().url(),
   CONSTELLATION_L1_URL: z.string().url(),
+  WEB3_STORAGE_TOKEN: z.string().min(10, 'WEB3_STORAGE_TOKEN must be provided'),
+  WEB3_STORAGE_GATEWAY: z.string().url().default('https://w3s.link'),
+  WEB3_STORAGE_ENDPOINT: z.string().url().optional(),
   CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   ICP_CKBTC_HOST: z.string().url().optional(),
   ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
@@ -139,12 +140,16 @@ function parseEnv() {
     CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
     CONSTELLATION_L0_URL: process.env.CONSTELLATION_L0_URL,
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
+    WEB3_STORAGE_TOKEN: process.env.WEB3_STORAGE_TOKEN,
+    WEB3_STORAGE_GATEWAY: process.env.WEB3_STORAGE_GATEWAY,
+    WEB3_STORAGE_ENDPOINT: process.env.WEB3_STORAGE_ENDPOINT,
     CKBTC_LEDGER_CANISTER_ID: process.env.CKBTC_LEDGER_CANISTER_ID,
     ICP_CKBTC_HOST: process.env.ICP_CKBTC_HOST,
     ICP_CKBTC_LEDGER_CANISTER_ID: process.env.ICP_CKBTC_LEDGER_CANISTER_ID,
     ICP_CKBTC_NETWORK: process.env.ICP_CKBTC_NETWORK,
     CKBTC_MERCHANT_PRINCIPAL:
-      process.env.CKBTC_MERCHANT_PRINCIPAL ?? process.env.ICP_ESCROW_CANISTER_ID,
+      process.env.CKBTC_MERCHANT_PRINCIPAL ??
+      process.env.ICP_ESCROW_CANISTER_ID,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     BTC_NETWORK: process.env.BTC_NETWORK,

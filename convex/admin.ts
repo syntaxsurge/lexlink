@@ -1,5 +1,6 @@
-import { internalMutation, type MutationCtx } from './_generated/server'
 import { v } from 'convex/values'
+
+import { internalMutation, type MutationCtx } from './_generated/server'
 
 const TABLES = [
   'ips',
@@ -62,12 +63,21 @@ const ipSeeds = [
     description: 'An AI-assisted house track; commercial licensing enabled.',
     imageUrl:
       'https://cdn2.suno.ai/image_large_8bcba6bc-3f60-4921-b148-f32a59086a4c.jpeg',
-    mediaUrl:
-      'https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3',
+    imageHash:
+      '0xe247f9e6f95efa5e79efc8ae27fd1c33dbd8bb3bfc0152151229059215584728',
+    mediaUrl: 'https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3',
     mediaType: 'audio/mpeg',
+    mediaHash:
+      '0x90ae82eb1fa1fb7ad819faa0b4d104fd04d48b5852d24bb0c609be6e62861be0',
     ipMetadataUri: 'ipfs://midnight-marriage/metadata.json',
+    ipMetadataHash:
+      '0xab85dafb2cad2ea153182bc118c2afcf4b0c156542ab21ad03d63f660a094644',
     nftMetadataUri: 'ipfs://midnight-marriage/nft.json',
+    nftMetadataHash:
+      '0xc66333b08ad01dc797b975b7b1ee981178c124c36fc47211cbf9e57f4972aee1',
     createdAt: baseTime,
+    commercialUse: true,
+    derivativesAllowed: true,
     ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
@@ -79,14 +89,22 @@ const ipSeeds = [
     licenseTermsId: '0x7f1dba23c6e9d84a53e210b5fd6c7089e13b42cd',
     description:
       'Generative ambient score tuned for branded livestreams and creator libraries.',
-    imageUrl:
-      'https://images.lexlink.dev/solar-echo-cover.jpg',
-    mediaUrl:
-      'https://audio.lexlink.dev/solar-echo-master.wav',
+    imageUrl: 'https://images.lexlink.dev/solar-echo-cover.jpg',
+    imageHash:
+      '0x1d7685d0eb4ded2b7459f5883154547537f029ce1bc3377c31c7e69bdb4ab864',
+    mediaUrl: 'https://audio.lexlink.dev/solar-echo-master.wav',
     mediaType: 'audio/wav',
+    mediaHash:
+      '0xdb06b1ab5ee3f87067c9dbb291e1bb2204d6e535d4d67ac8e7bedfc7d7da845f',
     ipMetadataUri: 'ipfs://solar-echo/metadata.json',
+    ipMetadataHash:
+      '0x12e2f5ef49478f3216018a9946da0410db673f79e604245c854c99615f4cef99',
     nftMetadataUri: 'ipfs://solar-echo/nft.json',
+    nftMetadataHash:
+      '0x773a3629cc9b425cc59f272c16f054bb79ed88758f60838b9716331e874621b7',
     createdAt: baseTime + 1000 * 60 * 60,
+    commercialUse: true,
+    derivativesAllowed: false,
     ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
@@ -99,11 +117,21 @@ const ipSeeds = [
     description:
       'High-resolution visual loops with C2PA attestations for AI model augmentation.',
     imageUrl: 'https://images.lexlink.dev/neon-district-cover.png',
+    imageHash:
+      '0x47fc10250380d1f73c6fa11acd9f55c2ef92ebb075e15dfc5f7bc9b9304078b2',
     mediaUrl: 'https://assets.lexlink.dev/video/neon-district.webm',
     mediaType: 'video/webm',
+    mediaHash:
+      '0x52693f542111a1f554a7c362e2bfdec6d0119d169f1678d445b247798c9a1cc4',
     ipMetadataUri: 'ipfs://neon-district/metadata.json',
+    ipMetadataHash:
+      '0xd51adb14e7523284cec8d5243c742af8f9b22243cc7de5e8dd7742092fa7c09a',
     nftMetadataUri: 'ipfs://neon-district/nft.json',
+    nftMetadataHash:
+      '0xf9ef7b46594e96343684f27b3b4fd556623da7e5b5ebfc5fa09efc11d472dcf4',
     createdAt: baseTime - 1000 * 60 * 45,
+    commercialUse: true,
+    derivativesAllowed: true,
     ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   }
 ] as const
@@ -117,8 +145,7 @@ const licenseSeeds: LicenseSeed[] = [
     amountSats: 250000,
     network: 'testnet',
     paymentMode: 'btc',
-    btcTxId:
-      '8fb16e56636e016a1e7d94e05875012e8a33f8a07e3b5a62c401eb8b1c2d3341',
+    btcTxId: '8fb16e56636e016a1e7d94e05875012e8a33f8a07e3b5a62c401eb8b1c2d3341',
     attestationHash:
       '0x6b98e5a1ce30cd7a567c3adf92b1e6a5cabff3a3d817f4e8811b1e241c6e3f52',
     constellationTx:
@@ -134,10 +161,8 @@ const licenseSeeds: LicenseSeed[] = [
     contentHash: 'ipfs://midnight-marriage/content.json',
     c2paHash:
       '0x1a9d5c7b8e3f4a6d5c7b8e3f4a6d5c7b8e3f4a6d5c7b8e3f4a6d5c7b8e3f4a6d',
-    c2paArchive:
-      'https://assets.lexlink.dev/c2pa/midnight-marriage.c2pa',
-    vcDocument:
-      'https://assets.lexlink.dev/vc/midnight-marriage.json',
+    c2paArchive: 'https://assets.lexlink.dev/c2pa/midnight-marriage.c2pa',
+    vcDocument: 'https://assets.lexlink.dev/vc/midnight-marriage.json',
     vcHash:
       '0x7b2c5d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b',
     complianceScore: 100,
@@ -237,10 +262,8 @@ const disputeSeeds = [
     disputeId: 'dispute_midnight_marriage_001',
     ipId: ipSeeds[0].ipId,
     targetTag: 'IMPROPER_USAGE',
-    evidenceCid:
-      'ipfs://bafkreihdwdcej3m2vxxevidencelexlinkdemo',
-    txHash:
-      '0x5f2d7a3c9b1e4d6f8a0c2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8f0a1b2',
+    evidenceCid: 'ipfs://bafkreihdwdcej3m2vxxevidencelexlinkdemo',
+    txHash: '0x5f2d7a3c9b1e4d6f8a0c2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8f0a1b2',
     evidenceHash:
       '0x3b7e9d1f5a2c4e6d8f0a1b3c5d7e9f1a2c4e6d8f0a1b3c5d7e9f1a2c4e6d8f0',
     constellationTx:

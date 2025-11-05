@@ -18,51 +18,74 @@ export function getStoryClient() {
   return cachedClient
 }
 
-export function getDefaultLicenseTerms({ royaltyBps }: { royaltyBps: number }) {
-  const commercialRevShare = Math.min(royaltyBps, 10_000) / 100
-
+export function getDefaultLicenseTerms({
+  commercialRevSharePercent,
+  commercialUse,
+  derivativesAllowed,
+  defaultMintingFee
+}: {
+  commercialRevSharePercent: number
+  commercialUse: boolean
+  derivativesAllowed: boolean
+  defaultMintingFee?: bigint | number
+}) {
+  const sharePercent = clampPercent(commercialRevSharePercent)
   const zeroAddress =
     '0x0000000000000000000000000000000000000000' as `0x${string}`
   const currency = WIP_TOKEN_ADDRESS as `0x${string}`
 
   return {
     transferable: true,
-    commercialUse: true,
+    commercialUse,
     commercialAttribution: true,
     commercializerChecker: zeroAddress,
-    commercializerCheckerData: zeroAddress,
-    derivativesAllowed: true,
+    commercializerCheckerData: '0x' as `0x${string}`,
+    derivativesAllowed,
     derivativesAttribution: true,
     derivativesApproval: false,
     derivativesReciprocal: false,
     currency,
     uri: env.STORY_PIL_URI,
-    defaultMintingFee: 0,
+    defaultMintingFee:
+      typeof defaultMintingFee === 'number'
+        ? BigInt(Math.max(defaultMintingFee, 0))
+        : (defaultMintingFee ?? 0n),
     expiration: 0,
     commercialRevCeiling: 0,
     derivativeRevCeiling: 0,
-    commercialRevShare
+    commercialRevShare: sharePercent
   }
 }
 
 export function getDefaultLicensingConfig({
-  royaltyBps
+  commercialRevSharePercent,
+  mintingFee
 }: {
-  royaltyBps: number
+  commercialRevSharePercent: number
+  mintingFee?: bigint | number
 }) {
-  const commercialRevShare = Math.min(royaltyBps, 10_000) / 100
-
+  const sharePercent = clampPercent(commercialRevSharePercent)
   const zeroAddress =
     '0x0000000000000000000000000000000000000000' as `0x${string}`
 
   return {
     isSet: true,
-    mintingFee: 0,
+    mintingFee:
+      typeof mintingFee === 'number'
+        ? BigInt(Math.max(mintingFee, 0))
+        : (mintingFee ?? 0n),
     licensingHook: zeroAddress,
     hookData: '0x' as `0x${string}`,
-    commercialRevShare,
+    commercialRevShare: sharePercent,
     disabled: false,
     expectMinimumGroupRewardShare: 0,
     expectGroupRewardPool: zeroAddress
   }
+}
+
+function clampPercent(value: number) {
+  if (Number.isNaN(value)) {
+    return 0
+  }
+  return Math.min(Math.max(value, 0), 100)
 }

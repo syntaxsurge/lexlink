@@ -1,11 +1,10 @@
 'use client'
 
 import type { ComponentProps, ReactNode } from 'react'
-
 import { useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { z } from 'zod'
 
 import { registerIpAsset } from '@/app/app/actions'
@@ -22,39 +21,88 @@ import {
 const storyNetwork: StoryNetwork =
   process.env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet' ? 'mainnet' : 'aeneid'
 
-const formSchema = z.object({
-  title: z.string().min(3, 'Title must be at least 3 characters'),
-  description: z.string().min(20, 'Description must be at least 20 characters'),
-  createdAt: z.string().min(1, 'Select the creation date'),
-  imageUrl: z
-    .string()
-    .min(1, 'Provide a cover image URL')
-    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID'),
-  mediaUrl: z
-    .string()
-    .min(1, 'Provide the media URL')
-    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID'),
-  mediaType: z.string().min(3, 'Provide a MIME type (e.g. audio/mpeg)'),
-  priceBtc: z
-    .number({ required_error: 'Set a license price in BTC' })
-    .min(0.00000001, 'Price must be at least 0.00000001 BTC'),
-  royaltyPercent: z
-    .number({ required_error: 'Set the royalty share' })
-    .min(0, 'Royalties cannot be negative')
-    .max(100, 'Royalties cannot exceed 100%'),
-  creatorName: z.string().min(2, 'Creator name is required'),
-  creatorAddress: z
-    .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, 'Creator address must be a 0x-prefixed EVM address'),
-  ipMetadataUri: z
-    .string()
-    .min(1, 'Provide the IP metadata URI')
-    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID'),
-  nftMetadataUri: z
-    .string()
-    .min(1, 'Provide the NFT metadata URI')
-    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID')
-})
+const formSchema = z
+  .object({
+    title: z.string().min(3, 'Title must be at least 3 characters'),
+    description: z
+      .string()
+      .min(20, 'Description must be at least 20 characters'),
+    createdAt: z.string().min(1, 'Select the creation date'),
+    imageUrl: z.string().optional(),
+    imageFile: z
+      .custom<
+        FileList | undefined
+      >(value => value === undefined || value instanceof FileList)
+      .optional(),
+    mediaUrl: z.string().optional(),
+    mediaFile: z
+      .custom<
+        FileList | undefined
+      >(value => value === undefined || value instanceof FileList)
+      .optional(),
+    mediaType: z.string().min(3, 'Provide a MIME type (e.g. audio/mpeg)'),
+    priceBtc: z
+      .number({ required_error: 'Set a license price in BTC' })
+      .min(0.00000001, 'Price must be at least 0.00000001 BTC'),
+    royaltyPercent: z
+      .number({ required_error: 'Set the royalty share' })
+      .min(0, 'Royalties cannot be negative')
+      .max(100, 'Royalties cannot exceed 100%'),
+    commercialUse: z.boolean(),
+    derivativesAllowed: z.boolean(),
+    creatorName: z.string().min(2, 'Creator name is required'),
+    creatorAddress: z
+      .string()
+      .regex(
+        /^0x[a-fA-F0-9]{40}$/,
+        'Creator address must be a 0x-prefixed EVM address'
+      ),
+    nftAttributes: z
+      .array(
+        z.object({
+          traitType: z.string().min(1, 'Trait name is required'),
+          value: z.string().min(1, 'Trait value is required')
+        })
+      )
+      .optional()
+  })
+  .superRefine((values, ctx) => {
+    const imageUrl = values.imageUrl?.trim() ?? ''
+    const hasImageFile =
+      values.imageFile instanceof FileList && values.imageFile.length > 0
+    if (!hasImageFile && !imageUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Upload a cover image or provide a URL',
+        path: ['imageUrl']
+      })
+    }
+    if (imageUrl && !isUrlOrIpfs(imageUrl)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Provide a valid URL or ipfs:// CID',
+        path: ['imageUrl']
+      })
+    }
+
+    const mediaUrl = values.mediaUrl?.trim() ?? ''
+    const hasMediaFile =
+      values.mediaFile instanceof FileList && values.mediaFile.length > 0
+    if (!hasMediaFile && !mediaUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Upload the primary media or provide a URL',
+        path: ['mediaUrl']
+      })
+    }
+    if (mediaUrl && !isUrlOrIpfs(mediaUrl)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Provide a valid URL or ipfs:// CID',
+        path: ['mediaUrl']
+      })
+    }
+  })
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -78,41 +126,79 @@ export function RegisterIpForm() {
       mediaType: 'audio/mpeg',
       priceBtc: 0.001,
       royaltyPercent: 10,
+      commercialUse: true,
+      derivativesAllowed: true,
       creatorName: '',
       creatorAddress: '',
-      ipMetadataUri: '',
-      nftMetadataUri: ''
+      nftAttributes: []
     }
   })
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    setValue
+  } = form
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'nftAttributes'
+  })
+
+  const imageFileList = watch('imageFile') as FileList | undefined
+  const mediaFileList = watch('mediaFile') as FileList | undefined
 
   const onSubmit = (values: FormValues) => {
     setError(null)
     setResult(null)
     startTransition(async () => {
       try {
-        const createdAtIso = new Date(values.createdAt).toISOString()
         const priceSats = Math.round(values.priceBtc * 100_000_000)
         const royaltyBps = Math.round(values.royaltyPercent * 100)
 
+        const imageInput = await buildAssetInput({
+          fileList: values.imageFile,
+          url: values.imageUrl
+        })
+        const mediaInput = await buildAssetInput({
+          fileList: values.mediaFile,
+          url: values.mediaUrl
+        })
+
+        const attributes = (values.nftAttributes ?? []).filter(
+          attribute => attribute.traitType.trim() && attribute.value.trim()
+        )
+
         const response = await registerIpAsset({
-          title: values.title,
-          description: values.description,
-          createdAt: createdAtIso,
-          imageUrl: resolveUrl(values.imageUrl),
-          mediaUrl: resolveUrl(values.mediaUrl),
-          mediaType: values.mediaType,
+          title: values.title.trim(),
+          description: values.description.trim(),
+          createdAt: new Date(values.createdAt).toISOString(),
+          image: imageInput,
+          media: mediaInput,
+          mediaType: values.mediaType.trim(),
           priceSats,
           royaltyBps,
-          ipMetadataUri: resolveUrl(values.ipMetadataUri),
-          nftMetadataUri: resolveUrl(values.nftMetadataUri),
+          commercialUse: values.commercialUse,
+          derivativesAllowed: values.derivativesAllowed,
           creators: [
             {
-              name: values.creatorName,
+              name: values.creatorName.trim(),
               address: values.creatorAddress as `0x${string}`,
               contributionPercent: 100
             }
-          ]
+          ],
+          nftAttributes:
+            attributes.length > 0
+              ? attributes.map(attribute => ({
+                  traitType: attribute.traitType.trim(),
+                  value: attribute.value.trim()
+                }))
+              : undefined
         })
+
         setResult({
           ipId: response.ipId,
           tokenId: response.tokenId,
@@ -126,11 +212,16 @@ export function RegisterIpForm() {
     })
   }
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors }
-  } = form
+  const imageFileField = register('imageFile')
+  const mediaFileField = register('mediaFile')
+  const imageFileName =
+    imageFileList && imageFileList.length > 0
+      ? (imageFileList[0]?.name ?? null)
+      : null
+  const mediaFileName =
+    mediaFileList && mediaFileList.length > 0
+      ? (mediaFileList[0]?.name ?? null)
+      : null
 
   return (
     <div className='space-y-6'>
@@ -166,26 +257,83 @@ export function RegisterIpForm() {
         </Field>
 
         <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='Cover image URL' error={errors.imageUrl?.message}>
-            <Input
-              id='imageUrl'
-              placeholder='https://cdn.example.com/cover.jpg or ipfs://CID'
-              {...register('imageUrl')}
-            />
+          <Field label='Cover image' error={errors.imageUrl?.message}>
+            <div className='space-y-2'>
+              <Input
+                id='imageFile'
+                type='file'
+                accept='image/*'
+                {...imageFileField}
+                onChange={event => {
+                  imageFileField.onChange(event)
+                  if (event.target.files && event.target.files.length === 0) {
+                    event.target.value = ''
+                  }
+                }}
+              />
+              <Input
+                id='imageUrl'
+                placeholder='https://cdn.example.com/cover.jpg or ipfs://CID'
+                {...register('imageUrl')}
+              />
+              {imageFileName && (
+                <p className='text-xs text-muted-foreground'>
+                  Selected file: {imageFileName}
+                </p>
+              )}
+              <Hint>
+                Upload an image or paste a hosted URL. We store the file on IPFS
+                and record the hash automatically.
+              </Hint>
+            </div>
           </Field>
-          <Field label='Media URL' error={errors.mediaUrl?.message}>
-            <Input
-              id='mediaUrl'
-              placeholder='https://cdn.example.com/audio.mp3 or ipfs://CID'
-              {...register('mediaUrl')}
-            />
+          <Field label='Primary media' error={errors.mediaUrl?.message}>
+            <div className='space-y-2'>
+              <Input
+                id='mediaFile'
+                type='file'
+                accept='audio/*,video/*'
+                {...mediaFileField}
+                onChange={event => {
+                  mediaFileField.onChange(event)
+                  const file = event.target.files?.[0]
+                  if (file?.type) {
+                    setValue('mediaType', file.type, { shouldDirty: true })
+                  }
+                  if (event.target.files && event.target.files.length === 0) {
+                    event.target.value = ''
+                  }
+                }}
+              />
+              <Input
+                id='mediaUrl'
+                placeholder='https://cdn.example.com/audio.mp3 or ipfs://CID'
+                {...register('mediaUrl')}
+              />
+              {mediaFileName && (
+                <p className='text-xs text-muted-foreground'>
+                  Selected file: {mediaFileName}
+                </p>
+              )}
+              <Hint>
+                Supply the master audio/video. We fetch it, upload to IPFS, and
+                compute Story-compatible hashes.
+              </Hint>
+            </div>
           </Field>
+        </div>
+
+        <div className='grid gap-3 md:grid-cols-2'>
           <Field label='Media type (MIME)' error={errors.mediaType?.message}>
             <Input
               id='mediaType'
               placeholder='audio/mpeg'
               {...register('mediaType')}
             />
+            <Hint>
+              Used for Story attestation. Examples: audio/mpeg, video/mp4,
+              application/pdf.
+            </Hint>
           </Field>
           <Field label='License price (BTC)' error={errors.priceBtc?.message}>
             <Input
@@ -223,6 +371,49 @@ export function RegisterIpForm() {
         </div>
 
         <div className='grid gap-3 md:grid-cols-2'>
+          <Field label='Commercial use'>
+            <Controller
+              control={control}
+              name='commercialUse'
+              render={({ field }) => (
+                <label className='flex items-center gap-2 text-sm text-foreground'>
+                  <input
+                    type='checkbox'
+                    className='h-4 w-4 accent-primary'
+                    checked={field.value}
+                    onChange={event => field.onChange(event.target.checked)}
+                    ref={field.ref}
+                  />
+                  <span className='text-muted-foreground'>
+                    Enable commercial licensing and Story attestation.
+                  </span>
+                </label>
+              )}
+            />
+          </Field>
+          <Field label='Derivatives allowed'>
+            <Controller
+              control={control}
+              name='derivativesAllowed'
+              render={({ field }) => (
+                <label className='flex items-center gap-2 text-sm text-foreground'>
+                  <input
+                    type='checkbox'
+                    className='h-4 w-4 accent-primary'
+                    checked={field.value}
+                    onChange={event => field.onChange(event.target.checked)}
+                    ref={field.ref}
+                  />
+                  <span className='text-muted-foreground'>
+                    Allow derivative works under the PIL terms.
+                  </span>
+                </label>
+              )}
+            />
+          </Field>
+        </div>
+
+        <div className='grid gap-3 md:grid-cols-2'>
           <Field label='Creator name' error={errors.creatorName?.message}>
             <Input
               id='creatorName'
@@ -230,34 +421,71 @@ export function RegisterIpForm() {
               {...register('creatorName')}
             />
           </Field>
-          <Field
-            label='Creator wallet'
-            error={errors.creatorAddress?.message}
-          >
+          <Field label='Creator wallet' error={errors.creatorAddress?.message}>
             <Input
               id='creatorAddress'
               placeholder='0xabc123…'
               {...register('creatorAddress')}
             />
           </Field>
-          <Field label='IP metadata URI' error={errors.ipMetadataUri?.message}>
-            <Input
-              id='ipMetadataUri'
-              placeholder='https://cdn.example.com/ip.json or ipfs://CID'
-              {...register('ipMetadataUri')}
-            />
-          </Field>
-          <Field
-            label='NFT metadata URI'
-            error={errors.nftMetadataUri?.message}
-          >
-            <Input
-              id='nftMetadataUri'
-              placeholder='https://cdn.example.com/nft.json or ipfs://CID'
-              {...register('nftMetadataUri')}
-            />
-          </Field>
         </div>
+
+        <details className='rounded-lg border border-border bg-muted/40 p-4 text-sm'>
+          <summary className='cursor-pointer text-sm font-semibold text-foreground'>
+            Advanced metadata
+          </summary>
+          <div className='mt-3 space-y-3'>
+            <p className='text-xs text-muted-foreground'>
+              Add optional NFT traits. Leave blank to skip.
+            </p>
+            {fields.map((fieldItem, index) => {
+              const traitError =
+                errors.nftAttributes?.[index]?.traitType?.message
+              const valueError = errors.nftAttributes?.[index]?.value?.message
+              return (
+                <div
+                  key={fieldItem.id}
+                  className='grid gap-2 md:grid-cols-[1fr_1fr_auto]'
+                >
+                  <div>
+                    <Input
+                      placeholder='Trait name (e.g., Instrument)'
+                      {...register(`nftAttributes.${index}.traitType` as const)}
+                    />
+                    {traitError && (
+                      <p className='text-xs text-destructive'>{traitError}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Input
+                      placeholder='Trait value (e.g., Piano)'
+                      {...register(`nftAttributes.${index}.value` as const)}
+                    />
+                    {valueError && (
+                      <p className='text-xs text-destructive'>{valueError}</p>
+                    )}
+                  </div>
+                  <Button
+                    type='button'
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => remove(index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              )
+            })}
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => append({ traitType: '', value: '' })}
+            >
+              Add attribute
+            </Button>
+          </div>
+        </details>
 
         <div className='flex items-center gap-3'>
           <Button type='submit' disabled={isPending}>
@@ -338,16 +566,62 @@ function ResultLink({ href, variant = 'outline', children }: ResultLinkProps) {
   )
 }
 
+async function buildAssetInput({
+  fileList,
+  url
+}: {
+  fileList?: FileList
+  url?: string | null
+}) {
+  const file = fileList && fileList.length > 0 ? fileList[0] : undefined
+  if (file) {
+    return {
+      kind: 'file' as const,
+      file: await serializeFile(file)
+    }
+  }
+
+  const trimmed = url?.trim()
+  if (trimmed) {
+    return {
+      kind: 'url' as const,
+      url: trimmed
+    }
+  }
+
+  throw new Error('Asset source is required')
+}
+
+async function serializeFile(file: File) {
+  return {
+    name: file.name,
+    type: file.type,
+    size: file.size,
+    data: await fileToDataUrl(file)
+  }
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = reader.result
+      if (typeof result === 'string') {
+        resolve(result)
+      } else {
+        reject(new Error('Unable to read file'))
+      }
+    }
+    reader.onerror = () => {
+      reject(reader.error ?? new Error('Unable to read file'))
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
 function defaultDateTimeLocal() {
   const iso = new Date().toISOString()
   return iso.slice(0, 16)
-}
-
-function resolveUrl(value: string) {
-  if (value.startsWith('ipfs://')) {
-    return value.replace('ipfs://', 'https://ipfs.io/ipfs/')
-  }
-  return value
 }
 
 function isUrlOrIpfs(value: string) {

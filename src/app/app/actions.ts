@@ -6,19 +6,22 @@ import { DisputeTargetTag } from '@story-protocol/core-sdk'
 
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
 import { createLicenseArchive } from '@/lib/c2pa'
+import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
 import { publishEvidence } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
 import {
-  deriveOrderSubaccount,
-  formatSubaccountHex
-} from '@/lib/ckbtc'
+  getLedgerMetadata,
+  getAccountBalance as getLedgerAccountBalance
+} from '@/lib/ic/ckbtc/service'
+import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 import {
   requestDepositAddress,
   confirmPayment,
-  fetchAttestation,
+  fetchAttestation
 } from '@/lib/icp'
+import { uploadBytes, uploadJson } from '@/lib/ipfs'
 import {
   readPaymentMode,
   getDefaultPaymentMode,
@@ -31,11 +34,6 @@ import {
   getDefaultLicensingConfig
 } from '@/lib/story'
 import { generateLicenseCredential } from '@/lib/vc'
-import {
-  getLedgerMetadata,
-  getAccountBalance as getLedgerAccountBalance,
-} from '@/lib/ic/ckbtc/service'
-import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
 export type IpRecord = {
   ipId: string
@@ -51,6 +49,12 @@ export type IpRecord = {
   mediaType: string
   ipMetadataUri: string
   nftMetadataUri: string
+  ipMetadataHash: `0x${string}`
+  nftMetadataHash: `0x${string}`
+  imageHash: `0x${string}`
+  mediaHash: `0x${string}`
+  commercialUse: boolean
+  derivativesAllowed: boolean
   ownerPrincipal?: string
 }
 
@@ -127,18 +131,35 @@ type CreatorInput = {
   contributionPercent: number
 }
 
+type SerializedFile = {
+  name: string
+  type: string
+  size: number
+  data: string
+}
+
+type AssetInput =
+  | { kind: 'file'; file: SerializedFile }
+  | { kind: 'url'; url: string }
+
+type NftAttributeInput = {
+  traitType: string
+  value: string
+}
+
 export type RegisterIpPayload = {
   title: string
   description: string
   createdAt: string
-  imageUrl: string
-  mediaUrl: string
+  image: AssetInput
+  media: AssetInput
   mediaType: string
   creators: CreatorInput[]
   priceSats: number
   royaltyBps: number
-  ipMetadataUri: string
-  nftMetadataUri: string
+  commercialUse: boolean
+  derivativesAllowed: boolean
+  nftAttributes?: NftAttributeInput[]
 }
 
 type ConvexClient = ReturnType<typeof getConvexClient>
@@ -399,7 +420,65 @@ function ensurePercent(creators: CreatorInput[]) {
   }
 }
 
-async function hashFromUrl(url: string): Promise<`0x${string}`> {
+type ResolvedAsset = {
+  bytes: Uint8Array
+  mimeType?: string
+  name: string
+}
+
+async function prepareAsset({
+  input,
+  fallbackName,
+  explicitMimeType
+}: {
+  input: AssetInput
+  fallbackName: string
+  explicitMimeType?: string
+}) {
+  const resolved =
+    input.kind === 'file'
+      ? await resolveFileAsset(input.file, fallbackName)
+      : await resolveUrlAsset(input.url, fallbackName)
+
+  const mimeType =
+    explicitMimeType ?? resolved.mimeType ?? 'application/octet-stream'
+  const fileName = ensureExtension(resolved.name || fallbackName, mimeType)
+  const uri = await uploadBytes(fileName, resolved.bytes)
+  const hash = sha256Hex(Buffer.from(resolved.bytes))
+
+  return {
+    uri,
+    hash,
+    mimeType
+  }
+}
+
+function resolveFileAsset(
+  file: SerializedFile,
+  fallbackName: string
+): ResolvedAsset {
+  const base64 = stripDataUrlPrefix(file.data)
+  const buffer = Buffer.from(base64, 'base64')
+  return {
+    bytes: new Uint8Array(buffer),
+    mimeType: file.type || undefined,
+    name: file.name || fallbackName
+  }
+}
+
+async function resolveUrlAsset(
+  url: string,
+  fallbackName: string
+): Promise<ResolvedAsset> {
+  const downloaded = await downloadAssetFromUrl(url)
+  return {
+    bytes: downloaded.bytes,
+    mimeType: downloaded.mimeType,
+    name: downloaded.fileName ?? fallbackName
+  }
+}
+
+async function downloadAssetFromUrl(url: string) {
   const candidateUrls = resolveCandidateAssetUrls(url)
   let lastError: unknown = null
 
@@ -412,11 +491,14 @@ async function hashFromUrl(url: string): Promise<`0x${string}`> {
         )
       }
       const arrayBuffer = await response.arrayBuffer()
-      const hash = crypto
-        .createHash('sha256')
-        .update(Buffer.from(arrayBuffer))
-        .digest('hex')
-      return `0x${hash}` as const
+      const bytes = new Uint8Array(arrayBuffer)
+      const contentType = response.headers.get('content-type') ?? undefined
+      const finalUrl = response.url || candidate
+      return {
+        bytes,
+        mimeType: normalizeMimeType(contentType),
+        fileName: extractFileName(finalUrl)
+      }
     } catch (error) {
       lastError = error
     }
@@ -458,7 +540,6 @@ function resolveCandidateAssetUrls(source: string): string[] {
       }
     }
   } catch {
-    // If URL constructor fails (plain CID), treat as IPFS hash
     const cid = source.replace(/^ipfs:\/\//, '').replace(/^\/+/, '')
     if (cid) {
       for (const gateway of IPFS_GATEWAYS) {
@@ -468,6 +549,84 @@ function resolveCandidateAssetUrls(source: string): string[] {
   }
 
   return Array.from(candidates)
+}
+
+function extractFileName(url: string) {
+  try {
+    const parsed = new URL(url)
+    const segments = parsed.pathname.split('/').filter(Boolean)
+    if (segments.length === 0) {
+      return undefined
+    }
+    const raw = segments[segments.length - 1]
+    if (!raw) {
+      return undefined
+    }
+    return decodeURIComponent(raw)
+  } catch {
+    return undefined
+  }
+}
+
+const MIME_EXTENSION_MAP: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'audio/mpeg': '.mp3',
+  'audio/wav': '.wav',
+  'audio/x-wav': '.wav',
+  'audio/flac': '.flac',
+  'audio/ogg': '.ogg',
+  'video/mp4': '.mp4',
+  'video/quicktime': '.mov'
+}
+
+function ensureExtension(name: string, mimeType?: string) {
+  const sanitized = sanitizeFileName(name)
+  if (/\.[A-Za-z0-9]+$/.test(sanitized)) {
+    return sanitized
+  }
+  const extension = mimeType
+    ? (MIME_EXTENSION_MAP[mimeType.toLowerCase()] ?? '.bin')
+    : '.bin'
+  return `${sanitized}${extension}`
+}
+
+function sanitizeFileName(name: string) {
+  const trimmed = name.trim().replace(/\s+/g, '-')
+  const cleaned = trimmed
+    .replace(/[^A-Za-z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return (cleaned || 'asset').slice(0, 64)
+}
+
+function normalizeMimeType(contentType?: string) {
+  if (!contentType) {
+    return undefined
+  }
+  return contentType.split(';')[0]?.trim() || undefined
+}
+
+function stripDataUrlPrefix(data: string) {
+  if (data.startsWith('data:')) {
+    const commaIndex = data.indexOf(',')
+    if (commaIndex !== -1) {
+      return data.slice(commaIndex + 1).replace(/\s/g, '')
+    }
+  }
+  return data.replace(/\s/g, '')
+}
+
+function slugify(value: string) {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'asset'
+  ).slice(0, 48)
 }
 
 function normalizePaymentMode(value?: string | null): PaymentMode {
@@ -545,12 +704,13 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
 
   try {
     const convex = getConvexClient()
-    const [metadata, operatorBalanceRaw, licensesRaw, ipsRaw] = await Promise.all([
-      getLedgerMetadata(),
-      getLedgerAccountBalance({ owner: actor.principal }),
-      convex.query('licenses:list' as any, {}),
-      convex.query('ipAssets:list' as any, {})
-    ])
+    const [metadata, operatorBalanceRaw, licensesRaw, ipsRaw] =
+      await Promise.all([
+        getLedgerMetadata(),
+        getLedgerAccountBalance({ owner: actor.principal }),
+        convex.query('licenses:list' as any, {}),
+        convex.query('ipAssets:list' as any, {})
+      ])
 
     const ipOwners = new Map<string, string>()
     for (const ip of ipsRaw as IpRecord[]) {
@@ -686,7 +846,9 @@ export async function autoFinalizeCkbtcOrder(orderId: string) {
     env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
 
   if (!escrowPrincipal) {
-    throw new Error('Escrow principal not configured for ckBTC ledger settlement.')
+    throw new Error(
+      'Escrow principal not configured for ckBTC ledger settlement.'
+    )
   }
 
   const ledgerBalance = await getLedgerAccountBalance({
@@ -735,20 +897,75 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   const actor = await requireRole(['operator', 'creator'])
   ensurePercent(payload.creators)
 
-  const [ipMetadataHash, nftMetadataHash, imageHash, mediaHash] =
-    await Promise.all([
-      hashFromUrl(payload.ipMetadataUri),
-      hashFromUrl(payload.nftMetadataUri),
-      hashFromUrl(payload.imageUrl),
-      hashFromUrl(payload.mediaUrl)
-    ])
+  const createdAtIso = new Date(payload.createdAt).toISOString()
+  const assetSlug = slugify(payload.title)
+  const mediaType = payload.mediaType || 'application/octet-stream'
+
+  const [imageAsset, mediaAsset] = await Promise.all([
+    prepareAsset({
+      input: payload.image,
+      fallbackName: `${assetSlug}-image`,
+      explicitMimeType: undefined
+    }),
+    prepareAsset({
+      input: payload.media,
+      fallbackName: `${assetSlug}-media`,
+      explicitMimeType: mediaType
+    })
+  ])
+
+  const ipMetadataPayload = {
+    title: payload.title,
+    description: payload.description,
+    createdAt: createdAtIso,
+    image: imageAsset.uri,
+    imageHash: imageAsset.hash,
+    mediaUrl: mediaAsset.uri,
+    mediaHash: mediaAsset.hash,
+    mediaType,
+    creators: payload.creators.map(creator => ({
+      name: creator.name,
+      address: creator.address,
+      contributionPercent: creator.contributionPercent
+    })),
+    license: {
+      commercialUse: payload.commercialUse,
+      derivativesAllowed: payload.derivativesAllowed,
+      royaltyPercent: Math.min(payload.royaltyBps / 100, 100)
+    }
+  }
+
+  const nftMetadataPayload = {
+    name: payload.title,
+    description: payload.description,
+    image: imageAsset.uri,
+    animation_url: mediaAsset.uri,
+    attributes: (payload.nftAttributes ?? []).map(attribute => ({
+      trait_type: attribute.traitType,
+      value: attribute.value
+    }))
+  }
+
+  const [ipMetadataUpload, nftMetadataUpload] = await Promise.all([
+    uploadJson(`${assetSlug}-ip.json`, ipMetadataPayload),
+    uploadJson(`${assetSlug}-nft.json`, nftMetadataPayload)
+  ])
+
+  const ipMetadataUri = ipMetadataUpload.uri
+  const nftMetadataUri = nftMetadataUpload.uri
+  const ipMetadataHash = sha256Hex(Buffer.from(ipMetadataUpload.bytes))
+  const nftMetadataHash = sha256Hex(Buffer.from(nftMetadataUpload.bytes))
 
   const storyClient = getStoryClient()
+  const royaltyPercent = Math.min(payload.royaltyBps / 100, 100)
+
   const licenseTerms = getDefaultLicenseTerms({
-    royaltyBps: payload.royaltyBps
+    commercialRevSharePercent: royaltyPercent,
+    commercialUse: payload.commercialUse,
+    derivativesAllowed: payload.derivativesAllowed
   })
   const licensingConfig = getDefaultLicensingConfig({
-    royaltyBps: payload.royaltyBps
+    commercialRevSharePercent: royaltyPercent
   })
 
   const registerResponse =
@@ -756,9 +973,9 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
       spgNftContract: env.STORY_SPG_NFT_ADDRESS as `0x${string}`,
       allowDuplicates: false,
       ipMetadata: {
-        ipMetadataURI: payload.ipMetadataUri,
+        ipMetadataURI: ipMetadataUri,
         ipMetadataHash,
-        nftMetadataURI: payload.nftMetadataUri,
+        nftMetadataURI: nftMetadataUri,
         nftMetadataHash
       },
       licenseTermsData: [
@@ -782,11 +999,17 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     royaltyBps: payload.royaltyBps,
     licenseTermsId: registerResponse.licenseTermsIds[0].toString(),
     description: payload.description,
-    imageUrl: payload.imageUrl,
-    mediaUrl: payload.mediaUrl,
-    mediaType: payload.mediaType,
-    ipMetadataUri: payload.ipMetadataUri,
-    nftMetadataUri: payload.nftMetadataUri,
+    imageUrl: imageAsset.uri,
+    imageHash: imageAsset.hash,
+    mediaUrl: mediaAsset.uri,
+    mediaHash: mediaAsset.hash,
+    mediaType,
+    ipMetadataUri,
+    ipMetadataHash,
+    nftMetadataUri,
+    nftMetadataHash,
+    commercialUse: payload.commercialUse,
+    derivativesAllowed: payload.derivativesAllowed,
     ownerPrincipal: actor.principal
   })
 
@@ -807,15 +1030,17 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     licenseTermsId: registerResponse.licenseTermsIds[0].toString(),
     ipMetadata: {
       hash: ipMetadataHash,
-      uri: payload.ipMetadataUri
+      uri: ipMetadataUri
     },
     nftMetadata: {
       hash: nftMetadataHash,
-      uri: payload.nftMetadataUri
+      uri: nftMetadataUri
     },
     assets: {
-      imageHash,
-      mediaHash
+      imageUri: imageAsset.uri,
+      imageHash: imageAsset.hash,
+      mediaUri: mediaAsset.uri,
+      mediaHash: mediaAsset.hash
     }
   }
 }
@@ -875,7 +1100,6 @@ export async function createLicenseOrder({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown escrow canister error'
-      const lowered = message.toLowerCase()
       if (message.includes('Requested unknown threshold key')) {
         throw new Error(
           'Escrow canister rejected the ECDSA request. Ensure your canister uses the `dfx_test_key` (local) or the appropriate subnet key via `ECDSA_KEY_NAME`.'
@@ -927,11 +1151,7 @@ export async function createLicenseOrder({
   }
 }
 
-export async function simulateLicenseFunding({
-  orderId
-}: {
-  orderId: string
-}) {
+export async function simulateLicenseFunding({ orderId }: { orderId: string }) {
   if (process.env.NODE_ENV === 'production') {
     throw new Error('Simulation endpoints are disabled in production.')
   }
@@ -1138,10 +1358,7 @@ export async function completeLicenseSale({
   receiver?: `0x${string}`
   actorOverride?: SessionActor
 }) {
-  if (
-    actorOverride &&
-    actorOverride.role !== 'operator'
-  ) {
+  if (actorOverride && actorOverride.role !== 'operator') {
     throw new Error('Automation actor must carry operator role.')
   }
   const actor = actorOverride ?? (await requireRole(['operator']))
@@ -1176,8 +1393,7 @@ export async function completeLicenseSale({
     await assertActorOwnsLicense({ license: order, ip, actor, convex })
   }
 
-  const targetReceiver =
-    receiver ?? (order.buyer as `0x${string}` | undefined)
+  const targetReceiver = receiver ?? (order.buyer as `0x${string}` | undefined)
   if (!targetReceiver) {
     throw new Error('Receiver wallet is required to mint license token.')
   }
@@ -1227,9 +1443,7 @@ export async function completeLicenseSale({
     }
 
     if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error(
-        'ckBTC balance exceeds supported range for finalization.'
-      )
+      throw new Error('ckBTC balance exceeds supported range for finalization.')
     }
 
     const ledgerAmount = Number(ledgerBalance)
@@ -1594,15 +1808,15 @@ export async function loadAuditTrail(limit = 50): Promise<AuditEventRecord[]> {
       resourceId:
         typeof event.resourceId === 'string' ? event.resourceId : undefined,
       payload:
-      typeof event.payload === 'string'
-        ? (JSON.parse(event.payload) as Record<string, unknown>)
-        : {},
-    actorAddress:
-      typeof event.actorAddress === 'string' ? event.actorAddress : undefined,
-    actorPrincipal:
-      typeof event.actorPrincipal === 'string'
-        ? event.actorPrincipal
-        : undefined,
+        typeof event.payload === 'string'
+          ? (JSON.parse(event.payload) as Record<string, unknown>)
+          : {},
+      actorAddress:
+        typeof event.actorAddress === 'string' ? event.actorAddress : undefined,
+      actorPrincipal:
+        typeof event.actorPrincipal === 'string'
+          ? event.actorPrincipal
+          : undefined,
       createdAt: Number(event.createdAt ?? Date.now())
     }))
 }
@@ -1630,23 +1844,21 @@ export async function loadInvoicePublic(orderId: string) {
   const convex = getConvexClient()
   const invoice = (await convex.query('licenses:getPublic' as any, {
     orderId
-  })) as
-    | {
-        orderId: string
-        ipId: string
-        ipTitle: string
-        amountSats?: number
-        btcAddress: string
-        paymentMode?: string
-        status: string
-        ckbtcSubaccount?: string
-        ckbtcMintedSats?: number
-        ckbtcBlockIndex?: number
-        createdAt: number
-        updatedAt?: number
-        network?: string
-      }
-    | null
+  })) as {
+    orderId: string
+    ipId: string
+    ipTitle: string
+    amountSats?: number
+    btcAddress: string
+    paymentMode?: string
+    status: string
+    ckbtcSubaccount?: string
+    ckbtcMintedSats?: number
+    ckbtcBlockIndex?: number
+    createdAt: number
+    updatedAt?: number
+    network?: string
+  } | null
 
   return invoice
 }
@@ -1731,9 +1943,7 @@ export async function completeLicenseSaleSystem({
     }
 
     if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error(
-        'ckBTC balance exceeds supported range for finalization.'
-      )
+      throw new Error('ckBTC balance exceeds supported range for finalization.')
     }
 
     const ledgerAmount = Number(ledgerBalance)

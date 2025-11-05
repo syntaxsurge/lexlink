@@ -12,10 +12,16 @@ export default defineSchema({
     description: v.string(),
     createdAt: v.number(),
     imageUrl: v.string(),
+    imageHash: v.string(),
     mediaUrl: v.string(),
     mediaType: v.string(),
+    mediaHash: v.string(),
     ipMetadataUri: v.string(),
+    ipMetadataHash: v.string(),
     nftMetadataUri: v.string(),
+    nftMetadataHash: v.string(),
+    commercialUse: v.boolean(),
+    derivativesAllowed: v.boolean(),
     ownerPrincipal: v.optional(v.string())
   })
     .index('by_ipId', ['ipId'])
