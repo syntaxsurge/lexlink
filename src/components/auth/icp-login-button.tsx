@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import { AuthClient } from '@dfinity/auth-client'
 import { signIn } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -57,6 +58,7 @@ function getIdentityProvider() {
 
 export function IcpLoginButton() {
   const [loading, setLoading] = useState(false)
+  const router = useRouter()
 
   const handleLogin = async () => {
     try {
@@ -95,6 +97,8 @@ export function IcpLoginButton() {
 
       if (result?.ok) {
         toast.success('Signed in with Internet Identity')
+        router.replace('/app')
+        router.refresh()
       } else {
         throw new Error(result?.error ?? 'Authentication failed')
       }

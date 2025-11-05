@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
 
         const profile = await upsertPrincipalUser(verification.principal)
         return {
-          id: profile.id,
+          id: String(profile.id),
           principal: verification.principal,
           role: profile.role
         }
