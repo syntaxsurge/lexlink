@@ -17,12 +17,7 @@ import { storyAeneid } from '@/lib/chains'
 const chains = [storyAeneid] as const
 
 const walletConnectProjectId =
-  process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ??
-  (() => {
-    throw new Error(
-      'NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID is required for wallet connections'
-    )
-  })()
+  process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID ?? 'demo-wallet-connect'
 
 const config = getDefaultConfig({
   appName: 'LexLink',

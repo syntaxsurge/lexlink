@@ -9,8 +9,11 @@ const publicEnvSchema = z.object({
       /^DAG[0-9A-Za-z]{20,64}$/,
       'NEXT_PUBLIC_DAG_ADDRESS must be a DAG address'
     ),
-  NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3),
-  NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: z.string().min(4)
+  NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000'),
+  NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID: z
+    .string()
+    .min(1)
+    .default('demo-wallet-connect')
 })
 
 const serverEnvSchema = z.object({
