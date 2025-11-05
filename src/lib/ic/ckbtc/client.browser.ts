@@ -8,8 +8,58 @@ import ledgerIdl from '@/lib/ic/ckbtc/idl/ledger.idl'
 import minterIdl from '@/lib/ic/ckbtc/idl/minter.idl'
 
 const HOST = process.env.NEXT_PUBLIC_ICP_CKBTC_HOST ?? 'https://icp-api.io'
-const LEDGER_ID = process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID
-const MINTER_ID = process.env.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID
+const NETWORK =
+  process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK === 'ckbtc-mainnet'
+    ? 'ckbtc-mainnet'
+    : 'ckbtc-testnet'
+
+const CKBTC_CANISTER_DEFAULTS = {
+  'ckbtc-testnet': {
+    ledger: 'mc6ru-gyaaa-aaaar-qaaaq-cai',
+    minter: 'ml52i-qqaaa-aaaar-qaaba-cai'
+  },
+  'ckbtc-mainnet': {
+    ledger: 'mxzaz-hqaaa-aaaar-qaada-cai',
+    minter: 'mqygn-kiaaa-aaaar-qaadq-cai'
+  }
+} as const
+
+const DEPRECATED_TESTNET_LEDGER_IDS = new Set([
+  'mxzaz-hqaaa-aaaar-qaada-cai'
+])
+const DEPRECATED_TESTNET_MINTER_IDS = new Set([
+  'qjdve-lqaaa-aaaaa-aaaeq-cai'
+])
+
+const ckbtcDefaults =
+  CKBTC_CANISTER_DEFAULTS[NETWORK] ??
+  CKBTC_CANISTER_DEFAULTS['ckbtc-testnet']
+
+function resolveCanisterId(
+  candidate: string | undefined,
+  type: 'ledger' | 'minter'
+): string {
+  if (candidate) {
+    if (
+      NETWORK === 'ckbtc-testnet' &&
+      ((type === 'ledger' && DEPRECATED_TESTNET_LEDGER_IDS.has(candidate)) ||
+        (type === 'minter' && DEPRECATED_TESTNET_MINTER_IDS.has(candidate)))
+    ) {
+      return ckbtcDefaults[type]
+    }
+    return candidate
+  }
+  return ckbtcDefaults[type]
+}
+
+const LEDGER_ID = resolveCanisterId(
+  process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID,
+  'ledger'
+)
+const MINTER_ID = resolveCanisterId(
+  process.env.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID,
+  'minter'
+)
 
 function invariantCanister(id: string | undefined, label: string): string {
   if (!id) {
