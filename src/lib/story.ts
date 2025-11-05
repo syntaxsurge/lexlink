@@ -19,9 +19,7 @@ export function getStoryClient() {
 }
 
 export function getDefaultLicenseTerms({ royaltyBps }: { royaltyBps: number }) {
-  const commercialRevShare = Math.round(
-    Math.min(royaltyBps, 10_000) * (100_000_000 / 10_000)
-  )
+  const commercialRevShare = Math.min(royaltyBps, 10_000) / 100
 
   const zeroAddress =
     '0x0000000000000000000000000000000000000000' as `0x${string}`
@@ -52,9 +50,7 @@ export function getDefaultLicensingConfig({
 }: {
   royaltyBps: number
 }) {
-  const commercialRevShare = Math.round(
-    Math.min(royaltyBps, 10_000) * (100_000_000 / 10_000)
-  )
+  const commercialRevShare = Math.min(royaltyBps, 10_000) / 100
 
   const zeroAddress =
     '0x0000000000000000000000000000000000000000' as `0x${string}`
