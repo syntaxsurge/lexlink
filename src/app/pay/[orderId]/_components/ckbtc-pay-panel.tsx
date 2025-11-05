@@ -4,14 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal'
+import type { Identity } from '@dfinity/agent'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-
-import ledgerIdl from '@/lib/ic/ckbtc/idl/ledger.idl'
-import minterIdl from '@/lib/ic/ckbtc/idl/minter.idl'
+import { ledgerActor, minterActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
 type TransferResult =
@@ -26,26 +25,16 @@ type Props = {
   escrowPrincipal: string
   ckbtcSubaccountHex: string
   network: 'ckbtc-mainnet' | 'ckbtc-testnet'
-  ledgerCanisterId: string
-  minterCanisterId: string
-  icpHost: string
 }
 
 const IDENTITY_PROVIDER = 'https://identity.ic0.app'
-
-function needsRootKey(host: string) {
-  return host.includes('127.0.0.1') || host.includes('localhost')
-}
 
 export function CkbtcPayPanel({
   orderId,
   amountSats,
   escrowPrincipal,
   ckbtcSubaccountHex,
-  network,
-  ledgerCanisterId,
-  minterCanisterId,
-  icpHost
+  network
 }: Props) {
   const [authClient, setAuthClient] = useState<AuthClient | null>(null)
   const [principal, setPrincipal] = useState<Principal | null>(null)
@@ -82,90 +71,11 @@ export function CkbtcPayPanel({
     AuthClient.create().then(setAuthClient)
   }, [])
 
-  const createAgent = useCallback(
-    async (identity?: unknown) => {
-      const { HttpAgent } = await import('@dfinity/agent')
-      const agent = new HttpAgent({
-        host: icpHost,
-        identity: identity as never
-      })
-      if (needsRootKey(icpHost)) {
-        await agent.fetchRootKey().catch(() => {
-          console.warn('Unable to fetch root key from local replica.')
-        })
-      }
-      return agent
-    },
-    [icpHost]
-  )
-
-  const createLedgerActor = useCallback(
-    async (identity: unknown) => {
-      const { Actor } = await import('@dfinity/agent')
-      const agent = await createAgent(identity)
-      return Actor.createActor(ledgerIdl as never, {
-        agent,
-        canisterId: ledgerCanisterId
-      }) as {
-        icrc1_symbol: () => Promise<string>
-        icrc1_decimals: () => Promise<number>
-        icrc1_balance_of: (args: {
-          owner: Principal
-          subaccount: [] | [number[]]
-        }) => Promise<bigint>
-        icrc1_transfer: (args: Record<string, unknown>) => Promise<
-          | { Ok: bigint }
-          | {
-              Err: {
-                InsufficientFunds?: { balance: bigint }
-                GenericError?: { message: string; error_code: bigint }
-                TemporarilyUnavailable?: null
-                Duplicate?: { duplicate_of: bigint }
-                BadFee?: { expected_fee: bigint }
-              }
-            }
-        >
-      }
-    },
-    [createAgent, ledgerCanisterId]
-  )
-
-  const createMinterActor = useCallback(
-    async (identity: unknown) => {
-      const { Actor } = await import('@dfinity/agent')
-      const agent = await createAgent(identity)
-      return Actor.createActor(minterIdl as never, {
-        agent,
-        canisterId: minterCanisterId
-      }) as {
-        get_btc_address: (args: {
-          owner: [Principal]
-          subaccount: [] | [number[]]
-        }) => Promise<string>
-        update_balance: (args: {
-          owner: [Principal]
-          subaccount: [] | [number[]]
-        }) => Promise<
-          | { Ok: bigint }
-          | {
-              Err: {
-                NoNewUtxos?: null
-                AlreadyProcessing?: null
-                TemporarilyUnavailable?: null
-                GenericError?: { error_message: string; error_code: bigint }
-              }
-            }
-        >
-      }
-    },
-    [createAgent, minterCanisterId]
-  )
-
   const refreshBalances = useCallback(
     async (identity?: unknown) => {
       if (!authClient) return
       const activeIdentity = identity ?? (await authClient.getIdentity())
-      const ledger = await createLedgerActor(activeIdentity)
+      const ledger = await ledgerActor(activeIdentity as Identity)
       const id = (activeIdentity as { getPrincipal: () => Principal }).getPrincipal()
       const [sym, dec, bal] = await Promise.all([
         ledger.icrc1_symbol(),
@@ -179,7 +89,7 @@ export function CkbtcPayPanel({
       setDecimals(Number(dec))
       setBalance(BigInt(bal))
     },
-    [authClient, createLedgerActor]
+    [authClient]
   )
 
   const ensureIdentity = useCallback(async () => {
@@ -221,7 +131,7 @@ export function CkbtcPayPanel({
     try {
       if (!authClient) throw new Error('Auth client not ready')
       const identity = await ensureIdentity()
-      const minter = await createMinterActor(identity)
+      const minter = await minterActor(identity as Identity)
       const owner = (identity as { getPrincipal: () => Principal }).getPrincipal()
       const address = await minter.get_btc_address({
         owner: [owner],
@@ -236,14 +146,14 @@ export function CkbtcPayPanel({
           : 'Unable to obtain ckBTC deposit address.'
       )
     }
-  }, [authClient, createMinterActor, ensureIdentity])
+  }, [authClient, ensureIdentity])
 
   const handleUpdateBalance = useCallback(async () => {
     try {
       if (!authClient) throw new Error('Auth client not ready')
       setIsUpdating(true)
       const identity = await ensureIdentity()
-      const minter = await createMinterActor(identity)
+      const minter = await minterActor(identity as Identity)
       const owner = (identity as { getPrincipal: () => Principal }).getPrincipal()
       const result = await minter.update_balance({
         owner: [owner],
@@ -275,7 +185,7 @@ export function CkbtcPayPanel({
     } finally {
       setIsUpdating(false)
     }
-  }, [authClient, createMinterActor, decimals, ensureIdentity, refreshBalances, symbol])
+  }, [authClient, decimals, ensureIdentity, refreshBalances, symbol])
 
   const handlePay = useCallback(async () => {
     try {
@@ -286,7 +196,7 @@ export function CkbtcPayPanel({
       setTransferState({ status: 'pending' })
 
       const identity = await ensureIdentity()
-      const ledger = await createLedgerActor(identity)
+      const ledger = await ledgerActor(identity as Identity)
       const result = await ledger.icrc1_transfer({
         to: {
           owner: escrowOwner,
@@ -340,7 +250,6 @@ export function CkbtcPayPanel({
     }
   }, [
     authClient,
-    createLedgerActor,
     ensureIdentity,
     escrowOwner,
     escrowSubaccount,

@@ -11,7 +11,25 @@ import type { CkbtcSnapshot } from '@/app/app/actions'
 
 export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
   if (!snapshot.enabled) {
-    return null
+    return (
+      <Card className='border-border/60 bg-card/70'>
+        <CardHeader className='flex flex-col gap-2'>
+          <div className='flex items-center justify-between gap-2'>
+            <CardTitle>ckBTC Balances</CardTitle>
+            <Badge variant='outline'>ckBTC</Badge>
+          </div>
+          <CardDescription>
+            Configure ckBTC canister IDs to surface wallet telemetry.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className='text-sm text-muted-foreground'>
+            {snapshot.error ??
+              'Set CKBTC_LEDGER_CANISTER_ID (or ICP_CKBTC_LEDGER_CANISTER_ID) and ICP_HOST to a live replica.'}
+          </p>
+        </CardContent>
+      </Card>
+    )
   }
 
   const warnings =

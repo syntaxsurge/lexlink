@@ -248,7 +248,7 @@ function calculateComplianceScore({
 }
 
 export type CkbtcSnapshot =
-  | { enabled: false }
+  | { enabled: false; error?: string }
   | {
       enabled: true
       symbol: string
@@ -276,84 +276,110 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
   const actor = await requireSession()
 
   if (!env.CKBTC_LEDGER_CANISTER_ID) {
-    return { enabled: false }
+    return {
+      enabled: false,
+      error:
+        'ckBTC ledger canister ID is not configured. Set CKBTC_LEDGER_CANISTER_ID or ICP_CKBTC_LEDGER_CANISTER_ID.'
+    }
   }
 
-  const convex = getConvexClient()
-  const [metadata, operatorBalanceRaw, licensesRaw] = await Promise.all([
-    getLedgerMetadata(),
-    getLedgerAccountBalance({ owner: actor.principal }),
-    convex.query('licenses:list' as any, {})
-  ])
-
-  const escrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-  const openOrders =
-    (licensesRaw as LicenseRecord[]).filter(
-      license =>
-        license.paymentMode === 'ckbtc' &&
-        ['pending', 'funded', 'confirmed'].includes(license.status)
-    ) ?? []
-
-  let escrowOpenTotal = 0n
-  const orderBalances: Array<{
-    orderId: string
-    balance: string
-    formatted: string
-  }> = []
-  const warnings: string[] = []
-
-  if (escrowPrincipal) {
-    await Promise.all(
-      openOrders.map(async order => {
-        if (!order.ckbtcSubaccount) {
-          warnings.push(
-            `Order ${order.orderId} missing ckBTC subaccount metadata.`
-          )
-          return
-        }
-        try {
-          const balance = await getLedgerAccountBalance({
-            owner: escrowPrincipal,
-            subaccount: hexToUint8Array(order.ckbtcSubaccount)
-          })
-          escrowOpenTotal += balance
-          orderBalances.push({
-            orderId: order.orderId,
-            balance: balance.toString(),
-            formatted: formatTokenAmount(balance, metadata.decimals)
-          })
-        } catch (error) {
-          const message =
-            error instanceof Error ? error.message : 'Unable to fetch balance'
-          warnings.push(`Order ${order.orderId}: ${message}`)
-        }
-      })
-    )
+  if (
+    env.CKBTC_HOST.includes('127.0.0.1') ||
+    env.CKBTC_HOST.includes('localhost')
+  ) {
+    return {
+      enabled: false,
+      error:
+        'ckBTC balance lookup requires an ICP boundary node. Set ICP_CKBTC_HOST / NEXT_PUBLIC_ICP_CKBTC_HOST to https://icp-api.io (or another gateway).'
+    }
   }
 
-  return {
-    enabled: true,
-    symbol: metadata.symbol,
-    decimals: metadata.decimals,
-    network: env.CKBTC_NETWORK,
-    operator: {
-      principal: actor.principal,
-      balance: operatorBalanceRaw.toString(),
-      formatted: formatTokenAmount(operatorBalanceRaw, metadata.decimals)
-    },
-    escrow: escrowPrincipal
-      ? {
-          principal: escrowPrincipal,
-          openBalance: escrowOpenTotal.toString(),
-          formattedOpenBalance: formatTokenAmount(
-            escrowOpenTotal,
-            metadata.decimals
-          ),
-          openOrders: orderBalances
-        }
-      : null,
-    warnings
+  try {
+    const convex = getConvexClient()
+    const [metadata, operatorBalanceRaw, licensesRaw] = await Promise.all([
+      getLedgerMetadata(),
+      getLedgerAccountBalance({ owner: actor.principal }),
+      convex.query('licenses:list' as any, {})
+    ])
+
+    const escrowPrincipal =
+      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    const openOrders =
+      (licensesRaw as LicenseRecord[]).filter(
+        license =>
+          license.paymentMode === 'ckbtc' &&
+          ['pending', 'funded', 'confirmed'].includes(license.status)
+      ) ?? []
+
+    let escrowOpenTotal = 0n
+    const orderBalances: Array<{
+      orderId: string
+      balance: string
+      formatted: string
+    }> = []
+    const warnings: string[] = []
+
+    if (escrowPrincipal) {
+      await Promise.all(
+        openOrders.map(async order => {
+          if (!order.ckbtcSubaccount) {
+            warnings.push(
+              `Order ${order.orderId} missing ckBTC subaccount metadata.`
+            )
+            return
+          }
+          try {
+            const balance = await getLedgerAccountBalance({
+              owner: escrowPrincipal,
+              subaccount: hexToUint8Array(order.ckbtcSubaccount)
+            })
+            escrowOpenTotal += balance
+            orderBalances.push({
+              orderId: order.orderId,
+              balance: balance.toString(),
+              formatted: formatTokenAmount(balance, metadata.decimals)
+            })
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : 'Unable to fetch balance'
+            warnings.push(`Order ${order.orderId}: ${message}`)
+          }
+        })
+      )
+    }
+
+    return {
+      enabled: true,
+      symbol: metadata.symbol,
+      decimals: metadata.decimals,
+      network: env.CKBTC_NETWORK,
+      operator: {
+        principal: actor.principal,
+        balance: operatorBalanceRaw.toString(),
+        formatted: formatTokenAmount(operatorBalanceRaw, metadata.decimals)
+      },
+      escrow: escrowPrincipal
+        ? {
+            principal: escrowPrincipal,
+            openBalance: escrowOpenTotal.toString(),
+            formattedOpenBalance: formatTokenAmount(
+              escrowOpenTotal,
+              metadata.decimals
+            ),
+            openOrders: orderBalances
+          }
+        : null,
+      warnings
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to reach ckBTC ledger. Verify ICP_HOST and canister IDs.'
+    return {
+      enabled: false,
+      error: message
+    }
   }
 }
 

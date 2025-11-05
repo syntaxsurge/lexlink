@@ -135,12 +135,12 @@ export default async function OverviewPage() {
       />
     </div>
 
-      {ckbtcSnapshot.enabled && (
-        <div className='grid gap-4 lg:grid-cols-2'>
-          <CkbtcBalanceCard snapshot={ckbtcSnapshot} />
+      <div className='grid gap-4 lg:grid-cols-2'>
+        <CkbtcBalanceCard snapshot={ckbtcSnapshot} />
+        {ckbtcSnapshot.enabled ? (
           <OperatorTopUpPanel snapshot={ckbtcSnapshot} />
-        </div>
-      )}
+        ) : null}
+      </div>
 
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card className='border-border/60 bg-card/60'>

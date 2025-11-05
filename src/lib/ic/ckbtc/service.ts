@@ -1,7 +1,7 @@
 import { type Identity } from '@dfinity/agent'
 import { Principal } from '@dfinity/principal'
 
-import { ledgerActor, minterActor } from '@/lib/ic/ckbtc/client'
+import { ledgerActor, minterActor } from '@/lib/ic/ckbtc/client.server'
 import { toLedgerAccount } from '@/lib/ic/ckbtc/utils'
 
 export async function getLedgerMetadata(identity?: Identity) {

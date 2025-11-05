@@ -19,16 +19,20 @@ function requireCanisterId(label: 'ledger' | 'minter'): string {
   return value
 }
 
+function resolveHost(): string {
+  return env.CKBTC_HOST ?? 'https://icp-api.io'
+}
+
 export async function ledgerActor(identity?: Identity) {
   const canisterId = requireCanisterId('ledger')
-  const agent = await makeAgent(identity)
+  const agent = await makeAgent(resolveHost(), identity)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Actor.createActor(ledgerIdl as any, { agent, canisterId }) as any
 }
 
 export async function minterActor(identity?: Identity) {
   const canisterId = requireCanisterId('minter')
-  const agent = await makeAgent(identity)
+  const agent = await makeAgent(resolveHost(), identity)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return Actor.createActor(minterIdl as any, { agent, canisterId }) as any
 }

@@ -27,14 +27,21 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
   }
 
   const isCkbtc = invoice.paymentMode === 'ckbtc'
-  const ledgerCanisterId = env.CKBTC_LEDGER_CANISTER_ID ?? ''
-  const minterCanisterId = env.CKBTC_MINTER_CANISTER_ID ?? ''
   const escrowPrincipal = env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-  const icpHost = env.NEXT_PUBLIC_ICP_HOST ?? env.ICP_HOST
+  const ledgerConfigured = Boolean(
+    env.CKBTC_LEDGER_CANISTER_ID || env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID
+  )
+  const minterConfigured = Boolean(
+    env.CKBTC_MINTER_CANISTER_ID || env.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID
+  )
+  const hostConfigured = Boolean(
+    env.CKBTC_HOST || env.NEXT_PUBLIC_ICP_CKBTC_HOST
+  )
   const showCkbtcPay =
     isCkbtc &&
-    Boolean(ledgerCanisterId) &&
-    Boolean(minterCanisterId) &&
+    ledgerConfigured &&
+    minterConfigured &&
+    hostConfigured &&
     Boolean(escrowPrincipal) &&
     typeof invoice.ckbtcSubaccount === 'string' &&
     invoice.ckbtcSubaccount.length === 64
@@ -83,9 +90,6 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
           escrowPrincipal={escrowPrincipal}
           ckbtcSubaccountHex={invoice.ckbtcSubaccount!}
           network={env.CKBTC_NETWORK}
-          ledgerCanisterId={ledgerCanisterId}
-          minterCanisterId={minterCanisterId}
-          icpHost={icpHost}
         />
       )}
 

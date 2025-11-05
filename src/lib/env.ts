@@ -12,7 +12,13 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000'),
   NEXT_PUBLIC_STORY_NETWORK: z.enum(['aeneid', 'mainnet']).default('aeneid'),
   NEXT_PUBLIC_ICP_HOST: z.string().url().optional(),
-  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional()
+  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional(),
+  NEXT_PUBLIC_ICP_CKBTC_HOST: z.string().url().optional(),
+  NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
+  NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID: z.string().optional(),
+  NEXT_PUBLIC_ICP_CKBTC_NETWORK: z
+    .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
+    .optional()
 })
 
 const serverEnvSchema = z.object({
@@ -65,6 +71,7 @@ const serverEnvSchema = z.object({
   CONSTELLATION_L1_URL: z.string().url(),
   CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
+  ICP_CKBTC_HOST: z.string().url().optional(),
   ICP_CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   ICP_CKBTC_NETWORK: z
@@ -94,7 +101,13 @@ function parseEnv() {
     NEXT_PUBLIC_STORY_NETWORK: process.env.NEXT_PUBLIC_STORY_NETWORK,
     NEXT_PUBLIC_ICP_HOST: process.env.NEXT_PUBLIC_ICP_HOST,
     NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID:
-      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
+      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID,
+    NEXT_PUBLIC_ICP_CKBTC_HOST: process.env.NEXT_PUBLIC_ICP_CKBTC_HOST,
+    NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
+      process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID,
+    NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID:
+      process.env.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID,
+    NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK
   })
 
   const serverEnv = serverEnvSchema.parse({
@@ -120,6 +133,7 @@ function parseEnv() {
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
     CKBTC_MINTER_CANISTER_ID: process.env.CKBTC_MINTER_CANISTER_ID,
     CKBTC_LEDGER_CANISTER_ID: process.env.CKBTC_LEDGER_CANISTER_ID,
+    ICP_CKBTC_HOST: process.env.ICP_CKBTC_HOST,
     ICP_CKBTC_MINTER_CANISTER_ID: process.env.ICP_CKBTC_MINTER_CANISTER_ID,
     ICP_CKBTC_LEDGER_CANISTER_ID: process.env.ICP_CKBTC_LEDGER_CANISTER_ID,
     ICP_CKBTC_NETWORK: process.env.ICP_CKBTC_NETWORK,
@@ -141,23 +155,33 @@ const { publicEnv, serverEnv } = parseEnv()
 const resolvedCkbtcLedger =
   serverEnv.CKBTC_LEDGER_CANISTER_ID ??
   serverEnv.ICP_CKBTC_LEDGER_CANISTER_ID ??
+  publicEnv.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID ??
   undefined
 const resolvedCkbtcMinter =
   serverEnv.CKBTC_MINTER_CANISTER_ID ??
   serverEnv.ICP_CKBTC_MINTER_CANISTER_ID ??
+  publicEnv.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID ??
   undefined
 const resolvedCkbtcNetwork =
-  serverEnv.ICP_CKBTC_NETWORK ?? 'ckbtc-testnet'
+  serverEnv.ICP_CKBTC_NETWORK ??
+  publicEnv.NEXT_PUBLIC_ICP_CKBTC_NETWORK ??
+  'ckbtc-testnet'
+const resolvedCkbtcHost =
+  serverEnv.ICP_CKBTC_HOST ??
+  publicEnv.NEXT_PUBLIC_ICP_CKBTC_HOST ??
+  'https://icp-api.io'
 
 export const env = {
   ...publicEnv,
   ...serverEnv,
   CKBTC_LEDGER_CANISTER_ID: resolvedCkbtcLedger,
   CKBTC_MINTER_CANISTER_ID: resolvedCkbtcMinter,
-  CKBTC_NETWORK: resolvedCkbtcNetwork
+  CKBTC_NETWORK: resolvedCkbtcNetwork,
+  CKBTC_HOST: resolvedCkbtcHost
 } satisfies PublicEnv &
   ServerEnv & {
     CKBTC_LEDGER_CANISTER_ID?: string
     CKBTC_MINTER_CANISTER_ID?: string
     CKBTC_NETWORK: 'ckbtc-mainnet' | 'ckbtc-testnet'
+    CKBTC_HOST: string
   }
