@@ -14,6 +14,10 @@ import { z } from 'zod'
 
 import { registerIpAsset } from '@/app/app/actions'
 import { AdvancedCreators } from '@/components/app/advanced-creators'
+import {
+  AdvancedRelationships,
+  RELATIONSHIP_TYPE_VALUES
+} from '@/components/app/advanced-relationships'
 import { MediaTypeChip } from '@/components/app/media-type-chip'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -31,19 +35,14 @@ const storyNetwork: StoryNetwork =
 
 const creatorSchema = z.object({
   name: z
-    .string()
+    .string({ required_error: 'Creator name is required' })
     .trim()
-    .max(120, 'Creator names are limited to 120 characters')
-    .optional(),
+    .min(2, 'Creator name is required')
+    .max(120, 'Creator names are limited to 120 characters'),
   wallet: z
-    .string()
+    .string({ required_error: 'Creator wallet is required' })
     .trim()
-    .max(200, 'Creator wallet identifiers are limited to 200 characters')
-    .optional()
-    .refine(
-      value => !value || isValidCreatorIdentifier(value),
-      'Use an EVM address, Internet Identity principal, or DID'
-    ),
+    .regex(/^0x[a-fA-F0-9]{40}$/, 'Creator wallet must be an 0x-prefixed address'),
   role: z
     .string()
     .trim()
@@ -57,9 +56,24 @@ const creatorSchema = z.object({
     .max(100, 'Contribution cannot exceed 100')
 })
 
+const RELATIONSHIP_ENUM_VALUES = RELATIONSHIP_TYPE_VALUES as [
+  string,
+  ...string[]
+]
+
 const attributeSchema = z.object({
   traitType: z.string().min(1, 'Trait name is required'),
   value: z.string().min(1, 'Trait value is required')
+})
+
+const relationshipSchema = z.object({
+  parentIpId: z
+    .string({ required_error: 'Parent IP ID is required' })
+    .trim()
+    .regex(/^0x[a-fA-F0-9]{40}$/, 'Parent IP ID must be an 0x-prefixed address'),
+  type: z.enum(RELATIONSHIP_ENUM_VALUES, {
+    errorMap: () => ({ message: 'Select a valid relationship type' })
+  })
 })
 
 const formSchema = z
@@ -95,7 +109,11 @@ const formSchema = z
       .max(100, 'Royalties cannot exceed 100%'),
     commercialUse: z.boolean(),
     derivativesAllowed: z.boolean(),
-    creators: z.array(creatorSchema).optional(),
+    creators: z
+      .array(creatorSchema)
+      .min(1, 'Add at least one creator')
+      .optional(),
+    relationships: z.array(relationshipSchema).optional(),
     nftAttributes: z.array(attributeSchema).optional(),
     customMetadata: z.string().optional()
   })
@@ -188,11 +206,24 @@ const formSchema = z
 type FormValues = z.infer<typeof formSchema>
 
 export function RegisterIpForm() {
-  const [result, setResult] = useState<null | {
-    ipId: string
-    tokenId: string
-    licenseTermsId: string
-  }>(null)
+  const [result, setResult] = useState<
+    | null
+    | {
+        ipId: string
+        tokenId: string
+        licenseTermsId: string
+        creators: Array<{
+          name: string
+          address: string
+          role?: string
+          contributionPercent: number
+        }>
+        relationships: Array<{
+          parentIpId: string
+          type: string
+        }>
+      }
+  >(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -210,6 +241,7 @@ export function RegisterIpForm() {
       commercialUse: true,
       derivativesAllowed: true,
       creators: [],
+      relationships: [],
       nftAttributes: [],
       customMetadata: ''
     }
@@ -340,22 +372,26 @@ export function RegisterIpForm() {
 
         const creatorEntries = (values.creators ?? [])
           .map(creator => ({
-            name: creator.name?.trim() ?? '',
-            wallet: creator.wallet?.trim() ?? '',
+            name: creator.name.trim(),
+            wallet: creator.wallet.trim(),
             role: creator.role?.trim() ?? '',
             contributionPercent: creator.pct
           }))
-          .filter(
-            creator =>
-              creator.name || creator.wallet || creator.role
-          )
+          .filter(creator => creator.name && creator.wallet)
 
         const payloadCreators = creatorEntries.map(creator => ({
           name: creator.name,
           address: creator.wallet,
-          role: creator.role,
+          role: creator.role || undefined,
           contributionPercent: creator.contributionPercent
         }))
+
+        const relationshipEntries = (values.relationships ?? [])
+          .map(rel => ({
+            parentIpId: rel.parentIpId.trim(),
+            type: rel.type
+          }))
+          .filter(rel => rel.parentIpId && rel.type)
 
         const customMetadata = parseOptionalJsonRecord(
           values.customMetadata
@@ -383,13 +419,17 @@ export function RegisterIpForm() {
                   value: attribute.value.trim()
                 }))
               : undefined,
+          relationships:
+            relationshipEntries.length > 0 ? relationshipEntries : undefined,
           customMetadata
         })
 
         setResult({
           ipId: response.ipId,
           tokenId: response.tokenId,
-          licenseTermsId: response.licenseTermsId
+          licenseTermsId: response.licenseTermsId,
+          creators: payloadCreators,
+          relationships: relationshipEntries
         })
       } catch (err) {
         const message =
@@ -615,6 +655,8 @@ export function RegisterIpForm() {
           <div className='mt-3 space-y-6'>
             <AdvancedCreators className='text-sm' />
 
+            <AdvancedRelationships className='text-sm' />
+
             <div className='space-y-2'>
               <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
                 Media type override
@@ -706,7 +748,7 @@ export function RegisterIpForm() {
       </form>
 
       {result && (
-        <dl className='grid gap-2 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
+        <dl className='grid gap-4 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>IP ID</dt>
             <dd className='break-all font-mono text-xs'>{result.ipId}</dd>
@@ -734,6 +776,52 @@ export function RegisterIpForm() {
             </dt>
             <dd className='font-mono text-xs'>{result.licenseTermsId}</dd>
           </div>
+          {result.creators.length > 0 && (
+            <div className='space-y-2'>
+              <dt className='font-semibold text-muted-foreground'>Creators</dt>
+              <div className='space-y-2'>
+                {result.creators.map((creator, index) => (
+                  <div
+                    key={`${creator.address}-${index}`}
+                    className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'
+                  >
+                    <div className='flex flex-wrap items-center justify-between gap-2'>
+                      <span className='font-medium text-foreground'>{creator.name}</span>
+                      <span className='font-mono text-muted-foreground'>
+                        {creator.contributionPercent}%
+                      </span>
+                    </div>
+                    <div className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
+                      {creator.address}
+                    </div>
+                    {creator.role && (
+                      <div className='mt-1 text-[10px] uppercase tracking-wide text-muted-foreground'>
+                        Role: {creator.role}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {result.relationships.length > 0 && (
+            <div className='space-y-2'>
+              <dt className='font-semibold text-muted-foreground'>Lineage</dt>
+              <div className='space-y-2'>
+                {result.relationships.map((relationship, index) => (
+                  <div
+                    key={`${relationship.parentIpId}-${index}`}
+                    className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'
+                  >
+                    <div className='font-medium text-foreground'>{relationship.type}</div>
+                    <div className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
+                      {relationship.parentIpId}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </dl>
       )}
       </div>
@@ -864,19 +952,4 @@ function isUrlOrIpfs(value: string) {
   } catch {
     return false
   }
-}
-
-function isValidCreatorIdentifier(value: string) {
-  const trimmed = value.trim()
-  if (/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
-    return true
-  }
-  if (trimmed.startsWith('did:')) {
-    return trimmed.length > 4
-  }
-  if (/^[a-z0-9-]{5,120}$/.test(trimmed)) {
-    const segments = trimmed.split('-')
-    return segments.every(segment => segment.length > 0)
-  }
-  return false
 }

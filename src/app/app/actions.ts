@@ -126,8 +126,8 @@ export type AuditEventRecord = {
 }
 
 type CreatorInput = {
-  name?: string
-  address?: string
+  name: string
+  address: string
   role?: string
   contributionPercent: number
 }
@@ -161,7 +161,13 @@ export type RegisterIpPayload = {
   commercialUse: boolean
   derivativesAllowed: boolean
   nftAttributes?: NftAttributeInput[]
+  relationships?: RelationshipInput[]
   customMetadata?: Record<string, unknown>
+}
+
+type RelationshipInput = {
+  parentIpId: string
+  type: string
 }
 
 type ConvexClient = ReturnType<typeof getConvexClient>
@@ -414,25 +420,39 @@ function isSystemActor(actor: SessionActor | undefined) {
 
 function sanitizeCreators(creators?: CreatorInput[]) {
   if (!creators) {
-    return [] as CreatorInput[]
+    return []
   }
   return creators
     .map(creator => ({
-      name: creator.name?.trim() || undefined,
-      address: creator.address?.trim() || undefined,
+      name: creator.name.trim(),
+      address: creator.address.trim(),
       role: creator.role?.trim() || undefined,
       contributionPercent: creator.contributionPercent
     }))
     .filter(
       creator =>
-        (creator.name && creator.name.length > 0) ||
-        (creator.address && creator.address.length > 0) ||
-        (creator.role && creator.role.length > 0)
+        creator.name.length > 0 && creator.address.length > 0
     )
 }
 
-function ensurePercent(creators?: CreatorInput[]) {
-  if (!creators || creators.length === 0) {
+function sanitizeRelationships(relationships?: RelationshipInput[]) {
+  if (!relationships) {
+    return []
+  }
+  return relationships
+    .map(relationship => ({
+      parentIpId: relationship.parentIpId.trim(),
+      type: relationship.type.trim().toUpperCase()
+    }))
+    .filter(
+      relationship =>
+        /^0x[a-fA-F0-9]{40}$/.test(relationship.parentIpId) &&
+        relationship.type.length > 0
+    )
+}
+
+function ensurePercent(creators: CreatorInput[]) {
+  if (creators.length === 0) {
     return
   }
   if (
@@ -466,7 +486,23 @@ function normalizeCustomMetadata(
   if (entries.length === 0) {
     return undefined
   }
+  const reservedKeys = new Set([
+    'title',
+    'description',
+    'createdAt',
+    'image',
+    'imageHash',
+    'creators',
+    'mediaUrl',
+    'mediaHash',
+    'mediaType',
+    'relationships',
+    'license'
+  ])
   return entries.reduce<Record<string, unknown>>((acc, [key, value]) => {
+    if (reservedKeys.has(key)) {
+      return acc
+    }
     acc[key] = value
     return acc
   }, {})
@@ -948,6 +984,7 @@ async function recordEvent({
 export async function registerIpAsset(payload: RegisterIpPayload) {
   const actor = await requireRole(['operator', 'creator'])
   const creators = sanitizeCreators(payload.creators)
+  const relationships = sanitizeRelationships(payload.relationships)
   ensurePercent(creators)
 
   const createdAtIso = new Date(payload.createdAt).toISOString()
@@ -979,7 +1016,7 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
       : base
   })
 
-  const ipMetadataPayload = {
+  const ipMetadataPayload: Record<string, unknown> = {
     title: payload.title,
     description: payload.description,
     createdAt: createdAtIso,
@@ -994,6 +1031,10 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
       derivativesAllowed: payload.derivativesAllowed,
       royaltyPercent: Math.min(payload.royaltyBps / 100, 100)
     }
+  }
+
+  if (relationships.length > 0) {
+    ipMetadataPayload.relationships = relationships
   }
 
   if (customMetadata) {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -8,10 +9,10 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
 type CreatorField = {
-  name?: string
-  wallet?: string
+  name: string
+  wallet: string
   role?: string
-  pct?: number
+  pct: number
 }
 
 type AdvancedCreatorsProps = {
@@ -29,7 +30,7 @@ export function AdvancedCreators({
     formState: { errors }
   } = useFormContext()
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control,
     name: fieldName as 'creators'
   })
@@ -43,13 +44,26 @@ export function AdvancedCreators({
       (allErrors?.root?.message as string | undefined)
     : undefined
 
+  useEffect(() => {
+    if (fields.length === 0) {
+      replace([
+        {
+          name: '',
+          wallet: '',
+          role: '',
+          pct: 100
+        }
+      ])
+    }
+  }, [fields.length, replace])
+
   return (
     <div className={cn('space-y-3', className)}>
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div>
           <p className='text-sm font-medium text-foreground'>Creators</p>
           <p className='text-xs text-muted-foreground'>
-            Optional credits for collaborators. Leave blank to skip.
+            Provide the on-chain contributors for this IP Asset. Percentages must total 100.
           </p>
         </div>
         <Button
@@ -92,10 +106,10 @@ export function AdvancedCreators({
               </div>
               <div className='md:col-span-4 space-y-1'>
                 <Label className='text-xs uppercase text-muted-foreground'>
-                  Wallet / DID
+                  Wallet (0x address)
                 </Label>
                 <Input
-                  placeholder='0x… / principal / did:'
+                  placeholder='0x…'
                   {...register(`${fieldName}.${index}.wallet` as const)}
                 />
                 {fieldErrors?.wallet?.message && (
