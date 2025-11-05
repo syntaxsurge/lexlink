@@ -43,7 +43,7 @@
     "c2pa": "^0.30.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "convex": "^1.10.0",
+    "convex": "^1.28.2",
     "date-fns": "^3.6.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.542.0",
