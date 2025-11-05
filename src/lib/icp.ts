@@ -9,9 +9,18 @@ import { Ed25519KeyIdentity } from '@dfinity/identity'
 import { env } from '@/lib/env'
 
 type EscrowActor = {
-  request_deposit_address: (licenseId: string) => Promise<string>
-  confirm_payment: (licenseId: string, txid: string) => Promise<void>
-  attestation: (licenseId: string) => Promise<string>
+  request_deposit_address?: (licenseId: string) => Promise<string>
+  confirm_payment?: (licenseId: string, txid: string) => Promise<void>
+  attestation?: (licenseId: string) => Promise<string>
+  generate_btc_invoice?: (args: {
+    sats: bigint
+    memo: [] | [string]
+  }) => Promise<{
+    address: string
+    amount_sats: bigint
+    expires_at: bigint
+    network: string
+  }>
 }
 
 let cachedActor: EscrowActor | null = null
@@ -54,7 +63,24 @@ const idlFactory = (idl: { IDL: typeof IDL }) => {
   return candid.Service({
     request_deposit_address: candid.Func([candid.Text], [candid.Text], []),
     confirm_payment: candid.Func([candid.Text, candid.Text], [], []),
-    attestation: candid.Func([candid.Text], [candid.Text], ['query'])
+    attestation: candid.Func([candid.Text], [candid.Text], ['query']),
+    generate_btc_invoice: candid.Func(
+      [
+        candid.Record({
+          sats: candid.Nat64,
+          memo: candid.Opt(candid.Text)
+        })
+      ],
+      [
+        candid.Record({
+          address: candid.Text,
+          amount_sats: candid.Nat64,
+          expires_at: candid.Nat64,
+          network: candid.Text
+        })
+      ],
+      []
+    )
   })
 }
 
@@ -83,17 +109,58 @@ async function getActor(): Promise<EscrowActor> {
   return cachedActor
 }
 
-export async function requestDepositAddress(orderId: string) {
+type DepositInvoice = {
+  address: string
+  amountSats?: number
+  expiresAt?: number
+  network?: string
+}
+
+const useMockInvoice = env.NEXT_PUBLIC_USE_MOCK_BTC_INVOICE ?? false
+
+export async function requestDepositAddress(
+  orderId: string,
+  amountSats?: number
+): Promise<DepositInvoice> {
   const actor = await getActor()
-  return actor.request_deposit_address(orderId)
+
+  const prefersGenerate =
+    useMockInvoice || typeof actor.request_deposit_address !== 'function'
+
+  if (prefersGenerate && typeof actor.generate_btc_invoice === 'function') {
+    const sats = BigInt(amountSats ?? 0)
+    const invoice = await actor.generate_btc_invoice({
+      sats,
+      memo: [orderId]
+    })
+    return {
+      address: invoice.address,
+      amountSats: Number(invoice.amount_sats),
+      expiresAt: Number(invoice.expires_at),
+      network: invoice.network
+    }
+  }
+
+  if (typeof actor.request_deposit_address === 'function') {
+    const address = await actor.request_deposit_address(orderId)
+    return { address }
+  }
+
+  throw new Error('Escrow canister does not expose a deposit endpoint.')
 }
 
 export async function confirmPayment(orderId: string, txId: string) {
   const actor = await getActor()
+  if (typeof actor.confirm_payment !== 'function') {
+    throw new Error('Escrow canister does not expose confirm_payment')
+  }
   await actor.confirm_payment(orderId, txId)
 }
 
 export async function fetchAttestation(orderId: string) {
   const actor = await getActor()
+  if (typeof actor.attestation !== 'function') {
+    throw new Error('Escrow canister does not expose attestation')
+  }
   return actor.attestation(orderId)
 }

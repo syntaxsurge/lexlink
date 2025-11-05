@@ -335,9 +335,20 @@ export async function createLicenseOrder({
 }) {
   const actor = await requireRole(['operator', 'creator'])
   const orderId = crypto.randomUUID()
+  const convex = getConvexClient()
+
+  const ipRecord = (await convex.query('ipAssets:getById' as any, {
+    ipId
+  })) as IpRecord | null
+
+  if (!ipRecord) {
+    throw new Error('Unable to locate IP asset in Convex')
+  }
+
   let btcAddress: string
   try {
-    btcAddress = await requestDepositAddress(orderId)
+    const invoice = await requestDepositAddress(orderId, ipRecord.priceSats)
+    btcAddress = invoice.address
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unknown escrow canister error'
@@ -349,7 +360,6 @@ export async function createLicenseOrder({
     throw new Error(`Failed to allocate deposit address: ${message}`)
   }
 
-  const convex = getConvexClient()
   await convex.mutation('licenses:insert' as any, {
     orderId,
     ipId,

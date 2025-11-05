@@ -52,6 +52,7 @@ NEXT_PUBLIC_IDENTITY_PROVIDER_URL="https://identity.internetcomputer.org" # opti
 NEXT_PUBLIC_STORY_NETWORK="aeneid" # or 'mainnet'
 NEXT_PUBLIC_ICP_HOST="http://127.0.0.1:4943"            # optional fallback for dev
 NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID="<local-canister-id>"
+NEXT_PUBLIC_USE_MOCK_BTC_INVOICE="true"
 
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
@@ -108,6 +109,8 @@ Use this checklist to source every value in `.env.local`.
   - Server-side configuration for the ICP escrow canister (production / staging)
 - `NEXT_PUBLIC_ICP_HOST` / `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID`
   - Optional overrides that allow pointing the frontend at a local replica without redefining server envs (useful when `dfx start` is running on `http://127.0.0.1:4943`)
+- `NEXT_PUBLIC_USE_MOCK_BTC_INVOICE`
+  - When `true`, instructs LexLink to call the local canister’s `generate_btc_invoice` method (used during dfx development).
 - `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
   - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
 - `CONVEX_DEPLOYMENT`
