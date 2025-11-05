@@ -20,7 +20,8 @@ export const insert = mutationGeneric({
     constellationTx: v.string(),
     status: v.string(),
     livenessSeconds: v.number(),
-    bond: v.number()
+    bond: v.number(),
+    ownerPrincipal: v.string()
   },
   handler: async (ctx, args) => {
     await ctx.db.insert('disputes', {
@@ -47,6 +48,34 @@ export const setStatus = mutationGeneric({
 
     await ctx.db.patch(dispute._id, {
       status: args.status
+    })
+  }
+})
+
+export const assignOwner = mutationGeneric({
+  args: {
+    disputeId: v.string(),
+    ownerPrincipal: v.string()
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query('disputes')
+      .withIndex('by_disputeId', q => q.eq('disputeId', args.disputeId))
+      .unique()
+
+    if (!record) {
+      throw new Error('Dispute not found')
+    }
+
+    if (
+      record.ownerPrincipal &&
+      record.ownerPrincipal !== args.ownerPrincipal
+    ) {
+      throw new Error('Dispute already assigned to a different principal')
+    }
+
+    await ctx.db.patch(record._id, {
+      ownerPrincipal: args.ownerPrincipal
     })
   }
 })

@@ -32,12 +32,41 @@ export const insert = mutationGeneric({
     mediaUrl: v.string(),
     mediaType: v.string(),
     ipMetadataUri: v.string(),
-    nftMetadataUri: v.string()
+    nftMetadataUri: v.string(),
+    ownerPrincipal: v.string()
   },
   handler: async (ctx, args) => {
     await ctx.db.insert('ips', {
       ...args,
       createdAt: Date.now()
+    })
+  }
+})
+
+export const assignOwner = mutationGeneric({
+  args: {
+    ipId: v.string(),
+    ownerPrincipal: v.string()
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query('ips')
+      .withIndex('by_ipId', q => q.eq('ipId', args.ipId))
+      .unique()
+
+    if (!record) {
+      throw new Error('IP asset not found')
+    }
+
+    if (
+      record.ownerPrincipal &&
+      record.ownerPrincipal !== args.ownerPrincipal
+    ) {
+      throw new Error('IP asset already assigned to a different principal')
+    }
+
+    await ctx.db.patch(record._id, {
+      ownerPrincipal: args.ownerPrincipal
     })
   }
 })

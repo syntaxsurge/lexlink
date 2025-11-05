@@ -15,8 +15,11 @@ export default defineSchema({
     mediaUrl: v.string(),
     mediaType: v.string(),
     ipMetadataUri: v.string(),
-    nftMetadataUri: v.string()
-  }).index('by_ipId', ['ipId']),
+    nftMetadataUri: v.string(),
+    ownerPrincipal: v.optional(v.string())
+  })
+    .index('by_ipId', ['ipId'])
+    .index('by_ownerPrincipal', ['ownerPrincipal']),
   licenses: defineTable({
     orderId: v.string(),
     ipId: v.string(),
@@ -45,11 +48,13 @@ export default defineSchema({
     vcDocument: v.string(),
     vcHash: v.string(),
     complianceScore: v.number(),
-    trainingUnits: v.number()
+    trainingUnits: v.number(),
+    ownerPrincipal: v.optional(v.string())
   })
     .index('by_orderId', ['orderId'])
     .index('by_ipId', ['ipId'])
-    .index('by_status', ['status']),
+    .index('by_status', ['status'])
+    .index('by_ownerPrincipal', ['ownerPrincipal']),
   disputes: defineTable({
     disputeId: v.string(),
     ipId: v.string(),
@@ -61,20 +66,24 @@ export default defineSchema({
     status: v.string(),
     livenessSeconds: v.number(),
     bond: v.number(),
-    createdAt: v.number()
+    createdAt: v.number(),
+    ownerPrincipal: v.optional(v.string())
   })
     .index('by_disputeId', ['disputeId'])
-    .index('by_ipId', ['ipId']),
+    .index('by_ipId', ['ipId'])
+    .index('by_ownerPrincipal', ['ownerPrincipal']),
   trainingBatches: defineTable({
     batchId: v.string(),
     ipId: v.string(),
     units: v.number(),
     evidenceHash: v.string(),
     constellationTx: v.string(),
-    createdAt: v.number()
+    createdAt: v.number(),
+    ownerPrincipal: v.optional(v.string())
   })
     .index('by_batchId', ['batchId'])
-    .index('by_ipId', ['ipId']),
+    .index('by_ipId', ['ipId'])
+    .index('by_ownerPrincipal', ['ownerPrincipal']),
   users: defineTable({
     address: v.optional(v.string()),
     principal: v.optional(v.string()),

@@ -85,7 +85,8 @@ export const insert = mutationGeneric({
     amountSats: v.number(),
     network: v.string(),
     paymentMode: v.string(),
-    ckbtcSubaccount: v.optional(v.string())
+    ckbtcSubaccount: v.optional(v.string()),
+    ownerPrincipal: v.string()
   },
   handler: async (ctx, args) => {
     const now = Date.now()
@@ -110,6 +111,34 @@ export const insert = mutationGeneric({
       updatedAt: now,
       fundedAt: undefined,
       finalizedAt: undefined
+    })
+  }
+})
+
+export const assignOwner = mutationGeneric({
+  args: {
+    orderId: v.string(),
+    ownerPrincipal: v.string()
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!record) {
+      throw new Error('License order not found')
+    }
+
+    if (
+      record.ownerPrincipal &&
+      record.ownerPrincipal !== args.ownerPrincipal
+    ) {
+      throw new Error('License order already assigned to a different principal')
+    }
+
+    await ctx.db.patch(record._id, {
+      ownerPrincipal: args.ownerPrincipal
     })
   }
 })

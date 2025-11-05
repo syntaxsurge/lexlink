@@ -41,6 +41,7 @@ type LicenseSeed = {
   ckbtcBlockIndex?: number
   fundedAt?: number
   finalizedAt?: number
+  ownerPrincipal: string
 }
 
 type UserSeed = {
@@ -66,7 +67,8 @@ const ipSeeds = [
     mediaType: 'audio/mpeg',
     ipMetadataUri: 'ipfs://midnight-marriage/metadata.json',
     nftMetadataUri: 'ipfs://midnight-marriage/nft.json',
-    createdAt: baseTime
+    createdAt: baseTime,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
     ipId: '0x4d33aeaabcad9818a5565d0bf90c1e75ad34a1be',
@@ -84,7 +86,8 @@ const ipSeeds = [
     mediaType: 'audio/wav',
     ipMetadataUri: 'ipfs://solar-echo/metadata.json',
     nftMetadataUri: 'ipfs://solar-echo/nft.json',
-    createdAt: baseTime + 1000 * 60 * 60
+    createdAt: baseTime + 1000 * 60 * 60,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
     ipId: '0xa1c3b5d7e9f1a2c4e6d8f0a1b3c5d7e9f1a2c4e6',
@@ -100,7 +103,8 @@ const ipSeeds = [
     mediaType: 'video/webm',
     ipMetadataUri: 'ipfs://neon-district/metadata.json',
     nftMetadataUri: 'ipfs://neon-district/nft.json',
-    createdAt: baseTime - 1000 * 60 * 45
+    createdAt: baseTime - 1000 * 60 * 45,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   }
 ] as const
 
@@ -137,7 +141,8 @@ const licenseSeeds: LicenseSeed[] = [
     vcHash:
       '0x7b2c5d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b',
     complianceScore: 100,
-    trainingUnits: 150
+    trainingUnits: 150,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
     orderId: 'order_solar_echo_ckbtc',
@@ -171,7 +176,8 @@ const licenseSeeds: LicenseSeed[] = [
     complianceScore: 62,
     trainingUnits: 40,
     ckbtcMintedSats: 180000,
-    ckbtcBlockIndex: 482
+    ckbtcBlockIndex: 482,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
     orderId: 'order_neon_dusk_pending',
@@ -196,7 +202,8 @@ const licenseSeeds: LicenseSeed[] = [
     vcDocument: '',
     vcHash: '',
     complianceScore: 0,
-    trainingUnits: 0
+    trainingUnits: 0,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   }
 ] as const
 
@@ -209,7 +216,8 @@ const trainingBatchSeeds = [
       '0x2f1a7b5c9d3e4f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4',
     constellationTx:
       '0x4f92ab13cd68ef024579bce13579df02468ace13579bdf02468ace13579bdf02',
-    createdAt: baseTime + 1000 * 60 * 90
+    createdAt: baseTime + 1000 * 60 * 90,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
     batchId: 'batch_solar_echo_001',
@@ -219,7 +227,8 @@ const trainingBatchSeeds = [
       '0x7d3e1f5a9b2c4d6e8f0a1b3c5d7e9f1a2c4e6d8f0a1b3c5d7e9f1a2c4e6d8f0',
     constellationTx:
       '0x1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
-    createdAt: baseTime + 1000 * 60 * 260
+    createdAt: baseTime + 1000 * 60 * 260,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   }
 ] as const
 
@@ -239,7 +248,8 @@ const disputeSeeds = [
     status: 'open',
     livenessSeconds: 259200,
     bond: 0,
-    createdAt: baseTime + 1000 * 60 * 180
+    createdAt: baseTime + 1000 * 60 * 180,
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   }
 ] as const
 

@@ -51,6 +51,7 @@ export type IpRecord = {
   mediaType: string
   ipMetadataUri: string
   nftMetadataUri: string
+  ownerPrincipal?: string
 }
 
 export type LicenseRecord = {
@@ -82,6 +83,7 @@ export type LicenseRecord = {
   vcHash: string
   complianceScore: number
   trainingUnits: number
+  ownerPrincipal?: string
 }
 
 export type DisputeRecord = {
@@ -96,6 +98,7 @@ export type DisputeRecord = {
   livenessSeconds: number
   bond: number
   createdAt: number
+  ownerPrincipal?: string
 }
 
 export type TrainingBatchRecord = {
@@ -105,6 +108,7 @@ export type TrainingBatchRecord = {
   evidenceHash: string
   constellationTx: string
   createdAt: number
+  ownerPrincipal?: string
 }
 
 export type AuditEventRecord = {
@@ -135,6 +139,254 @@ export type RegisterIpPayload = {
   royaltyBps: number
   ipMetadataUri: string
   nftMetadataUri: string
+}
+
+type ConvexClient = ReturnType<typeof getConvexClient>
+
+async function fetchOwnerPrincipalFromEvent({
+  convex,
+  resourceId,
+  action
+}: {
+  convex: ConvexClient
+  resourceId: string
+  action: string
+}): Promise<string | undefined> {
+  const events = (await convex.query('events:listByResource' as any, {
+    resourceId
+  })) as Array<Record<string, unknown>>
+
+  for (const event of events) {
+    const eventAction = String(event.action ?? '')
+    const actorPrincipal =
+      typeof event.actorPrincipal === 'string'
+        ? (event.actorPrincipal as string)
+        : undefined
+    if (eventAction === action && actorPrincipal) {
+      return actorPrincipal
+    }
+  }
+
+  return undefined
+}
+
+async function ensureIpOwner(
+  ip: IpRecord,
+  convex: ConvexClient
+): Promise<string | undefined> {
+  if (ip.ownerPrincipal) {
+    return ip.ownerPrincipal
+  }
+
+  const owner = await fetchOwnerPrincipalFromEvent({
+    convex,
+    resourceId: ip.ipId,
+    action: 'ip_asset.registered'
+  })
+
+  if (owner) {
+    await convex.mutation('ipAssets:assignOwner' as any, {
+      ipId: ip.ipId,
+      ownerPrincipal: owner
+    })
+    ip.ownerPrincipal = owner
+  }
+
+  return owner
+}
+
+async function ensureLicenseOwner({
+  license,
+  convex,
+  ipOwners
+}: {
+  license: LicenseRecord
+  convex: ConvexClient
+  ipOwners: Map<string, string>
+}): Promise<string | undefined> {
+  if (license.ownerPrincipal) {
+    return license.ownerPrincipal
+  }
+
+  const ipOwner = ipOwners.get(license.ipId)
+  if (ipOwner) {
+    await convex.mutation('licenses:assignOwner' as any, {
+      orderId: license.orderId,
+      ownerPrincipal: ipOwner
+    })
+    license.ownerPrincipal = ipOwner
+    return ipOwner
+  }
+
+  const owner = await fetchOwnerPrincipalFromEvent({
+    convex,
+    resourceId: license.orderId,
+    action: 'license.order_created'
+  })
+
+  if (owner) {
+    await convex.mutation('licenses:assignOwner' as any, {
+      orderId: license.orderId,
+      ownerPrincipal: owner
+    })
+    license.ownerPrincipal = owner
+    if (!ipOwners.has(license.ipId)) {
+      ipOwners.set(license.ipId, owner)
+    }
+  }
+
+  return owner
+}
+
+async function ensureDisputeOwner({
+  dispute,
+  convex,
+  ipOwners
+}: {
+  dispute: DisputeRecord
+  convex: ConvexClient
+  ipOwners: Map<string, string>
+}): Promise<string | undefined> {
+  if (dispute.ownerPrincipal) {
+    return dispute.ownerPrincipal
+  }
+
+  const ipOwner = ipOwners.get(dispute.ipId)
+  if (ipOwner) {
+    await convex.mutation('disputes:assignOwner' as any, {
+      disputeId: dispute.disputeId,
+      ownerPrincipal: ipOwner
+    })
+    dispute.ownerPrincipal = ipOwner
+    return ipOwner
+  }
+
+  const owner = await fetchOwnerPrincipalFromEvent({
+    convex,
+    resourceId: dispute.disputeId,
+    action: 'dispute.raised'
+  })
+
+  if (owner) {
+    await convex.mutation('disputes:assignOwner' as any, {
+      disputeId: dispute.disputeId,
+      ownerPrincipal: owner
+    })
+    dispute.ownerPrincipal = owner
+    if (!ipOwners.has(dispute.ipId)) {
+      ipOwners.set(dispute.ipId, owner)
+    }
+  }
+
+  return owner
+}
+
+async function ensureTrainingOwner({
+  batch,
+  convex,
+  ipOwners
+}: {
+  batch: TrainingBatchRecord
+  convex: ConvexClient
+  ipOwners: Map<string, string>
+}): Promise<string | undefined> {
+  if (batch.ownerPrincipal) {
+    return batch.ownerPrincipal
+  }
+
+  const ipOwner = ipOwners.get(batch.ipId)
+  if (ipOwner) {
+    await convex.mutation('trainingBatches:assignOwner' as any, {
+      batchId: batch.batchId,
+      ownerPrincipal: ipOwner
+    })
+    batch.ownerPrincipal = ipOwner
+    return ipOwner
+  }
+
+  const owner = await fetchOwnerPrincipalFromEvent({
+    convex,
+    resourceId: batch.batchId,
+    action: 'training.batch_recorded'
+  })
+
+  if (owner) {
+    await convex.mutation('trainingBatches:assignOwner' as any, {
+      batchId: batch.batchId,
+      ownerPrincipal: owner
+    })
+    batch.ownerPrincipal = owner
+    if (!ipOwners.has(batch.ipId)) {
+      ipOwners.set(batch.ipId, owner)
+    }
+  }
+
+  return owner
+}
+
+async function assertActorOwnsIp({
+  ip,
+  actor,
+  convex
+}: {
+  ip: IpRecord
+  actor: SessionActor
+  convex: ConvexClient
+}) {
+  const resolvedOwner = await ensureIpOwner(ip, convex)
+
+  if (resolvedOwner && resolvedOwner !== actor.principal) {
+    throw new Error('You do not have access to this IP asset.')
+  }
+
+  if (!resolvedOwner) {
+    await convex.mutation('ipAssets:assignOwner' as any, {
+      ipId: ip.ipId,
+      ownerPrincipal: actor.principal
+    })
+    ip.ownerPrincipal = actor.principal
+  }
+}
+
+async function assertActorOwnsLicense({
+  license,
+  ip,
+  actor,
+  convex
+}: {
+  license: LicenseRecord
+  ip: IpRecord
+  actor: SessionActor
+  convex: ConvexClient
+}) {
+  await assertActorOwnsIp({ ip, actor, convex })
+
+  const ipOwners = new Map<string, string>()
+  if (ip.ownerPrincipal) {
+    ipOwners.set(ip.ipId, ip.ownerPrincipal)
+  }
+
+  const resolvedOwner = await ensureLicenseOwner({
+    license,
+    convex,
+    ipOwners
+  })
+
+  if (resolvedOwner && resolvedOwner !== actor.principal) {
+    throw new Error('You do not have access to this license order.')
+  }
+
+  if (!resolvedOwner) {
+    await convex.mutation('licenses:assignOwner' as any, {
+      orderId: license.orderId,
+      ownerPrincipal: actor.principal
+    })
+    license.ownerPrincipal = actor.principal
+  }
+}
+
+function isSystemActor(actor: SessionActor | undefined) {
+  return actor?.principal.startsWith('system:')
 }
 
 function ensurePercent(creators: CreatorInput[]) {
@@ -293,16 +545,40 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
 
   try {
     const convex = getConvexClient()
-    const [metadata, operatorBalanceRaw, licensesRaw] = await Promise.all([
+    const [metadata, operatorBalanceRaw, licensesRaw, ipsRaw] = await Promise.all([
       getLedgerMetadata(),
       getLedgerAccountBalance({ owner: actor.principal }),
-      convex.query('licenses:list' as any, {})
+      convex.query('licenses:list' as any, {}),
+      convex.query('ipAssets:list' as any, {})
     ])
+
+    const ipOwners = new Map<string, string>()
+    for (const ip of ipsRaw as IpRecord[]) {
+      const owner = await ensureIpOwner(ip, convex)
+      if (owner) {
+        ipOwners.set(ip.ipId, owner)
+      }
+    }
+
+    const scopedLicenses = [] as LicenseRecord[]
+    for (const license of licensesRaw as LicenseRecord[]) {
+      const owner = await ensureLicenseOwner({
+        license,
+        convex,
+        ipOwners
+      })
+      if (owner === actor.principal) {
+        scopedLicenses.push({
+          ...license,
+          ownerPrincipal: owner
+        })
+      }
+    }
 
     const escrowPrincipal =
       env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
     const openOrders =
-      (licensesRaw as LicenseRecord[]).filter(
+      scopedLicenses.filter(
         license =>
           license.paymentMode === 'ckbtc' &&
           ['pending', 'funded', 'confirmed'].includes(license.status)
@@ -510,7 +786,8 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     mediaUrl: payload.mediaUrl,
     mediaType: payload.mediaType,
     ipMetadataUri: payload.ipMetadataUri,
-    nftMetadataUri: payload.nftMetadataUri
+    nftMetadataUri: payload.nftMetadataUri,
+    ownerPrincipal: actor.principal
   })
 
   await recordEvent({
@@ -563,6 +840,8 @@ export async function createLicenseOrder({
   if (!ipRecord) {
     throw new Error('Unable to locate IP asset in Convex')
   }
+
+  await assertActorOwnsIp({ ip: ipRecord, actor, convex })
 
   const amountSats = ipRecord.priceSats
   const paymentMode = await readPaymentMode()
@@ -620,7 +899,8 @@ export async function createLicenseOrder({
     amountSats,
     network,
     paymentMode,
-    ckbtcSubaccount
+    ckbtcSubaccount,
+    ownerPrincipal: actor.principal
   })
 
   await recordEvent({
@@ -657,6 +937,24 @@ export async function simulateLicenseFunding({
   }
   const actor = await requireRole(['operator'])
   const convex = getConvexClient()
+
+  const order = (await convex.query('licenses:get' as any, {
+    orderId
+  })) as LicenseRecord | null
+
+  if (!order) {
+    throw new Error('License order not found')
+  }
+
+  const ip = (await convex.query('ipAssets:getById' as any, {
+    ipId: order.ipId
+  })) as IpRecord | null
+
+  if (!ip) {
+    throw new Error('Associated IP asset not found')
+  }
+
+  await assertActorOwnsLicense({ license: order, ip, actor, convex })
 
   await convex.mutation('licenses:updateFundingState' as any, {
     orderId,
@@ -863,6 +1161,21 @@ export async function completeLicenseSale({
     throw new Error('Associated IP asset not found')
   }
 
+  if (isSystemActor(actor)) {
+    const ipOwners = new Map<string, string>()
+    const resolvedIpOwner = await ensureIpOwner(ip, convex)
+    if (resolvedIpOwner) {
+      ipOwners.set(ip.ipId, resolvedIpOwner)
+    }
+    await ensureLicenseOwner({
+      license: order,
+      convex,
+      ipOwners
+    })
+  } else {
+    await assertActorOwnsLicense({ license: order, ip, actor, convex })
+  }
+
   const targetReceiver =
     receiver ?? (order.buyer as `0x${string}` | undefined)
   if (!targetReceiver) {
@@ -966,6 +1279,17 @@ export type RaiseDisputePayload = {
 
 export async function raiseDispute(payload: RaiseDisputePayload) {
   const actor = await requireRole(['operator', 'creator'])
+  const convex = getConvexClient()
+  const ip = (await convex.query('ipAssets:getById' as any, {
+    ipId: payload.ipId
+  })) as IpRecord | null
+
+  if (!ip) {
+    throw new Error('IP asset not found')
+  }
+
+  await assertActorOwnsIp({ ip, actor, convex })
+
   const storyClient = getStoryClient()
   const livenessSeconds =
     payload.livenessSeconds && payload.livenessSeconds > 0
@@ -1000,7 +1324,6 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
 
   const constellationTx = await publishEvidence(evidenceHash)
 
-  const convex = getConvexClient()
   await convex.mutation('disputes:insert' as any, {
     disputeId,
     ipId: payload.ipId,
@@ -1011,7 +1334,8 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     constellationTx,
     status: 'raised',
     livenessSeconds,
-    bond: payload.bond ?? 0
+    bond: payload.bond ?? 0,
+    ownerPrincipal: ip.ownerPrincipal ?? actor.principal
   })
 
   await recordEvent({
@@ -1046,12 +1370,73 @@ export async function loadDashboardData() {
     convex.query('trainingBatches:list' as any, {})
   ])
 
+  const ipOwners = new Map<string, string>()
+
+  const ips = [] as IpRecord[]
+  for (const ip of ipsRaw as IpRecord[]) {
+    const owner = await ensureIpOwner(ip, convex)
+    if (owner) {
+      ipOwners.set(ip.ipId, owner)
+    }
+    if (owner === actor.principal) {
+      ips.push({
+        ...ip,
+        ownerPrincipal: owner
+      })
+    }
+  }
+
+  const licenses = [] as LicenseRecord[]
+  for (const license of licensesRaw as LicenseRecord[]) {
+    const owner = await ensureLicenseOwner({
+      license,
+      convex,
+      ipOwners
+    })
+    if (owner === actor.principal) {
+      licenses.push({
+        ...license,
+        ownerPrincipal: owner
+      })
+    }
+  }
+
+  const disputes = [] as DisputeRecord[]
+  for (const dispute of disputesRaw as DisputeRecord[]) {
+    const owner = await ensureDisputeOwner({
+      dispute,
+      convex,
+      ipOwners
+    })
+    if (owner === actor.principal) {
+      disputes.push({
+        ...dispute,
+        ownerPrincipal: owner
+      })
+    }
+  }
+
+  const trainingBatches = [] as TrainingBatchRecord[]
+  for (const batch of trainingRaw as TrainingBatchRecord[]) {
+    const owner = await ensureTrainingOwner({
+      batch,
+      convex,
+      ipOwners
+    })
+    if (owner === actor.principal) {
+      trainingBatches.push({
+        ...batch,
+        ownerPrincipal: owner
+      })
+    }
+  }
+
   return {
     principal: actor.principal,
-    ips: ipsRaw as IpRecord[],
-    licenses: licensesRaw as LicenseRecord[],
-    disputes: disputesRaw as DisputeRecord[],
-    trainingBatches: trainingRaw as TrainingBatchRecord[]
+    ips,
+    licenses,
+    disputes,
+    trainingBatches
   }
 }
 
@@ -1076,6 +1461,8 @@ export async function recordTrainingBatch({
     throw new Error('IP asset not found')
   }
 
+  await assertActorOwnsIp({ ip, actor, convex })
+
   const batchId = crypto.randomUUID()
   const payload = JSON.stringify({
     kind: 'TRAINING_BATCH',
@@ -1092,7 +1479,8 @@ export async function recordTrainingBatch({
     ipId,
     units,
     evidenceHash,
-    constellationTx
+    constellationTx,
+    ownerPrincipal: ip.ownerPrincipal ?? actor.principal
   })
 
   const licensesForIp = (await convex.query('licenses:listByIp' as any, {
@@ -1186,18 +1574,26 @@ export async function updateUserRole({
 }
 
 export async function loadAuditTrail(limit = 50): Promise<AuditEventRecord[]> {
-  await requireSession()
+  const actor = await requireSession()
   const convex = getConvexClient()
   const records = (await convex.query('events:listRecent' as any, {
     limit
   })) as Array<Record<string, unknown>>
 
-  return records.map(event => ({
-    eventId: String(event.eventId ?? crypto.randomUUID()),
-    action: String(event.action ?? 'unknown'),
-    resourceId:
-      typeof event.resourceId === 'string' ? event.resourceId : undefined,
-    payload:
+  return records
+    .filter(event => {
+      const eventPrincipal =
+        typeof event.actorPrincipal === 'string'
+          ? (event.actorPrincipal as string)
+          : undefined
+      return !eventPrincipal || eventPrincipal === actor.principal
+    })
+    .map(event => ({
+      eventId: String(event.eventId ?? crypto.randomUUID()),
+      action: String(event.action ?? 'unknown'),
+      resourceId:
+        typeof event.resourceId === 'string' ? event.resourceId : undefined,
+      payload:
       typeof event.payload === 'string'
         ? (JSON.parse(event.payload) as Record<string, unknown>)
         : {},
@@ -1207,8 +1603,8 @@ export async function loadAuditTrail(limit = 50): Promise<AuditEventRecord[]> {
       typeof event.actorPrincipal === 'string'
         ? event.actorPrincipal
         : undefined,
-    createdAt: Number(event.createdAt ?? Date.now())
-  }))
+      createdAt: Number(event.createdAt ?? Date.now())
+    }))
 }
 
 export async function updatePaymentModeSetting(mode: PaymentMode) {
@@ -1279,6 +1675,18 @@ export async function completeLicenseSaleSystem({
   if (!ip) {
     throw new Error('Associated IP asset not found')
   }
+
+  const ipOwners = new Map<string, string>()
+  const resolvedIpOwner = await ensureIpOwner(ip, convex)
+  if (resolvedIpOwner) {
+    ipOwners.set(ip.ipId, resolvedIpOwner)
+  }
+
+  await ensureLicenseOwner({
+    license: order,
+    convex,
+    ipOwners
+  })
 
   const paymentMode = normalizePaymentMode(order.paymentMode)
   let paymentReference = btcTxId ?? ''
