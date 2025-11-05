@@ -48,6 +48,7 @@ values must point to real infrastructure—no placeholders remain in the code.
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="replace-with-64-char-secret"
 NEXT_PUBLIC_SITE_DOMAIN="localhost:3000"
+NEXT_PUBLIC_IDENTITY_PROVIDER_URL="https://identity.ic0.app/#authorize" # optional override
 
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
@@ -96,6 +97,8 @@ Use this checklist to source every value in `.env.local`.
   - Generate once: `openssl rand -hex 32`
 - `NEXT_PUBLIC_SITE_DOMAIN`
   - Hostname used by the browser (e.g. `localhost:3000` or `lexlink.app`)
+- `NEXT_PUBLIC_IDENTITY_PROVIDER_URL` (optional)
+  - Override when pointing to a custom Internet Identity deployment; defaults to the canonical `https://identity.ic0.app/#authorize`
 - `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
   - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
 - `CONVEX_DEPLOYMENT`

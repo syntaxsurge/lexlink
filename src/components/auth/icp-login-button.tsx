@@ -48,14 +48,11 @@ function getDerivationOrigin() {
 }
 
 function getIdentityProvider() {
-  if (isHostedOnMainnet()) {
-    return 'https://id.ai/'
+  const override = process.env.NEXT_PUBLIC_IDENTITY_PROVIDER_URL
+  if (override) {
+    return override
   }
-  const canisterId =
-    process.env.NEXT_PUBLIC_CANISTER_ID_INTERNET_IDENTITY ??
-    process.env.CANISTER_ID_INTERNET_IDENTITY ??
-    'rdmx6-jaaaa-aaaaa-aaadq-cai'
-  return `http://${canisterId}.localhost:4943`
+  return 'https://identity.ic0.app/#authorize'
 }
 
 export function IcpLoginButton() {
