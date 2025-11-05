@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
+import { logoutInternetIdentity } from '@/lib/internet-identity-client'
 
 type AppShellProps = {
   children: ReactNode
@@ -37,6 +38,13 @@ const routes = [
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
+
+  const handleSignOut = () => {
+    void (async () => {
+      await logoutInternetIdentity()
+      await signOut({ callbackUrl: '/' })
+    })()
+  }
 
   const principal = session?.principal ?? null
   const identityLabel = principal
@@ -96,9 +104,7 @@ export function AppShell({ children }: AppShellProps) {
           <Button
             variant='outline'
             size='sm'
-            onClick={() => {
-              void signOut({ callbackUrl: '/' })
-            }}
+            onClick={handleSignOut}
           >
             Sign out
           </Button>
@@ -156,9 +162,7 @@ export function AppShell({ children }: AppShellProps) {
             <Button
               variant='ghost'
               size='sm'
-              onClick={() => {
-                void signOut({ callbackUrl: '/' })
-              }}
+              onClick={handleSignOut}
             >
               Sign out
             </Button>

@@ -6,6 +6,7 @@ import { signOut, useSession } from 'next-auth/react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { logoutInternetIdentity } from '@/lib/internet-identity-client'
 
 const links = [
   { href: '/', label: 'Home' },
@@ -15,6 +16,12 @@ const links = [
 export function SiteHeader() {
   const { data: session, status } = useSession()
   const isAuthenticated = status === 'authenticated'
+  const handleSignOut = () => {
+    void (async () => {
+      await logoutInternetIdentity()
+      await signOut({ callbackUrl: '/' })
+    })()
+  }
 
   const principalLabel = session?.principal
     ? `${session.principal.split('-').slice(0, 2).join('-')}…`
@@ -47,12 +54,7 @@ export function SiteHeader() {
               <Button asChild variant='secondary'>
                 <Link href='/app'>Open Console</Link>
               </Button>
-              <Button
-                variant='ghost'
-                onClick={() => {
-                  void signOut({ callbackUrl: '/' })
-                }}
-              >
+              <Button variant='ghost' onClick={handleSignOut}>
                 {principalLabel ?? session?.principal ?? 'Sign out'}
               </Button>
             </>
