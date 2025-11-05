@@ -335,7 +335,19 @@ export async function createLicenseOrder({
 }) {
   const actor = await requireRole(['operator', 'creator'])
   const orderId = crypto.randomUUID()
-  const btcAddress = await requestDepositAddress(orderId)
+  let btcAddress: string
+  try {
+    btcAddress = await requestDepositAddress(orderId)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unknown escrow canister error'
+    if (message.includes('canister_not_found')) {
+      throw new Error(
+        'ICP escrow canister not found. Verify ICP_ESCROW_CANISTER_ID and ICP_HOST point to a deployed canister before generating invoices.'
+      )
+    }
+    throw new Error(`Failed to allocate deposit address: ${message}`)
+  }
 
   const convex = getConvexClient()
   await convex.mutation('licenses:insert' as any, {

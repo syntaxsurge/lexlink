@@ -39,6 +39,9 @@ export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
     resolver: zodResolver(schema)
   })
 
+  const selectedIpId = form.watch('ipKey')
+  const selectedIp = ips.find(ip => ip.ipId === selectedIpId)
+
   const onSubmit = (values: FormValues) => {
     setError(null)
     setResult(null)
@@ -79,7 +82,7 @@ export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
             <option value=''>— select —</option>
             {ips.map(ip => (
               <option key={ip.ipId} value={ip.ipId}>
-                {ip.title} · {ip.priceSats.toLocaleString()} sats
+                {ip.title} · {(ip.priceSats / 100_000_000).toFixed(6)} BTC
               </option>
             ))}
           </select>
@@ -89,6 +92,18 @@ export function LicenseOrderForm({ ips }: LicenseOrderFormProps) {
             </p>
           )}
         </div>
+        {selectedIp && (
+          <div className='rounded-lg border border-border/60 bg-muted/20 p-3 text-sm'>
+            <p>
+              <span className='font-medium'>{selectedIp.title}</span> is listed at{' '}
+              <span className='font-mono'>
+                {(selectedIp.priceSats / 100_000_000).toFixed(6)} BTC
+              </span>{' '}
+              ({selectedIp.priceSats.toLocaleString()} sats).
+            </p>
+          </div>
+        )}
+
         <div className='space-y-2'>
           <Label htmlFor='buyer'>Buyer Wallet Address</Label>
           <Input id='buyer' {...form.register('buyer')} />
