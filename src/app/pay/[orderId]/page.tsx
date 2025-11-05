@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 
 import { loadInvoicePublic } from '@/app/app/actions'
+import { CkbtcPayPanel } from '@/app/pay/[orderId]/_components/ckbtc-pay-panel'
 import { env } from '@/lib/env'
 
 function formatBtc(sats?: number) {
@@ -26,6 +27,17 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
   }
 
   const isCkbtc = invoice.paymentMode === 'ckbtc'
+  const ledgerCanisterId = env.CKBTC_LEDGER_CANISTER_ID ?? ''
+  const minterCanisterId = env.CKBTC_MINTER_CANISTER_ID ?? ''
+  const escrowPrincipal = env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+  const icpHost = env.NEXT_PUBLIC_ICP_HOST ?? env.ICP_HOST
+  const showCkbtcPay =
+    isCkbtc &&
+    Boolean(ledgerCanisterId) &&
+    Boolean(minterCanisterId) &&
+    Boolean(escrowPrincipal) &&
+    typeof invoice.ckbtcSubaccount === 'string' &&
+    invoice.ckbtcSubaccount.length === 64
 
   return (
     <div className='mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10'>
@@ -33,7 +45,9 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
         <p className='text-sm uppercase tracking-wide text-muted-foreground'>LexLink Invoice</p>
         <h1 className='text-3xl font-semibold tracking-tight'>Order {invoice.orderId.slice(0, 8)}…</h1>
         <p className='text-muted-foreground'>
-          Pay with {isCkbtc ? 'ckTESTBTC' : 'Bitcoin'} to finalize the license automatically.
+          {isCkbtc
+            ? 'Pay with ckTESTBTC using your Internet Identity or send Bitcoin testnet manually.'
+            : 'Send Bitcoin to the escrow address to finalize the license automatically.'}
         </p>
       </header>
 
@@ -62,9 +76,22 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
         </div>
       </section>
 
+      {isCkbtc && showCkbtcPay && escrowPrincipal && (
+        <CkbtcPayPanel
+          orderId={invoice.orderId}
+          amountSats={String(invoice.amountSats ?? 0)}
+          escrowPrincipal={escrowPrincipal}
+          ckbtcSubaccountHex={invoice.ckbtcSubaccount!}
+          network={env.CKBTC_NETWORK}
+          ledgerCanisterId={ledgerCanisterId}
+          minterCanisterId={minterCanisterId}
+          icpHost={icpHost}
+        />
+      )}
+
       {isCkbtc ? (
         <section className='space-y-4 rounded-xl border border-primary/40 bg-primary/5 p-6 text-sm'>
-          <h2 className='text-lg font-semibold text-foreground'>How to pay with ckTESTBTC</h2>
+          <h2 className='text-lg font-semibold text-foreground'>Pay by sending Bitcoin testnet</h2>
           <ol className='list-decimal space-y-3 pl-4'>
             <li>
               <p>

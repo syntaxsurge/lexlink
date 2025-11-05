@@ -65,6 +65,12 @@ const serverEnvSchema = z.object({
   CONSTELLATION_L1_URL: z.string().url(),
   CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
+  ICP_CKBTC_MINTER_CANISTER_ID: z.string().optional(),
+  ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
+  ICP_CKBTC_NETWORK: z
+    .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
+    .default('ckbtc-testnet')
+    .optional(),
   CKBTC_MERCHANT_PRINCIPAL: z.string().optional(),
   CONVEX_URL: z.string().url(),
   CONVEX_DEPLOYMENT: z.string(),
@@ -114,6 +120,9 @@ function parseEnv() {
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
     CKBTC_MINTER_CANISTER_ID: process.env.CKBTC_MINTER_CANISTER_ID,
     CKBTC_LEDGER_CANISTER_ID: process.env.CKBTC_LEDGER_CANISTER_ID,
+    ICP_CKBTC_MINTER_CANISTER_ID: process.env.ICP_CKBTC_MINTER_CANISTER_ID,
+    ICP_CKBTC_LEDGER_CANISTER_ID: process.env.ICP_CKBTC_LEDGER_CANISTER_ID,
+    ICP_CKBTC_NETWORK: process.env.ICP_CKBTC_NETWORK,
     CKBTC_MERCHANT_PRINCIPAL:
       process.env.CKBTC_MERCHANT_PRINCIPAL ?? process.env.ICP_ESCROW_CANISTER_ID,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
@@ -129,7 +138,26 @@ function parseEnv() {
 
 const { publicEnv, serverEnv } = parseEnv()
 
+const resolvedCkbtcLedger =
+  serverEnv.CKBTC_LEDGER_CANISTER_ID ??
+  serverEnv.ICP_CKBTC_LEDGER_CANISTER_ID ??
+  undefined
+const resolvedCkbtcMinter =
+  serverEnv.CKBTC_MINTER_CANISTER_ID ??
+  serverEnv.ICP_CKBTC_MINTER_CANISTER_ID ??
+  undefined
+const resolvedCkbtcNetwork =
+  serverEnv.ICP_CKBTC_NETWORK ?? 'ckbtc-testnet'
+
 export const env = {
   ...publicEnv,
-  ...serverEnv
-} satisfies PublicEnv & ServerEnv
+  ...serverEnv,
+  CKBTC_LEDGER_CANISTER_ID: resolvedCkbtcLedger,
+  CKBTC_MINTER_CANISTER_ID: resolvedCkbtcMinter,
+  CKBTC_NETWORK: resolvedCkbtcNetwork
+} satisfies PublicEnv &
+  ServerEnv & {
+    CKBTC_LEDGER_CANISTER_ID?: string
+    CKBTC_MINTER_CANISTER_ID?: string
+    CKBTC_NETWORK: 'ckbtc-mainnet' | 'ckbtc-testnet'
+  }

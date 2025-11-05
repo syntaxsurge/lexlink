@@ -12,8 +12,7 @@ import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
 import {
   deriveOrderSubaccount,
-  formatSubaccountHex,
-  parseSubaccountHex
+  formatSubaccountHex
 } from '@/lib/ckbtc'
 import {
   requestDepositAddress,
@@ -34,13 +33,12 @@ import {
 } from '@/lib/story'
 import { generateLicenseCredential } from '@/lib/vc'
 import {
-  fetchLedgerMetadata,
-  formatTokenAmount,
-  getAccountBalance,
-  requestCkbtcDepositAddress,
-  summarizeUpdateBalance,
-  updateCkbtcBalance
-} from '@/lib/ckbtc-ledger'
+  getLedgerMetadata,
+  getAccountBalance as getLedgerAccountBalance,
+  requestCkbtcDepositAddress as requestMinterDepositAddress,
+  updateCkbtcDepositBalance as updateMinterDepositBalance
+} from '@/lib/ic/ckbtc/service'
+import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
 export type IpRecord = {
   ipId: string
@@ -283,8 +281,8 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
 
   const convex = getConvexClient()
   const [metadata, operatorBalanceRaw, licensesRaw] = await Promise.all([
-    fetchLedgerMetadata(),
-    getAccountBalance(actor.principal),
+    getLedgerMetadata(),
+    getLedgerAccountBalance({ owner: actor.principal }),
     convex.query('licenses:list' as any, {})
   ])
 
@@ -315,10 +313,10 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
           return
         }
         try {
-          const balance = await getAccountBalance(
-            escrowPrincipal,
-            parseSubaccountHex(order.ckbtcSubaccount)
-          )
+          const balance = await getLedgerAccountBalance({
+            owner: escrowPrincipal,
+            subaccount: hexToUint8Array(order.ckbtcSubaccount)
+          })
           escrowOpenTotal += balance
           orderBalances.push({
             orderId: order.orderId,
@@ -338,7 +336,7 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
     enabled: true,
     symbol: metadata.symbol,
     decimals: metadata.decimals,
-    network: env.BTC_NETWORK,
+    network: env.CKBTC_NETWORK,
     operator: {
       principal: actor.principal,
       balance: operatorBalanceRaw.toString(),
@@ -366,9 +364,8 @@ export async function allocateOperatorTopUp() {
   }
 
   try {
-    const depositAddress = await requestCkbtcDepositAddress({
-      owner: actor.principal,
-      network: env.BTC_NETWORK
+    const depositAddress = await requestMinterDepositAddress({
+      owner: actor.principal
     })
 
     await recordEvent({
@@ -376,7 +373,7 @@ export async function allocateOperatorTopUp() {
       action: 'ckbtc.topup_address_allocated',
       payload: {
         principal: actor.principal,
-        network: env.BTC_NETWORK,
+        network: env.CKBTC_NETWORK,
         depositAddress
       },
       resourceId: actor.principal
@@ -385,7 +382,7 @@ export async function allocateOperatorTopUp() {
     return {
       depositAddress,
       principal: actor.principal,
-      network: env.BTC_NETWORK
+      network: env.CKBTC_NETWORK
     }
   } catch (error) {
     const message =
@@ -398,33 +395,107 @@ export async function mintOperatorTopUp() {
   const actor = await requireRole(['operator', 'creator'])
 
   try {
-    const response = await updateCkbtcBalance({
+    const response = await updateMinterDepositBalance({
       owner: actor.principal
     })
-    const summary = summarizeUpdateBalance(response)
+
+    let pending = false
+    let mintedAmount = 0n
+
+    if ('Ok' in response) {
+      mintedAmount = BigInt(response.Ok)
+      pending = mintedAmount === 0n
+    } else if ('Err' in response) {
+      const err = response.Err
+      if ('NoNewUtxos' in err || 'AlreadyProcessing' in err) {
+        pending = true
+      } else if ('TemporarilyUnavailable' in err) {
+        throw new Error('ckBTC minter temporarily unavailable. Try again shortly.')
+      } else if ('GenericError' in err) {
+        throw new Error(
+          `ckBTC minter error ${err.GenericError.error_code}: ${err.GenericError.error_message}`
+        )
+      } else {
+        throw new Error('Unknown ckBTC minter error.')
+      }
+    } else {
+      throw new Error('Unexpected ckBTC minter response.')
+    }
 
     await recordEvent({
       actor,
-      action: summary.pending
-        ? 'ckbtc.topup_pending'
-        : 'ckbtc.topup_minted',
+      action: pending ? 'ckbtc.topup_pending' : 'ckbtc.topup_minted',
       payload: {
         principal: actor.principal,
-        mintedSats: summary.mintedAmount.toString(),
-        pending: summary.pending
+        mintedSats: mintedAmount.toString(),
+        pending
       },
       resourceId: actor.principal
     })
 
     return {
-      pending: summary.pending,
-      mintedSats: summary.mintedAmount.toString()
+      pending,
+      mintedSats: mintedAmount.toString()
     }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unable to mint ckBTC'
     throw new Error(message)
   }
+}
+
+export async function autoFinalizeCkbtcOrder(orderId: string) {
+  if (!env.CKBTC_LEDGER_CANISTER_ID) {
+    return { status: 'disabled' as const }
+  }
+
+  const convex = getConvexClient()
+  const order = (await convex.query('licenses:get' as any, {
+    orderId
+  })) as LicenseRecord | null
+
+  if (!order) {
+    throw new Error('License order not found')
+  }
+
+  if (order.status === 'finalized') {
+    return { status: 'finalized' as const }
+  }
+
+  if (normalizePaymentMode(order.paymentMode) !== 'ckbtc') {
+    return { status: 'skipped' as const }
+  }
+
+  if (!order.ckbtcSubaccount) {
+    throw new Error('Order is missing ckBTC subaccount metadata.')
+  }
+
+  const escrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+
+  if (!escrowPrincipal) {
+    throw new Error('Escrow principal not configured for ckBTC ledger settlement.')
+  }
+
+  const ledgerBalance = await getLedgerAccountBalance({
+    owner: escrowPrincipal,
+    subaccount: hexToUint8Array(order.ckbtcSubaccount)
+  })
+
+  const required = BigInt(order.amountSats ?? 0)
+  if (ledgerBalance < required || required === 0n) {
+    return { status: 'pending' as const }
+  }
+
+  await completeLicenseSale({
+    orderId,
+    actorOverride: {
+      principal: 'system:ckbtc-finalizer',
+      role: 'operator'
+    }
+  })
+
+  return { status: 'finalized' as const }
 }
 
 async function recordEvent({
@@ -807,13 +878,21 @@ async function finalizeOrder({
 export async function completeLicenseSale({
   orderId,
   btcTxId,
-  receiver
+  receiver,
+  actorOverride
 }: {
   orderId: string
   btcTxId?: string
-  receiver: `0x${string}`
+  receiver?: `0x${string}`
+  actorOverride?: SessionActor
 }) {
-  const actor = await requireRole(['operator'])
+  if (
+    actorOverride &&
+    actorOverride.role !== 'operator'
+  ) {
+    throw new Error('Automation actor must carry operator role.')
+  }
+  const actor = actorOverride ?? (await requireRole(['operator']))
   const convex = getConvexClient()
   const order = (await convex.query('licenses:get' as any, {
     orderId
@@ -830,6 +909,12 @@ export async function completeLicenseSale({
     throw new Error('Associated IP asset not found')
   }
 
+  const targetReceiver =
+    receiver ?? (order.buyer as `0x${string}` | undefined)
+  if (!targetReceiver) {
+    throw new Error('Receiver wallet is required to mint license token.')
+  }
+
   const paymentMode = normalizePaymentMode(order.paymentMode)
   let paymentReference = btcTxId ?? ''
   let minted:
@@ -844,28 +929,71 @@ export async function completeLicenseSale({
       throw new Error('Provide a Bitcoin transaction hash for BTC mode finalization')
     }
   } else {
-    const settlement = await settleCkbtc(orderId)
-    const mintedSats = Number(settlement.minted)
-    const mintedBlockIndex = Number(settlement.blockIndex)
-    minted = {
-      sats: mintedSats,
-      blockIndex: Number.isNaN(mintedBlockIndex) ? undefined : mintedBlockIndex
+    try {
+      const settlement = await settleCkbtc(orderId)
+      const mintedSats = Number(settlement.minted)
+      const mintedBlockIndex = Number(settlement.blockIndex)
+      minted = {
+        sats: mintedSats,
+        blockIndex: Number.isNaN(mintedBlockIndex) ? undefined : mintedBlockIndex
+      }
+      const fallbackBlockIndex =
+        typeof minted.blockIndex === 'number' && !Number.isNaN(minted.blockIndex)
+          ? minted.blockIndex
+          : 0
+      paymentReference =
+        settlement.txids && settlement.txids.length > 0
+          ? settlement.txids
+          : `ckbtc-block-${fallbackBlockIndex}`
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      const mintedPending =
+        message.toLowerCase().includes('no ckbtc minted yet') ||
+        message.toLowerCase().includes('temporarily unavailable')
+
+      if (!mintedPending) {
+        throw error
+      }
+
+      if (!env.CKBTC_LEDGER_CANISTER_ID) {
+        throw new Error('ckBTC ledger is not configured; cannot verify direct ledger transfer.')
+      }
+      const escrowPrincipal =
+        env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+      if (!escrowPrincipal) {
+        throw new Error('Escrow principal not configured for ckBTC ledger settlement.')
+      }
+      if (!order.ckbtcSubaccount) {
+        throw new Error('Order is missing ckBTC subaccount metadata.')
+      }
+      const subaccount = hexToUint8Array(order.ckbtcSubaccount)
+      const ledgerBalance = await getLedgerAccountBalance({
+        owner: escrowPrincipal,
+        subaccount
+      })
+      const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
+
+      if (ledgerBalance < required) {
+        throw error
+      }
+
+      if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
+        throw new Error('ckBTC balance exceeds supported range for finalization.')
+      }
+
+      const ledgerAmount = Number(ledgerBalance)
+      minted = {
+        sats: ledgerAmount
+      }
+      paymentReference = `icrc-ledger-${orderId}-${Date.now()}`
     }
-    const fallbackBlockIndex =
-      typeof minted.blockIndex === 'number' && !Number.isNaN(minted.blockIndex)
-        ? minted.blockIndex
-        : 0
-    paymentReference =
-      settlement.txids && settlement.txids.length > 0
-        ? settlement.txids
-        : `ckbtc-block-${fallbackBlockIndex}`
   }
 
   const result = await finalizeOrder({
     order,
     ip,
     paymentReference,
-    receiver,
+    receiver: targetReceiver,
     actor,
     convex,
     paymentMode,
