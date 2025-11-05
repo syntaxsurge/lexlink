@@ -1,13 +1,20 @@
 'use client'
 
 import type { ComponentProps, ReactNode } from 'react'
-import { useState, useTransition } from 'react'
+import { useCallback, useEffect, useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Controller, useFieldArray, useForm } from 'react-hook-form'
+import {
+  Controller,
+  FormProvider,
+  useFieldArray,
+  useForm
+} from 'react-hook-form'
 import { z } from 'zod'
 
 import { registerIpAsset } from '@/app/app/actions'
+import { AdvancedCreators } from '@/components/app/advanced-creators'
+import { MediaTypeChip } from '@/components/app/media-type-chip'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -17,9 +24,43 @@ import {
   ipAssetExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
+import { detectMimeFromUrl } from '@/lib/media-type'
 
 const storyNetwork: StoryNetwork =
   process.env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet' ? 'mainnet' : 'aeneid'
+
+const creatorSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .max(120, 'Creator names are limited to 120 characters')
+    .optional(),
+  wallet: z
+    .string()
+    .trim()
+    .max(200, 'Creator wallet identifiers are limited to 200 characters')
+    .optional()
+    .refine(
+      value => !value || isValidCreatorIdentifier(value),
+      'Use an EVM address, Internet Identity principal, or DID'
+    ),
+  role: z
+    .string()
+    .trim()
+    .max(120, 'Creator roles are limited to 120 characters')
+    .optional(),
+  pct: z
+    .number({
+      invalid_type_error: 'Contribution must be a number'
+    })
+    .min(0, 'Contribution must be 0 or greater')
+    .max(100, 'Contribution cannot exceed 100')
+})
+
+const attributeSchema = z.object({
+  traitType: z.string().min(1, 'Trait name is required'),
+  value: z.string().min(1, 'Trait value is required')
+})
 
 const formSchema = z
   .object({
@@ -30,17 +71,21 @@ const formSchema = z
     createdAt: z.string().min(1, 'Select the creation date'),
     imageUrl: z.string().optional(),
     imageFile: z
-      .custom<
-        FileList | undefined
-      >(value => value === undefined || value instanceof FileList)
+      .custom<FileList | undefined>(
+        value => value === undefined || value instanceof FileList
+      )
       .optional(),
     mediaUrl: z.string().optional(),
     mediaFile: z
-      .custom<
-        FileList | undefined
-      >(value => value === undefined || value instanceof FileList)
+      .custom<FileList | undefined>(
+        value => value === undefined || value instanceof FileList
+      )
       .optional(),
-    mediaType: z.string().min(3, 'Provide a MIME type (e.g. audio/mpeg)'),
+    mediaType: z
+      .string()
+      .trim()
+      .max(200, 'MIME types are limited to 200 characters')
+      .optional(),
     priceBtc: z
       .number({ required_error: 'Set a license price in BTC' })
       .min(0.00000001, 'Price must be at least 0.00000001 BTC'),
@@ -50,21 +95,9 @@ const formSchema = z
       .max(100, 'Royalties cannot exceed 100%'),
     commercialUse: z.boolean(),
     derivativesAllowed: z.boolean(),
-    creatorName: z.string().min(2, 'Creator name is required'),
-    creatorAddress: z
-      .string()
-      .regex(
-        /^0x[a-fA-F0-9]{40}$/,
-        'Creator address must be a 0x-prefixed EVM address'
-      ),
-    nftAttributes: z
-      .array(
-        z.object({
-          traitType: z.string().min(1, 'Trait name is required'),
-          value: z.string().min(1, 'Trait value is required')
-        })
-      )
-      .optional()
+    creators: z.array(creatorSchema).optional(),
+    nftAttributes: z.array(attributeSchema).optional(),
+    customMetadata: z.string().optional()
   })
   .superRefine((values, ctx) => {
     const imageUrl = values.imageUrl?.trim() ?? ''
@@ -102,6 +135,54 @@ const formSchema = z
         path: ['mediaUrl']
       })
     }
+
+    const creatorEntries = (values.creators ?? []).filter(
+      creator =>
+        (creator.name && creator.name.trim().length > 0) ||
+        (creator.wallet && creator.wallet.trim().length > 0) ||
+        (creator.role && creator.role.trim().length > 0)
+    )
+    if (creatorEntries.length > 0) {
+      const contributions = creatorEntries.map(creator => creator.pct)
+      if (contributions.some(value => typeof value !== 'number')) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Set a contribution percentage for each creator',
+          path: ['creators']
+        })
+      } else {
+        const total = contributions.reduce(
+          (sum, value) => sum + (value ?? 0),
+          0
+        )
+        if (Math.abs(total - 100) > 0.001) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Creator contributions must total 100%',
+            path: ['creators']
+          })
+        }
+      }
+    }
+
+    const custom = values.customMetadata?.trim()
+    if (custom) {
+      try {
+        const parsed = JSON.parse(custom)
+        if (parsed === null || typeof parsed !== 'object') {
+          throw new Error('Metadata must be a JSON object')
+        }
+      } catch (error) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Enter valid JSON for custom metadata',
+          path: ['customMetadata']
+        })
+      }
+    }
   })
 
 type FormValues = z.infer<typeof formSchema>
@@ -123,14 +204,14 @@ export function RegisterIpForm() {
       createdAt: defaultDateTimeLocal(),
       imageUrl: '',
       mediaUrl: '',
-      mediaType: 'audio/mpeg',
+      mediaType: 'application/octet-stream',
       priceBtc: 0.001,
       royaltyPercent: 10,
       commercialUse: true,
       derivativesAllowed: true,
-      creatorName: '',
-      creatorAddress: '',
-      nftAttributes: []
+      creators: [],
+      nftAttributes: [],
+      customMetadata: ''
     }
   })
 
@@ -143,13 +224,98 @@ export function RegisterIpForm() {
     setValue
   } = form
 
-  const { fields, append, remove } = useFieldArray({
+  const {
+    fields: attributeFields,
+    append: appendAttribute,
+    remove: removeAttribute
+  } = useFieldArray({
     control,
     name: 'nftAttributes'
   })
 
   const imageFileList = watch('imageFile') as FileList | undefined
   const mediaFileList = watch('mediaFile') as FileList | undefined
+  const mediaUrlValue = watch('mediaUrl') as string | undefined
+  const mediaTypeValue = (watch('mediaType') as string | undefined) ?? ''
+
+  const [mediaTypeSource, setMediaTypeSource] = useState<'auto' | 'manual'>(
+    'auto'
+  )
+  const [detectedMime, setDetectedMime] = useState('application/octet-stream')
+  const [isDetectingMime, setIsDetectingMime] = useState(false)
+
+  const applyAutoMime = useCallback(
+    (mime: string) => {
+      const normalized = mime?.trim() || 'application/octet-stream'
+      setDetectedMime(prev => (prev === normalized ? prev : normalized))
+      if (mediaTypeSource === 'auto' && mediaTypeValue !== normalized) {
+        setValue('mediaType', normalized, { shouldDirty: true })
+      }
+    },
+    [mediaTypeSource, mediaTypeValue, setValue]
+  )
+
+  useEffect(() => {
+    const file =
+      mediaFileList instanceof FileList && mediaFileList.length > 0
+        ? mediaFileList[0]
+        : null
+    if (file?.type) {
+      applyAutoMime(file.type)
+      return
+    }
+    if (!mediaUrlValue) {
+      applyAutoMime('application/octet-stream')
+    }
+  }, [mediaFileList, mediaUrlValue, applyAutoMime])
+
+  useEffect(() => {
+    const trimmed = mediaUrlValue?.trim()
+    if (
+      !trimmed ||
+      !isUrlOrIpfs(trimmed) ||
+      (mediaFileList instanceof FileList && mediaFileList.length > 0)
+    ) {
+      setIsDetectingMime(false)
+      return
+    }
+    let cancelled = false
+    setIsDetectingMime(true)
+    detectMimeFromUrl(trimmed)
+      .then(mime => {
+        if (cancelled) return
+        applyAutoMime(mime)
+      })
+      .catch(() => {
+        if (cancelled) return
+        applyAutoMime('application/octet-stream')
+      })
+      .finally(() => {
+        if (cancelled) return
+        setIsDetectingMime(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [mediaUrlValue, mediaFileList, applyAutoMime])
+
+  const handleMimeOverride = (value: string) => {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return
+    }
+    setMediaTypeSource('manual')
+    if (mediaTypeValue !== trimmed) {
+      setValue('mediaType', trimmed, { shouldDirty: true })
+    }
+  }
+
+  const handleMimeReset = () => {
+    setMediaTypeSource('auto')
+    if (mediaTypeValue !== detectedMime) {
+      setValue('mediaType', detectedMime, { shouldDirty: true })
+    }
+  }
 
   const onSubmit = (values: FormValues) => {
     setError(null)
@@ -172,31 +338,52 @@ export function RegisterIpForm() {
           attribute => attribute.traitType.trim() && attribute.value.trim()
         )
 
+        const creatorEntries = (values.creators ?? [])
+          .map(creator => ({
+            name: creator.name?.trim() ?? '',
+            wallet: creator.wallet?.trim() ?? '',
+            role: creator.role?.trim() ?? '',
+            contributionPercent: creator.pct
+          }))
+          .filter(
+            creator =>
+              creator.name || creator.wallet || creator.role
+          )
+
+        const payloadCreators = creatorEntries.map(creator => ({
+          name: creator.name,
+          address: creator.wallet,
+          role: creator.role,
+          contributionPercent: creator.contributionPercent
+        }))
+
+        const customMetadata = parseOptionalJsonRecord(
+          values.customMetadata
+        )
+
+        const normalizedMediaType =
+          values.mediaType?.trim() || detectedMime || 'application/octet-stream'
+
         const response = await registerIpAsset({
           title: values.title.trim(),
           description: values.description.trim(),
           createdAt: new Date(values.createdAt).toISOString(),
           image: imageInput,
           media: mediaInput,
-          mediaType: values.mediaType.trim(),
+          mediaType: normalizedMediaType,
           priceSats,
           royaltyBps,
           commercialUse: values.commercialUse,
           derivativesAllowed: values.derivativesAllowed,
-          creators: [
-            {
-              name: values.creatorName.trim(),
-              address: values.creatorAddress as `0x${string}`,
-              contributionPercent: 100
-            }
-          ],
+          creators: payloadCreators,
           nftAttributes:
             attributes.length > 0
               ? attributes.map(attribute => ({
                   traitType: attribute.traitType.trim(),
                   value: attribute.value.trim()
                 }))
-              : undefined
+              : undefined,
+          customMetadata
         })
 
         setResult({
@@ -214,6 +401,15 @@ export function RegisterIpForm() {
 
   const imageFileField = register('imageFile')
   const mediaFileField = register('mediaFile')
+  const mediaUrlField = register('mediaUrl', {
+    onChange: () => {
+      setMediaTypeSource('auto')
+    }
+  })
+
+  useEffect(() => {
+    register('mediaType')
+  }, [register])
   const imageFileName =
     imageFileList && imageFileList.length > 0
       ? (imageFileList[0]?.name ?? null)
@@ -224,7 +420,8 @@ export function RegisterIpForm() {
       : null
 
   return (
-    <div className='space-y-6'>
+    <FormProvider {...form}>
+      <div className='space-y-6'>
       <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
         <div className='grid gap-3 md:grid-cols-2'>
           <Field label='Title' error={errors.title?.message}>
@@ -296,10 +493,7 @@ export function RegisterIpForm() {
                 {...mediaFileField}
                 onChange={event => {
                   mediaFileField.onChange(event)
-                  const file = event.target.files?.[0]
-                  if (file?.type) {
-                    setValue('mediaType', file.type, { shouldDirty: true })
-                  }
+                  setMediaTypeSource('auto')
                   if (event.target.files && event.target.files.length === 0) {
                     event.target.value = ''
                   }
@@ -308,7 +502,7 @@ export function RegisterIpForm() {
               <Input
                 id='mediaUrl'
                 placeholder='https://cdn.example.com/audio.mp3 or ipfs://CID'
-                {...register('mediaUrl')}
+                {...mediaUrlField}
               />
               {mediaFileName && (
                 <p className='text-xs text-muted-foreground'>
@@ -319,22 +513,23 @@ export function RegisterIpForm() {
                 Supply the master audio/video. We fetch it, upload to IPFS, and
                 compute Story-compatible hashes.
               </Hint>
+              <MediaTypeChip
+                value={mediaTypeValue}
+                detectedValue={detectedMime}
+                pending={isDetectingMime}
+                onChange={handleMimeOverride}
+                onReset={handleMimeReset}
+              />
+              {errors.mediaType?.message && (
+                <p className='text-xs text-destructive'>
+                  {errors.mediaType.message}
+                </p>
+              )}
             </div>
           </Field>
         </div>
 
         <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='Media type (MIME)' error={errors.mediaType?.message}>
-            <Input
-              id='mediaType'
-              placeholder='audio/mpeg'
-              {...register('mediaType')}
-            />
-            <Hint>
-              Used for Story attestation. Examples: audio/mpeg, video/mp4,
-              application/pdf.
-            </Hint>
-          </Field>
           <Field label='License price (BTC)' error={errors.priceBtc?.message}>
             <Input
               id='priceBtc'
@@ -413,77 +608,92 @@ export function RegisterIpForm() {
           </Field>
         </div>
 
-        <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='Creator name' error={errors.creatorName?.message}>
-            <Input
-              id='creatorName'
-              placeholder='LexLink Demo'
-              {...register('creatorName')}
-            />
-          </Field>
-          <Field label='Creator wallet' error={errors.creatorAddress?.message}>
-            <Input
-              id='creatorAddress'
-              placeholder='0xabc123…'
-              {...register('creatorAddress')}
-            />
-          </Field>
-        </div>
-
         <details className='rounded-lg border border-border bg-muted/40 p-4 text-sm'>
           <summary className='cursor-pointer text-sm font-semibold text-foreground'>
             Advanced metadata
           </summary>
-          <div className='mt-3 space-y-3'>
-            <p className='text-xs text-muted-foreground'>
-              Add optional NFT traits. Leave blank to skip.
-            </p>
-            {fields.map((fieldItem, index) => {
-              const traitError =
-                errors.nftAttributes?.[index]?.traitType?.message
-              const valueError = errors.nftAttributes?.[index]?.value?.message
-              return (
-                <div
-                  key={fieldItem.id}
-                  className='grid gap-2 md:grid-cols-[1fr_1fr_auto]'
-                >
-                  <div>
-                    <Input
-                      placeholder='Trait name (e.g., Instrument)'
-                      {...register(`nftAttributes.${index}.traitType` as const)}
-                    />
-                    {traitError && (
-                      <p className='text-xs text-destructive'>{traitError}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Input
-                      placeholder='Trait value (e.g., Piano)'
-                      {...register(`nftAttributes.${index}.value` as const)}
-                    />
-                    {valueError && (
-                      <p className='text-xs text-destructive'>{valueError}</p>
-                    )}
-                  </div>
-                  <Button
-                    type='button'
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => remove(index)}
+          <div className='mt-3 space-y-6'>
+            <AdvancedCreators className='text-sm' />
+
+            <div className='space-y-2'>
+              <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                Media type override
+              </p>
+              <p className='text-xs text-muted-foreground'>
+                Use the change control above whenever the auto-detected MIME type needs correction. Leave it untouched to keep the detected value.
+              </p>
+            </div>
+
+            <div className='space-y-3'>
+              <p className='text-xs text-muted-foreground'>
+                Add optional NFT traits. Leave blank to skip.
+              </p>
+              {attributeFields.map((fieldItem, index) => {
+                const traitError =
+                  errors.nftAttributes?.[index]?.traitType?.message
+                const valueError = errors.nftAttributes?.[index]?.value?.message
+                return (
+                  <div
+                    key={fieldItem.id}
+                    className='grid gap-2 md:grid-cols-[1fr_1fr_auto]'
                   >
-                    Remove
-                  </Button>
-                </div>
-              )
-            })}
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => append({ traitType: '', value: '' })}
-            >
-              Add attribute
-            </Button>
+                    <div>
+                      <Input
+                        placeholder='Trait name (e.g., Instrument)'
+                        {...register(`nftAttributes.${index}.traitType` as const)}
+                      />
+                      {traitError && (
+                        <p className='text-xs text-destructive'>{traitError}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Input
+                        placeholder='Trait value (e.g., Piano)'
+                        {...register(`nftAttributes.${index}.value` as const)}
+                      />
+                      {valueError && (
+                        <p className='text-xs text-destructive'>{valueError}</p>
+                      )}
+                    </div>
+                    <Button
+                      type='button'
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => removeAttribute(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )
+              })}
+              <Button
+                type='button'
+                variant='outline'
+                size='sm'
+                onClick={() => appendAttribute({ traitType: '', value: '' })}
+              >
+                Add attribute
+              </Button>
+            </div>
+
+            <div className='space-y-2'>
+              <Label className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                Custom metadata JSON
+              </Label>
+              <Textarea
+                rows={4}
+                placeholder='{ "genre": "Ambient" }'
+                {...register('customMetadata')}
+              />
+              {errors.customMetadata?.message && (
+                <p className='text-xs text-destructive'>
+                  {errors.customMetadata.message}
+                </p>
+              )}
+              <p className='text-xs text-muted-foreground'>
+                Optional free-form metadata that merges into the IP manifest. Provide a JSON object only when downstream services expect extra keys.
+              </p>
+            </div>
           </div>
         </details>
 
@@ -526,7 +736,8 @@ export function RegisterIpForm() {
           </div>
         </dl>
       )}
-    </div>
+      </div>
+    </FormProvider>
   )
 }
 
@@ -619,6 +830,25 @@ function fileToDataUrl(file: File): Promise<string> {
   })
 }
 
+function parseOptionalJsonRecord(input?: string | null) {
+  if (!input) {
+    return undefined
+  }
+  const trimmed = input.trim()
+  if (!trimmed) {
+    return undefined
+  }
+  try {
+    const parsed = JSON.parse(trimmed)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+  } catch {
+    // Validation handles surfacing errors to the user.
+  }
+  return undefined
+}
+
 function defaultDateTimeLocal() {
   const iso = new Date().toISOString()
   return iso.slice(0, 16)
@@ -634,4 +864,19 @@ function isUrlOrIpfs(value: string) {
   } catch {
     return false
   }
+}
+
+function isValidCreatorIdentifier(value: string) {
+  const trimmed = value.trim()
+  if (/^0x[a-fA-F0-9]{40}$/.test(trimmed)) {
+    return true
+  }
+  if (trimmed.startsWith('did:')) {
+    return trimmed.length > 4
+  }
+  if (/^[a-z0-9-]{5,120}$/.test(trimmed)) {
+    const segments = trimmed.split('-')
+    return segments.every(segment => segment.length > 0)
+  }
+  return false
 }

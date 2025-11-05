@@ -126,8 +126,9 @@ export type AuditEventRecord = {
 }
 
 type CreatorInput = {
-  name: string
-  address: `0x${string}`
+  name?: string
+  address?: string
+  role?: string
   contributionPercent: number
 }
 
@@ -154,12 +155,13 @@ export type RegisterIpPayload = {
   image: AssetInput
   media: AssetInput
   mediaType: string
-  creators: CreatorInput[]
+  creators?: CreatorInput[]
   priceSats: number
   royaltyBps: number
   commercialUse: boolean
   derivativesAllowed: boolean
   nftAttributes?: NftAttributeInput[]
+  customMetadata?: Record<string, unknown>
 }
 
 type ConvexClient = ReturnType<typeof getConvexClient>
@@ -410,7 +412,38 @@ function isSystemActor(actor: SessionActor | undefined) {
   return actor?.principal.startsWith('system:')
 }
 
-function ensurePercent(creators: CreatorInput[]) {
+function sanitizeCreators(creators?: CreatorInput[]) {
+  if (!creators) {
+    return [] as CreatorInput[]
+  }
+  return creators
+    .map(creator => ({
+      name: creator.name?.trim() || undefined,
+      address: creator.address?.trim() || undefined,
+      role: creator.role?.trim() || undefined,
+      contributionPercent: creator.contributionPercent
+    }))
+    .filter(
+      creator =>
+        (creator.name && creator.name.length > 0) ||
+        (creator.address && creator.address.length > 0) ||
+        (creator.role && creator.role.length > 0)
+    )
+}
+
+function ensurePercent(creators?: CreatorInput[]) {
+  if (!creators || creators.length === 0) {
+    return
+  }
+  if (
+    creators.some(
+      creator =>
+        typeof creator.contributionPercent !== 'number' ||
+        Number.isNaN(creator.contributionPercent)
+    )
+  ) {
+    throw new Error('Each creator requires a contributionPercent value')
+  }
   const total = creators.reduce(
     (sum, creator) => sum + creator.contributionPercent,
     0
@@ -418,6 +451,25 @@ function ensurePercent(creators: CreatorInput[]) {
   if (Math.abs(total - 100) > 0.001) {
     throw new Error('Creator contributionPercent values must total 100')
   }
+}
+
+function normalizeCustomMetadata(
+  metadata?: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  if (!metadata) {
+    return undefined
+  }
+  if (Array.isArray(metadata)) {
+    return undefined
+  }
+  const entries = Object.entries(metadata)
+  if (entries.length === 0) {
+    return undefined
+  }
+  return entries.reduce<Record<string, unknown>>((acc, [key, value]) => {
+    acc[key] = value
+    return acc
+  }, {})
 }
 
 type ResolvedAsset = {
@@ -895,11 +947,13 @@ async function recordEvent({
 
 export async function registerIpAsset(payload: RegisterIpPayload) {
   const actor = await requireRole(['operator', 'creator'])
-  ensurePercent(payload.creators)
+  const creators = sanitizeCreators(payload.creators)
+  ensurePercent(creators)
 
   const createdAtIso = new Date(payload.createdAt).toISOString()
   const assetSlug = slugify(payload.title)
   const mediaType = payload.mediaType || 'application/octet-stream'
+  const customMetadata = normalizeCustomMetadata(payload.customMetadata)
 
   const [imageAsset, mediaAsset] = await Promise.all([
     prepareAsset({
@@ -914,6 +968,17 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     })
   ])
 
+  const creatorMetadata = creators.map(creator => {
+    const base = {
+      name: creator.name ?? '',
+      address: creator.address ?? '',
+      contributionPercent: creator.contributionPercent
+    }
+    return creator.role
+      ? { ...base, role: creator.role }
+      : base
+  })
+
   const ipMetadataPayload = {
     title: payload.title,
     description: payload.description,
@@ -923,16 +988,16 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     mediaUrl: mediaAsset.uri,
     mediaHash: mediaAsset.hash,
     mediaType,
-    creators: payload.creators.map(creator => ({
-      name: creator.name,
-      address: creator.address,
-      contributionPercent: creator.contributionPercent
-    })),
+    creators: creatorMetadata,
     license: {
       commercialUse: payload.commercialUse,
       derivativesAllowed: payload.derivativesAllowed,
       royaltyPercent: Math.min(payload.royaltyBps / 100, 100)
     }
+  }
+
+  if (customMetadata) {
+    Object.assign(ipMetadataPayload, customMetadata)
   }
 
   const nftMetadataPayload = {
@@ -994,7 +1059,7 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   await convex.mutation('ipAssets:insert' as any, {
     ipId: registerResponse.ipId,
     title: payload.title,
-    creatorAddress: payload.creators[0]?.address ?? env.STORY_SPG_NFT_ADDRESS,
+    creatorAddress: creators[0]?.address ?? env.STORY_SPG_NFT_ADDRESS,
     priceSats: payload.priceSats,
     royaltyBps: payload.royaltyBps,
     licenseTermsId: registerResponse.licenseTermsIds[0].toString(),
