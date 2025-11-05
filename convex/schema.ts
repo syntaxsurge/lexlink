@@ -22,13 +22,19 @@ export default defineSchema({
     ipId: v.string(),
     buyer: v.string(),
     btcAddress: v.string(),
+    network: v.optional(v.string()),
+    amountSats: v.optional(v.number()),
     btcTxId: v.string(),
     attestationHash: v.string(),
     constellationTx: v.string(),
     tokenOnChainId: v.string(),
     licenseTermsId: v.string(),
     status: v.string(),
+    confirmations: v.optional(v.number()),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+    fundedAt: v.optional(v.number()),
+    finalizedAt: v.optional(v.number()),
     contentHash: v.string(),
     c2paHash: v.string(),
     c2paArchive: v.string(),
@@ -38,7 +44,8 @@ export default defineSchema({
     trainingUnits: v.number()
   })
     .index('by_orderId', ['orderId'])
-    .index('by_ipId', ['ipId']),
+    .index('by_ipId', ['ipId'])
+    .index('by_status', ['status']),
   disputes: defineTable({
     disputeId: v.string(),
     ipId: v.string(),

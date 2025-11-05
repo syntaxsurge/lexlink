@@ -1,5 +1,11 @@
 {
   "git": {
     "deploymentEnabled": true
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/workers/licensing",
+      "schedule": "*/2 * * * *"
+    }
+  ]
 }

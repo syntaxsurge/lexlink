@@ -88,18 +88,18 @@ export default async function OverviewPage() {
   const [{ ips, licenses, disputes, trainingBatches }, auditTrail] =
     await Promise.all([loadDashboardData(), loadAuditTrail(8)])
 
-  const awaitingOrders = licenses.filter(
-    (license: LicenseRecord) => license.status === 'awaiting_payment'
+  const pendingOrders = licenses.filter((license: LicenseRecord) =>
+    ['pending', 'funded', 'confirmed'].includes(license.status)
   )
-  const completedOrders = licenses.filter(
-    (license: LicenseRecord) => license.status === 'completed'
+  const finalizedOrders = licenses.filter(
+    (license: LicenseRecord) => license.status === 'finalized'
   )
-  const averageCompliance = completedOrders.length
+  const averageCompliance = finalizedOrders.length
     ? Math.round(
-        completedOrders.reduce(
+        finalizedOrders.reduce(
           (sum, license) => sum + license.complianceScore,
           0
-        ) / completedOrders.length
+        ) / finalizedOrders.length
       )
     : 0
   const totalTrainingUnits = licenses.reduce(
@@ -118,7 +118,7 @@ export default async function OverviewPage() {
         <MetricCard
           title='Open Licenses'
           hint='Awaiting Bitcoin settlement'
-          value={awaitingOrders.length.toString()}
+          value={pendingOrders.length.toString()}
         />
         <MetricCard
           title='Average Compliance'
@@ -136,9 +136,10 @@ export default async function OverviewPage() {
         <Card className='border-border/60 bg-card/60'>
           <CardHeader className='flex flex-row items-center justify-between'>
             <div>
-              <CardTitle>Awaiting Bitcoin Settlement</CardTitle>
+              <CardTitle>Pending Bitcoin Invoices</CardTitle>
               <CardDescription>
-                Orders that have invoices but no confirmed ICP attestation yet.
+                Orders waiting for funds or confirmations. Click through to the
+                Licenses page for full controls.
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm'>
@@ -150,13 +151,13 @@ export default async function OverviewPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Order</TableHead>
-                  <TableHead>IP ID</TableHead>
+                  <TableHead>IP</TableHead>
                   <TableHead>Buyer</TableHead>
-                  <TableHead>BTC Address</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {awaitingOrders.length === 0 && (
+                {pendingOrders.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={4}
@@ -166,19 +167,19 @@ export default async function OverviewPage() {
                     </TableCell>
                   </TableRow>
                 )}
-                {awaitingOrders.map(order => (
+                {pendingOrders.map(order => (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-medium'>
                       {order.orderId.slice(0, 8)}…
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.ipId}
+                      {order.ipId.slice(0, 10)}…
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.buyer}
+                      {order.buyer.slice(0, 10)}…
                     </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.btcAddress}
+                    <TableCell>
+                      <Badge variant='outline'>{order.status}</Badge>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -253,12 +254,12 @@ export default async function OverviewPage() {
             </Button>
           </CardHeader>
           <CardContent className='space-y-4'>
-            {completedOrders.length === 0 && (
+            {finalizedOrders.length === 0 && (
               <p className='text-sm text-muted-foreground'>
                 No completed licenses yet.
               </p>
             )}
-            {completedOrders.slice(0, 3).map(order => (
+            {finalizedOrders.slice(0, 3).map(order => (
               <div
                 key={order.orderId}
                 className='rounded-lg border border-border bg-background/60 p-4'

@@ -43,13 +43,19 @@ export type LicenseRecord = {
   ipId: string
   buyer: string
   btcAddress: string
+  network?: string
+  amountSats?: number
   btcTxId: string
   attestationHash: string
   constellationTx: string
   tokenOnChainId: string
   licenseTermsId: string
   status: string
+  confirmations?: number
   createdAt: number
+  updatedAt?: number
+  fundedAt?: number
+  finalizedAt?: number
   contentHash: string
   c2paHash: string
   c2paArchive: string
@@ -345,6 +351,9 @@ export async function createLicenseOrder({
     throw new Error('Unable to locate IP asset in Convex')
   }
 
+  const amountSats = ipRecord.priceSats
+  const network = env.BTC_NETWORK
+
   let btcAddress: string
   try {
     const invoice = await requestDepositAddress(orderId)
@@ -370,7 +379,9 @@ export async function createLicenseOrder({
     ipId,
     buyer,
     btcAddress,
-    licenseTermsId
+    licenseTermsId,
+    amountSats,
+    network
   })
 
   await recordEvent({
@@ -380,12 +391,171 @@ export async function createLicenseOrder({
       orderId,
       ipId,
       buyer,
-      btcAddress
+      btcAddress,
+      amountSats,
+      network
     },
     resourceId: orderId
   })
 
   return { orderId, btcAddress }
+}
+
+export async function simulateLicenseFunding({
+  orderId
+}: {
+  orderId: string
+}) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Simulation endpoints are disabled in production.')
+  }
+  const actor = await requireRole(['operator'])
+  const convex = getConvexClient()
+
+  await convex.mutation('licenses:updateFundingState' as any, {
+    orderId,
+    status: 'funded',
+    btcTxId: `sim-${crypto.randomUUID()}`,
+    confirmations: 0
+  })
+
+  await recordEvent({
+    actor,
+    action: 'license.simulated_funding',
+    payload: {
+      orderId,
+      simulated: true
+    },
+    resourceId: orderId
+  })
+
+  return { orderId }
+}
+
+type FinalizeOrderArgs = {
+  order: LicenseRecord
+  ip: IpRecord
+  btcTxId: string
+  receiver: `0x${string}`
+  actor: SessionActor
+  convex: ReturnType<typeof getConvexClient>
+}
+
+async function finalizeOrder({
+  order,
+  ip,
+  btcTxId,
+  receiver,
+  actor,
+  convex
+}: FinalizeOrderArgs) {
+  await confirmPayment(order.orderId, btcTxId)
+  const attestationJson = await fetchAttestation(order.orderId)
+  const attestation = JSON.parse(attestationJson)
+  const attestationHash = sha256Hex(attestationJson)
+
+  const storyClient = getStoryClient()
+  const mintResponse = await storyClient.license.mintLicenseTokens({
+    licensorIpId: order.ipId as `0x${string}`,
+    licenseTermsId: BigInt(order.licenseTermsId),
+    licenseTemplate: env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`,
+    amount: 1,
+    receiver,
+    maxMintingFee: 0,
+    maxRevenueShare: 100_000_000
+  })
+
+  if (!mintResponse.licenseTokenIds?.length) {
+    throw new Error('Failed to mint license token on Story Protocol')
+  }
+
+  const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
+
+  const mediaResponse = await fetch(ip.mediaUrl)
+  if (!mediaResponse.ok) {
+    throw new Error(
+      `Failed to fetch media for IP: ${mediaResponse.status} ${mediaResponse.statusText}`
+    )
+  }
+  const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer())
+  const contentHash = sha256Hex(mediaBuffer)
+
+  const evidencePayload = JSON.stringify({
+    kind: 'LICENSE_COMPLETED',
+    orderId: order.orderId,
+    ipId: order.ipId,
+    licenseTokenId,
+    btcTxId,
+    attestationHash,
+    contentHash,
+    timestamp: Date.now()
+  })
+  const evidenceHash = sha256Hex(evidencePayload)
+  const constellationTx = await publishEvidence(evidenceHash)
+
+  const archive = await createLicenseArchive({
+    assetBuffer: mediaBuffer,
+    assetFileName:
+      new URL(ip.mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
+    storyLicenseId: licenseTokenId,
+    btcTxId,
+    constellationTx,
+    attestationHash,
+    contentHash,
+    licenseTokenId
+  })
+
+  const vc = await generateLicenseCredential({
+    subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
+    storyLicenseId: licenseTokenId,
+    btcTxId,
+    constellationTx,
+    contentHash,
+    attestationHash
+  })
+  const vcJson = JSON.stringify(vc.document, null, 2)
+
+  const complianceScore = calculateComplianceScore({
+    hasPayment: true,
+    hasLicenseToken: true,
+    hasConstellationEvidence: Boolean(constellationTx),
+    hasC2paArchive: Boolean(archive.archiveBase64),
+    trainingUnits: order.trainingUnits
+  })
+
+  await convex.mutation('licenses:markCompleted' as any, {
+    orderId: order.orderId,
+    btcTxId,
+    attestationHash,
+    constellationTx,
+    tokenOnChainId: licenseTokenId,
+    contentHash,
+    c2paHash: archive.archiveHash,
+    c2paArchive: archive.archiveBase64,
+    vcDocument: vcJson,
+    vcHash: vc.hash,
+    complianceScore
+  })
+
+  await recordEvent({
+    actor,
+    action: 'license.sale_completed',
+    payload: {
+      orderId: order.orderId,
+      ipId: order.ipId,
+      btcTxId,
+      constellationTx,
+      licenseTokenId
+    },
+    resourceId: order.orderId
+  })
+
+  return {
+    licenseTokenId,
+    attestationHash,
+    constellationTx,
+    complianceScore
+  }
 }
 
 export async function completeLicenseSale({
@@ -786,4 +956,44 @@ export async function loadAuditTrail(limit = 50): Promise<AuditEventRecord[]> {
         : undefined,
     createdAt: Number(event.createdAt ?? Date.now())
   }))
+}
+
+export async function completeLicenseSaleSystem({
+  orderId,
+  btcTxId,
+  receiver
+}: {
+  orderId: string
+  btcTxId: string
+  receiver: `0x${string}`
+}) {
+  const convex = getConvexClient()
+  const order = (await convex.query('licenses:get' as any, {
+    orderId
+  })) as LicenseRecord | null
+
+  if (!order) {
+    throw new Error('License order not found')
+  }
+
+  const ip = (await convex.query('ipAssets:getById' as any, {
+    ipId: order.ipId
+  })) as IpRecord | null
+  if (!ip) {
+    throw new Error('Associated IP asset not found')
+  }
+
+  const systemActor: SessionActor = {
+    principal: 'system@lexlink',
+    role: 'operator'
+  }
+
+  return finalizeOrder({
+    order,
+    ip,
+    btcTxId,
+    receiver,
+    actor: systemActor,
+    convex
+  })
 }

@@ -30,15 +30,28 @@ export const get = queryGeneric({
   }
 })
 
+export const listByStatus = queryGeneric({
+  args: { status: v.string() },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query('licenses')
+      .withIndex('by_status', q => q.eq('status', args.status))
+      .collect()
+  }
+})
+
 export const insert = mutationGeneric({
   args: {
     orderId: v.string(),
     ipId: v.string(),
     buyer: v.string(),
     btcAddress: v.string(),
-    licenseTermsId: v.string()
+    licenseTermsId: v.string(),
+    amountSats: v.number(),
+    network: v.string()
   },
   handler: async (ctx, args) => {
+    const now = Date.now()
     await ctx.db.insert('licenses', {
       ...args,
       btcTxId: '',
@@ -52,8 +65,12 @@ export const insert = mutationGeneric({
       vcHash: '',
       complianceScore: 0,
       trainingUnits: 0,
-      status: 'awaiting_payment',
-      createdAt: Date.now()
+      status: 'pending',
+      confirmations: 0,
+      createdAt: now,
+      updatedAt: now,
+      fundedAt: undefined,
+      finalizedAt: undefined
     })
   }
 })
@@ -93,7 +110,9 @@ export const markCompleted = mutationGeneric({
       vcDocument: args.vcDocument,
       vcHash: args.vcHash,
       complianceScore: args.complianceScore,
-      status: 'completed'
+      status: 'finalized',
+      finalizedAt: Date.now(),
+      updatedAt: Date.now()
     })
   }
 })
@@ -117,6 +136,33 @@ export const setTrainingMetrics = mutationGeneric({
     await ctx.db.patch(license._id, {
       trainingUnits: args.trainingUnits,
       complianceScore: args.complianceScore
+    })
+  }
+})
+
+export const updateFundingState = mutationGeneric({
+  args: {
+    orderId: v.string(),
+    status: v.string(),
+    btcTxId: v.optional(v.string()),
+    confirmations: v.optional(v.number())
+  },
+  handler: async (ctx, args) => {
+    const license = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!license) {
+      throw new Error('License order not found')
+    }
+
+    await ctx.db.patch(license._id, {
+      status: args.status,
+      btcTxId: args.btcTxId ?? license.btcTxId,
+      confirmations: args.confirmations ?? license.confirmations ?? 0,
+      fundedAt: args.status === 'funded' ? Date.now() : license.fundedAt,
+      updatedAt: Date.now()
     })
   }
 })

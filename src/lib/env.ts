@@ -65,6 +65,7 @@ const serverEnvSchema = z.object({
   CONVEX_URL: z.string().url(),
   CONVEX_DEPLOYMENT: z.string(),
   BTC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
+  MEMPOOL_API_BASE: z.string().url().default('https://mempool.space'),
   VC_ISSUER_DID: z.string().min(4),
   VC_PRIVATE_KEY: z
     .string()
@@ -109,6 +110,7 @@ function parseEnv() {
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     BTC_NETWORK: process.env.BTC_NETWORK,
+    MEMPOOL_API_BASE: process.env.MEMPOOL_API_BASE,
     VC_ISSUER_DID: process.env.VC_ISSUER_DID,
     VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY
   })

@@ -2,7 +2,7 @@
 
 import { Buffer } from 'buffer'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
@@ -46,6 +46,17 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema)
   })
+
+  const selectedOrder = useMemo(() => {
+    const watchId = form.watch('orderId')
+    return orders.find(order => order.orderId === watchId)
+  }, [form, orders])
+
+  useEffect(() => {
+    if (selectedOrder) {
+      form.setValue('receiver', selectedOrder.buyer)
+    }
+  }, [selectedOrder, form])
 
   const onSubmit = (values: FormValues) => {
     setError(null)
@@ -95,8 +106,7 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
             <option value=''>— select —</option>
             {orders.map(order => (
               <option key={order.orderId} value={order.orderId}>
-                {order.orderId.slice(0, 8)}… – {order.ipId.slice(0, 6)}… –{' '}
-                {order.buyer.slice(0, 6)}…
+                {order.orderId.slice(0, 8)}… • {order.status}
               </option>
             ))}
           </select>

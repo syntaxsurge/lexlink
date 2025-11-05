@@ -2,7 +2,11 @@ import { Buffer } from 'node:buffer'
 
 import Link from 'next/link'
 
-import { loadDashboardData, type LicenseRecord } from '@/app/app/actions'
+import {
+  loadDashboardData,
+  simulateLicenseFunding,
+  type LicenseRecord
+} from '@/app/app/actions'
 import { FinalizeLicenseForm } from '@/components/app/finalize-license-form'
 import { LicenseOrderForm } from '@/components/app/license-order-form'
 import { Badge } from '@/components/ui/badge'
@@ -22,29 +26,67 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { env } from '@/lib/env'
-import {
-  ipAccountOnBlockExplorer,
-  ipAssetExplorerUrl,
-  type StoryNetwork
-} from '@/lib/story-links'
 
-const network = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
-const INTEGRATIONNET_EXPLORER =
-  'https://explorer.mainnet.constellationnetwork.io/transactions/'
+const MAINNET_MEMPOOL = 'https://mempool.space'
+const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
 
-function formatDate(ms: number) {
-  return new Date(ms).toLocaleString()
+function formatBtc(sats?: number) {
+  if (!sats) return '—'
+  return (sats / 100_000_000).toFixed(6)
+}
+
+function statusStyles(status: string) {
+  switch (status) {
+    case 'finalized':
+      return {
+        variant: 'default' as const,
+        className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+      }
+    case 'funded':
+    case 'confirmed':
+      return {
+        variant: 'default' as const,
+        className: 'bg-amber-500/10 text-amber-600 border-amber-500/20'
+      }
+    case 'failed':
+    case 'expired':
+      return {
+        variant: 'outline' as const,
+        className: 'text-destructive border-destructive/40'
+      }
+    default:
+      return {
+        variant: 'outline' as const,
+        className: ''
+      }
+  }
+}
+
+function explorerBase(network?: string) {
+  return network === 'mainnet' ? MAINNET_MEMPOOL : TESTNET_MEMPOOL
 }
 
 export default async function LicensesPage() {
   const { ips, licenses } = await loadDashboardData()
-  const awaitingOrders = licenses.filter(
-    (license: LicenseRecord) => license.status === 'awaiting_payment'
+
+  const pendingOrders = licenses.filter(order =>
+    ['pending', 'funded', 'confirmed'].includes(order.status)
   )
-  const completedOrders = licenses.filter(
-    (license: LicenseRecord) => license.status === 'completed'
+  const finalizedOrders = licenses.filter(
+    order => order.status === 'finalized'
   )
+  const manualFinalizeOrders = pendingOrders.filter(order => order.status !== 'pending')
+
+  const simulateEnabled = process.env.NODE_ENV !== 'production'
+
+  const simulateAction = async (formData: FormData) => {
+    'use server'
+    const orderId = formData.get('orderId')
+    if (!orderId || typeof orderId !== 'string') {
+      throw new Error('Missing order identifier')
+    }
+    await simulateLicenseFunding({ orderId })
+  }
 
   return (
     <div className='space-y-6'>
@@ -53,8 +95,8 @@ export default async function LicensesPage() {
           <CardHeader>
             <CardTitle>Generate Bitcoin License Order</CardTitle>
             <CardDescription>
-              Allocates an ICP escrow deposit address for the buyer and stores
-              the pending order.
+              Derives a dedicated P2WPKH deposit address via the escrow canister
+              and records the pending order.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -65,21 +107,22 @@ export default async function LicensesPage() {
           <CardHeader>
             <CardTitle>Finalize Sale &amp; Mint License</CardTitle>
             <CardDescription>
-              Confirms the Bitcoin transaction, mints a Story license token, and
-              anchors Constellation evidence.
+              Confirm the Bitcoin transaction, mint a Story license token, and
+              anchor Constellation evidence.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <FinalizeLicenseForm orders={awaitingOrders} />
+            <FinalizeLicenseForm orders={manualFinalizeOrders} />
           </CardContent>
         </Card>
       </div>
 
       <Card className='border-border/60 bg-card/60'>
         <CardHeader>
-          <CardTitle>Completed Licenses</CardTitle>
+          <CardTitle>Pending Invoices</CardTitle>
           <CardDescription>
-            Every finalized sale with Story, ICP, and Constellation references.
+            Copy deposit addresses, monitor confirmations, or finalize manually
+            once funds land.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -87,7 +130,113 @@ export default async function LicensesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Order</TableHead>
-                <TableHead>IP ID</TableHead>
+                <TableHead>IP</TableHead>
+                <TableHead>Buyer</TableHead>
+                <TableHead>Amount (BTC)</TableHead>
+                <TableHead>Deposit Address</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className='text-right'>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pendingOrders.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className='text-center text-sm text-muted-foreground'
+                  >
+                    No invoices waiting on Bitcoin settlement.
+                  </TableCell>
+                </TableRow>
+              )}
+              {pendingOrders.map(order => {
+                const base = explorerBase(order.network)
+                const addressUrl = `${base}/address/${order.btcAddress}`
+                const txUrl = order.btcTxId
+                  ? `${base}/tx/${order.btcTxId}`
+                  : undefined
+                return (
+                  <TableRow key={order.orderId}>
+                    <TableCell className='font-mono text-xs'>
+                      {order.orderId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.ipId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.buyer.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell>{formatBtc(order.amountSats)}</TableCell>
+                    <TableCell>
+                      <div className='flex flex-col'>
+                        <span className='font-mono text-xs'>{order.btcAddress}</span>
+                        <Link
+                          href={addressUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-xs text-primary underline-offset-4 hover:underline'
+                        >
+                          View address
+                        </Link>
+                        {txUrl && (
+                          <Link
+                            href={txUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-xs text-primary underline-offset-4 hover:underline'
+                          >
+                            View transaction
+                          </Link>
+                        )}
+                      </div>
+                    </TableCell>
+                   <TableCell>
+                      {(() => {
+                        const { variant, className } = statusStyles(order.status)
+                        return (
+                          <Badge variant={variant} className={className}>
+                            {order.status}
+                          </Badge>
+                        )
+                      })()}
+                      {typeof order.confirmations === 'number' && (
+                        <span className='ml-2 text-xs text-muted-foreground'>
+                          {order.confirmations} conf
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className='flex justify-end gap-2'>
+                      {simulateEnabled && (
+                        <form action={simulateAction} className='inline-flex'>
+                          <input type='hidden' name='orderId' value={order.orderId} />
+                          <Button type='submit' variant='ghost' size='sm'>
+                            Simulate funding
+                          </Button>
+                        </form>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card className='border-border/60 bg-card/60'>
+        <CardHeader>
+          <CardTitle>Finalized Licenses</CardTitle>
+          <CardDescription>
+            Story license tokens, C2PA bundles, and verifiable credentials for
+            completed sales.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>IP</TableHead>
                 <TableHead>Buyer</TableHead>
                 <TableHead>License Token</TableHead>
                 <TableHead>Bitcoin Tx</TableHead>
@@ -97,76 +246,71 @@ export default async function LicensesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {completedOrders.length === 0 && (
+              {finalizedOrders.length === 0 && (
                 <TableRow>
                   <TableCell
                     colSpan={8}
                     className='text-center text-sm text-muted-foreground'
                   >
-                    No completed licenses yet.
+                    No finalized licenses yet.
                   </TableCell>
                 </TableRow>
               )}
-              {completedOrders.map(order => (
-                <TableRow key={order.orderId}>
-                  <TableCell className='font-medium'>
-                    {order.orderId.slice(0, 10)}…
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    <div className='flex flex-col gap-1'>
-                      <span className='break-all text-xs text-muted-foreground'>
-                        {order.ipId}
-                      </span>
-                      <Link
-                        href={ipAssetExplorerUrl(order.ipId, network)}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='text-primary underline-offset-4 hover:underline'
-                      >
-                        Story IP Explorer
-                      </Link>
-                      <Link
-                        href={ipAccountOnBlockExplorer(order.ipId, network)}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='text-xs text-muted-foreground underline-offset-4 hover:underline'
-                      >
-                        StoryScan address
-                      </Link>
-                    </div>
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {order.buyer}
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {order.tokenOnChainId}
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    <Link
-                      href={`https://mempool.space/testnet/tx/${order.btcTxId}`}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      {order.btcTxId.slice(0, 14)}…
-                    </Link>
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    <Link
-                      href={`${INTEGRATIONNET_EXPLORER}${order.constellationTx}`}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      {order.constellationTx.slice(0, 14)}…
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Badge>{order.complianceScore}/100</Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(order.createdAt)}</TableCell>
-                </TableRow>
-              ))}
+              {finalizedOrders.map(order => {
+                const base = explorerBase(order.network)
+                return (
+                  <TableRow key={order.orderId}>
+                    <TableCell className='font-mono text-xs'>
+                      {order.orderId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.ipId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.buyer.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.tokenOnChainId || '—'}
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.btcTxId ? (
+                        <Link
+                          href={`${base}/tx/${order.btcTxId}`}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {order.btcTxId.slice(0, 14)}…
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {order.constellationTx ? (
+                        <Link
+                          href={`https://explorer.mainnet.constellationnetwork.io/transactions/${order.constellationTx}`}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {order.constellationTx.slice(0, 14)}…
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge>{order.complianceScore}/100</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {order.updatedAt
+                        ? new Date(order.updatedAt).toLocaleString()
+                        : new Date(order.createdAt).toLocaleString()}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -176,83 +320,46 @@ export default async function LicensesPage() {
         <CardHeader>
           <CardTitle>Completed Evidence Bundles</CardTitle>
           <CardDescription>
-            Downloadable C2PA archives and verifiable credentials for downstream
+            Download C2PA archives and verifiable credentials for downstream
             verification.
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
-          {completedOrders.length === 0 && (
+          {finalizedOrders.length === 0 && (
             <p className='text-sm text-muted-foreground'>
               No bundles generated yet.
             </p>
           )}
-          {completedOrders.map(order => {
-            const c2paHref = order.c2paArchive
-              ? `data:application/zip;base64,${order.c2paArchive}`
-              : null
-            const vcHref = order.vcDocument
-              ? `data:application/json;base64,${Buffer.from(
-                  order.vcDocument,
-                  'utf-8'
-                ).toString('base64')}`
-              : null
+          {finalizedOrders.map(order => {
+            if (!order.c2paArchive || !order.vcDocument) {
+              return null
+            }
+            const archiveHref = `data:application/zip;base64,${order.c2paArchive}`
+            const vcHref = `data:application/json;base64,${Buffer.from(
+              order.vcDocument,
+              'utf-8'
+            ).toString('base64')}`
             return (
               <div
-                key={order.orderId}
-                className='rounded-lg border border-border bg-background/60 p-4'
+                key={`${order.orderId}-bundle`}
+                className='flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-background/60 p-3 text-sm'
               >
-                <div className='flex items-center justify-between gap-3'>
-                  <div>
-                    <p className='text-sm font-medium'>
-                      Order {order.orderId.slice(0, 10)}…
-                    </p>
-                    <p className='text-xs text-muted-foreground'>
-                      Story IP ID {order.ipId}
-                    </p>
-                  </div>
-                  <div className='flex items-center gap-2'>
-                    <Button asChild size='sm' variant='outline'>
-                      <Link
-                        href={ipAssetExplorerUrl(order.ipId, network)}
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        Story IP Explorer
-                      </Link>
-                    </Button>
-                    <Button asChild size='sm' variant='ghost'>
-                      <Link
-                        href={ipAccountOnBlockExplorer(order.ipId, network)}
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        StoryScan
-                      </Link>
-                    </Button>
-                  </div>
+                <div className='flex-1'>
+                  <p className='font-medium'>Order {order.orderId.slice(0, 10)}…</p>
+                  <p className='text-xs text-muted-foreground'>
+                    License token {order.tokenOnChainId || '—'}
+                  </p>
                 </div>
-                <div className='mt-3 flex flex-wrap gap-2 text-xs'>
-                  {c2paHref && (
-                    <Button asChild size='sm' variant='secondary'>
-                      <a
-                        href={c2paHref}
-                        download={`lexlink-license-${order.orderId}.zip`}
-                      >
-                        Download C2PA
-                      </a>
-                    </Button>
-                  )}
-                  {vcHref && (
-                    <Button asChild size='sm' variant='secondary'>
-                      <a
-                        href={vcHref}
-                        download={`lexlink-vc-${order.orderId}.json`}
-                      >
-                        Download VC
-                      </a>
-                    </Button>
-                  )}
-                </div>
+                <Button asChild size='sm' variant='secondary'>
+                  <a href={archiveHref} download={`lexlink-license-${order.orderId}.zip`}>
+                    Download C2PA
+                  </a>
+                </Button>
+                <Button asChild size='sm' variant='secondary'>
+                  <a href={vcHref} download={`lexlink-license-vc-${order.orderId}.json`}>
+                    Download VC
+                  </a>
+                </Button>
               </div>
             )
           })}

@@ -106,6 +106,8 @@ Use this checklist to source every value in `.env.local`.
   - Switch Story explorer links between `aeneid` (testnet, default) and `mainnet`
 - `ICP_HOST` / `ICP_ESCROW_CANISTER_ID`
   - Server-side configuration for the ICP escrow canister (production / staging)
+- `MEMPOOL_API_BASE`
+  - Base URL for Bitcoin mempool API queries (defaults to `https://mempool.space`); the app appends `/testnet` when `BTC_NETWORK=testnet`
 - `NEXT_PUBLIC_ICP_HOST` / `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID`
   - Optional overrides that allow pointing the frontend at a local replica without redefining server envs (useful when `dfx start` is running on `http://127.0.0.1:4943`)
 
@@ -133,6 +135,7 @@ export NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
 export ICP_HOST="http://127.0.0.1:4943"
 export ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
 export ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
+export NEXT_PUBLIC_IC_NETWORK="local"
 ```
 
 If `request_deposit_address` rejects with “Requested unknown threshold key”, confirm that `ECDSA_KEY_NAME` matches a key supported by the environment (`dfx_test_key` on a local replica, `test_key_1` / `key_1` on IC subnets).
