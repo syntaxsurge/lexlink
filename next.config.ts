@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import type { NextConfig } from 'next'
 
 const securityHeaders = [
@@ -46,6 +48,18 @@ const nextConfig: NextConfig = {
         permanent: false
       }
     ]
+  },
+  webpack(config) {
+    config.resolve = config.resolve ?? {}
+    config.resolve.alias = {
+      ...(config.resolve.alias ?? {}),
+      '@react-native-async-storage/async-storage': path.resolve(
+        __dirname,
+        'src/polyfills/async-storage.ts'
+      ),
+      'pino-pretty': false
+    }
+    return config
   }
 }
 
