@@ -33,6 +33,7 @@ import {
 } from '@/lib/story-links'
 import { CkbtcBalanceCard } from '@/components/app/ckbtc-balance-card'
 import { OperatorTopUpPanel } from '@/components/app/operator-topup-panel'
+import { PrincipalSummary } from '@/components/app/principal-summary'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
@@ -88,7 +89,11 @@ function EventItem({ event }: { event: AuditEventRecord }) {
 }
 
 export default async function OverviewPage() {
-  const [{ ips, licenses, disputes, trainingBatches }, auditTrail, ckbtcSnapshot] =
+  const [
+    { principal, ips, licenses, disputes, trainingBatches },
+    auditTrail,
+    ckbtcSnapshot
+  ] =
     await Promise.all([loadDashboardData(), loadAuditTrail(8), loadCkbtcSnapshot()])
 
   const pendingOrders = licenses.filter((license: LicenseRecord) =>
@@ -112,6 +117,7 @@ export default async function OverviewPage() {
 
   return (
     <div className='space-y-6'>
+      <PrincipalSummary principal={principal} />
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
         <MetricCard
           title='Registered IP Assets'

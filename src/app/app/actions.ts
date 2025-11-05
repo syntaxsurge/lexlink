@@ -1126,7 +1126,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
 }
 
 export async function loadDashboardData() {
-  await requireSession()
+  const actor = await requireSession()
   const convex = getConvexClient()
   const [ipsRaw, licensesRaw, disputesRaw, trainingRaw] = await Promise.all([
     convex.query('ipAssets:list' as any, {}),
@@ -1136,6 +1136,7 @@ export async function loadDashboardData() {
   ])
 
   return {
+    principal: actor.principal,
     ips: ipsRaw as IpRecord[],
     licenses: licensesRaw as LicenseRecord[],
     disputes: disputesRaw as DisputeRecord[],
