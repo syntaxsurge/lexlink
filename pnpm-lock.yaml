@@ -6,6 +6,7 @@ settings:
 
 overrides:
   viem: 2.38.6
+  '@noble/hashes': 1.8.0
 
 importers:
 
@@ -386,7 +387,7 @@ packages:
     peerDependencies:
       '@dfinity/candid': 3.4.1
       '@dfinity/principal': 3.4.1
-      '@noble/hashes': ^1.8.0
+      '@noble/hashes': 1.8.0
 
   '@dfinity/auth-client@3.4.1':
     resolution: {integrity: sha512-HlzJtI325B6rflE2oWcmwHaZuWqJDgyYwfLOalIPxt9SpM/9h+twRC/cpGMaJ+renlswd+Ax8Ka1NTDZTGp/Kg==}
@@ -410,7 +411,7 @@ packages:
       '@dfinity/candid': 3.4.1
       '@dfinity/principal': 3.4.1
       '@noble/curves': ^1.9.2
-      '@noble/hashes': ^1.8.0
+      '@noble/hashes': 1.8.0
 
   '@dfinity/principal@3.4.1':
     resolution: {integrity: sha512-pXabsgcJDhRhj7/AaV7dLZKF8L4sK0vuzaGVBBtQ+8FxWXeXlvKn/Vxbwy8BCkIU7SHzJuBpYT2tz1oE6oNmbA==}
