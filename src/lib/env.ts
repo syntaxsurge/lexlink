@@ -2,23 +2,15 @@ import { z } from 'zod'
 
 const CKBTC_CANISTER_DEFAULTS = {
   'ckbtc-testnet': {
-    ledger: 'mc6ru-gyaaa-aaaar-qaaaq-cai',
-    minter: 'ml52i-qqaaa-aaaar-qaaba-cai'
+    ledger: 'mc6ru-gyaaa-aaaar-qaaaq-cai'
   },
   'ckbtc-mainnet': {
-    ledger: 'mxzaz-hqaaa-aaaar-qaada-cai',
-    minter: 'mqygn-kiaaa-aaaar-qaadq-cai'
+    ledger: 'mxzaz-hqaaa-aaaar-qaada-cai'
   }
-} satisfies Record<
-  'ckbtc-mainnet' | 'ckbtc-testnet',
-  { ledger: string; minter: string }
->
+} satisfies Record<'ckbtc-mainnet' | 'ckbtc-testnet', { ledger: string }>
 
 const DEPRECATED_TESTNET_LEDGER_IDS = new Set([
   'mxzaz-hqaaa-aaaar-qaada-cai'
-])
-const DEPRECATED_TESTNET_MINTER_IDS = new Set([
-  'qjdve-lqaaa-aaaaa-aaaeq-cai'
 ])
 
 const publicEnvSchema = z.object({
@@ -36,7 +28,6 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional(),
   NEXT_PUBLIC_ICP_CKBTC_HOST: z.string().url().optional(),
   NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
-  NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   NEXT_PUBLIC_ICP_CKBTC_NETWORK: z
     .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
     .optional()
@@ -90,10 +81,8 @@ const serverEnvSchema = z.object({
   CONSTELLATION_BE_URL: z.string().url(),
   CONSTELLATION_L0_URL: z.string().url(),
   CONSTELLATION_L1_URL: z.string().url(),
-  CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   ICP_CKBTC_HOST: z.string().url().optional(),
-  ICP_CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   ICP_CKBTC_NETWORK: z
     .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
@@ -126,8 +115,6 @@ function parseEnv() {
     NEXT_PUBLIC_ICP_CKBTC_HOST: process.env.NEXT_PUBLIC_ICP_CKBTC_HOST,
     NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
       process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID,
-    NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID:
-      process.env.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID,
     NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK
   })
 
@@ -152,10 +139,8 @@ function parseEnv() {
     CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
     CONSTELLATION_L0_URL: process.env.CONSTELLATION_L0_URL,
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
-    CKBTC_MINTER_CANISTER_ID: process.env.CKBTC_MINTER_CANISTER_ID,
     CKBTC_LEDGER_CANISTER_ID: process.env.CKBTC_LEDGER_CANISTER_ID,
     ICP_CKBTC_HOST: process.env.ICP_CKBTC_HOST,
-    ICP_CKBTC_MINTER_CANISTER_ID: process.env.ICP_CKBTC_MINTER_CANISTER_ID,
     ICP_CKBTC_LEDGER_CANISTER_ID: process.env.ICP_CKBTC_LEDGER_CANISTER_ID,
     ICP_CKBTC_NETWORK: process.env.ICP_CKBTC_NETWORK,
     CKBTC_MERCHANT_PRINCIPAL:
@@ -178,11 +163,6 @@ const resolvedCkbtcLedger =
   serverEnv.ICP_CKBTC_LEDGER_CANISTER_ID ??
   publicEnv.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID ??
   undefined
-const resolvedCkbtcMinter =
-  serverEnv.CKBTC_MINTER_CANISTER_ID ??
-  serverEnv.ICP_CKBTC_MINTER_CANISTER_ID ??
-  publicEnv.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID ??
-  undefined
 const resolvedCkbtcNetwork =
   serverEnv.ICP_CKBTC_NETWORK ??
   publicEnv.NEXT_PUBLIC_ICP_CKBTC_NETWORK ??
@@ -194,23 +174,14 @@ const resolvedCkbtcHost =
 
 const ckbtcDefaults = CKBTC_CANISTER_DEFAULTS[resolvedCkbtcNetwork]
 
-function sanitizeCkbtcId(
-  id: string | undefined,
-  type: 'ledger' | 'minter'
-): string | undefined {
+function sanitizeLedgerId(id: string | undefined): string | undefined {
   if (!id) {
     return undefined
   }
   if (resolvedCkbtcNetwork === 'ckbtc-testnet') {
-    if (type === 'ledger' && DEPRECATED_TESTNET_LEDGER_IDS.has(id)) {
+    if (DEPRECATED_TESTNET_LEDGER_IDS.has(id)) {
       console.warn(
         `[env] Ignoring deprecated ckBTC testnet ledger canister id ${id}; substituting ${ckbtcDefaults.ledger}.`
-      )
-      return undefined
-    }
-    if (type === 'minter' && DEPRECATED_TESTNET_MINTER_IDS.has(id)) {
-      console.warn(
-        `[env] Ignoring deprecated ckBTC testnet minter canister id ${id}; substituting ${ckbtcDefaults.minter}.`
       )
       return undefined
     }
@@ -218,27 +189,21 @@ function sanitizeCkbtcId(
   return id
 }
 
-const sanitizedLedgerId = sanitizeCkbtcId(resolvedCkbtcLedger, 'ledger')
-const sanitizedMinterId = sanitizeCkbtcId(resolvedCkbtcMinter, 'minter')
+const sanitizedLedgerId = sanitizeLedgerId(resolvedCkbtcLedger)
 
 const ckbtcLedgerId = sanitizedLedgerId ?? ckbtcDefaults.ledger
-const ckbtcMinterId = sanitizedMinterId ?? ckbtcDefaults.minter
 
 export const env = {
   ...publicEnv,
   ...serverEnv,
   NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
     publicEnv.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID ?? ckbtcLedgerId,
-  NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID:
-    publicEnv.NEXT_PUBLIC_ICP_CKBTC_MINTER_CANISTER_ID ?? ckbtcMinterId,
   CKBTC_LEDGER_CANISTER_ID: ckbtcLedgerId,
-  CKBTC_MINTER_CANISTER_ID: ckbtcMinterId,
   CKBTC_NETWORK: resolvedCkbtcNetwork,
   CKBTC_HOST: resolvedCkbtcHost
 } satisfies PublicEnv &
   ServerEnv & {
     CKBTC_LEDGER_CANISTER_ID?: string
-    CKBTC_MINTER_CANISTER_ID?: string
     CKBTC_NETWORK: 'ckbtc-mainnet' | 'ckbtc-testnet'
     CKBTC_HOST: string
   }

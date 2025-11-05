@@ -18,8 +18,6 @@ import {
   requestDepositAddress,
   confirmPayment,
   fetchAttestation,
-  loadIcpIdentity,
-  settleCkbtc
 } from '@/lib/icp'
 import {
   readPaymentMode,
@@ -36,8 +34,6 @@ import { generateLicenseCredential } from '@/lib/vc'
 import {
   getLedgerMetadata,
   getAccountBalance as getLedgerAccountBalance,
-  requestCkbtcDepositAddress as requestMinterDepositAddress,
-  updateCkbtcDepositBalance as updateMinterDepositBalance
 } from '@/lib/ic/ckbtc/service'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
@@ -384,95 +380,6 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
   }
 }
 
-export async function allocateOperatorTopUp() {
-  const actor = await requireRole(['operator', 'creator'])
-  if (!env.CKBTC_MINTER_CANISTER_ID) {
-    throw new Error('ckBTC minter not configured. Set CKBTC_MINTER_CANISTER_ID in the environment.')
-  }
-
-  try {
-    const depositAddress = await requestMinterDepositAddress({
-      owner: actor.principal
-    })
-
-    await recordEvent({
-      actor,
-      action: 'ckbtc.topup_address_allocated',
-      payload: {
-        principal: actor.principal,
-        network: env.CKBTC_NETWORK,
-        depositAddress
-      },
-      resourceId: actor.principal
-    })
-
-    return {
-      depositAddress,
-      principal: actor.principal,
-      network: env.CKBTC_NETWORK
-    }
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unable to allocate deposit address'
-    throw new Error(`ckBTC minter rejected the request: ${message}`)
-  }
-}
-
-export async function mintOperatorTopUp() {
-  const actor = await requireRole(['operator', 'creator'])
-
-  try {
-    const identity = loadIcpIdentity()
-    const response = await updateMinterDepositBalance({
-      owner: actor.principal,
-      identity
-    })
-
-    let pending = false
-    let mintedAmount = 0n
-
-    if ('Ok' in response) {
-      mintedAmount = BigInt(response.Ok)
-      pending = mintedAmount === 0n
-    } else if ('Err' in response) {
-      const err = response.Err
-      if ('NoNewUtxos' in err || 'AlreadyProcessing' in err) {
-        pending = true
-      } else if ('TemporarilyUnavailable' in err) {
-        throw new Error('ckBTC minter temporarily unavailable. Try again shortly.')
-      } else if ('GenericError' in err) {
-        throw new Error(
-          `ckBTC minter error ${err.GenericError.error_code}: ${err.GenericError.error_message}`
-        )
-      } else {
-        throw new Error('Unknown ckBTC minter error.')
-      }
-    } else {
-      throw new Error('Unexpected ckBTC minter response.')
-    }
-
-    await recordEvent({
-      actor,
-      action: pending ? 'ckbtc.topup_pending' : 'ckbtc.topup_minted',
-      payload: {
-        principal: actor.principal,
-        mintedSats: mintedAmount.toString(),
-        pending
-      },
-      resourceId: actor.principal
-    })
-
-    return {
-      pending,
-      mintedSats: mintedAmount.toString()
-    }
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unable to mint ckBTC'
-    throw new Error(message)
-  }
-}
-
 export async function autoFinalizeCkbtcOrder(orderId: string) {
   if (!env.CKBTC_LEDGER_CANISTER_ID) {
     return { status: 'disabled' as const }
@@ -667,29 +574,41 @@ export async function createLicenseOrder({
       : undefined
 
   let btcAddress: string
-  try {
-    const invoice = await requestDepositAddress(orderId, paymentMode)
-    btcAddress = invoice.address
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Unknown escrow canister error'
-    const lowered = message.toLowerCase()
-    if (message.includes('Requested unknown threshold key')) {
+  let ckbtcEscrowPrincipal: string | undefined
+
+  if (paymentMode === 'ckbtc') {
+    ckbtcEscrowPrincipal =
+      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    if (!ckbtcEscrowPrincipal) {
       throw new Error(
-        'Escrow canister rejected the ECDSA request. Ensure your canister uses the `dfx_test_key` (local) or the appropriate subnet key via `ECDSA_KEY_NAME`.'
+        'Escrow principal not configured for ckBTC settlement. Set CKBTC_MERCHANT_PRINCIPAL or ICP_ESCROW_CANISTER_ID.'
       )
     }
-    if (message.includes('canister_not_found')) {
-      throw new Error(
-        'ICP escrow canister not found. Verify ICP_ESCROW_CANISTER_ID and ICP_HOST point to a deployed canister before generating invoices.'
-      )
+    const labelParts = [
+      `owner=${ckbtcEscrowPrincipal}`,
+      ckbtcSubaccount ? `subaccount=${ckbtcSubaccount}` : null
+    ].filter(Boolean)
+    btcAddress = `icrc://${labelParts.join(';')}`
+  } else {
+    try {
+      const invoice = await requestDepositAddress(orderId, paymentMode)
+      btcAddress = invoice.address
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown escrow canister error'
+      const lowered = message.toLowerCase()
+      if (message.includes('Requested unknown threshold key')) {
+        throw new Error(
+          'Escrow canister rejected the ECDSA request. Ensure your canister uses the `dfx_test_key` (local) or the appropriate subnet key via `ECDSA_KEY_NAME`.'
+        )
+      }
+      if (message.includes('canister_not_found')) {
+        throw new Error(
+          'ICP escrow canister not found. Verify ICP_ESCROW_CANISTER_ID and ICP_HOST point to a deployed canister before generating invoices.'
+        )
+      }
+      throw new Error(`Failed to allocate deposit address: ${message}`)
     }
-    if (lowered.includes('ckbtc') && lowered.includes('not configured')) {
-      throw new Error(
-        'ckBTC minter missing or unavailable. Set CKBTC_MINTER_CANISTER_ID when PAYMENT_MODE=ckbtc.'
-      )
-    }
-    throw new Error(`Failed to allocate deposit address: ${message}`)
   }
 
   await convex.mutation('licenses:insert' as any, {
@@ -719,7 +638,13 @@ export async function createLicenseOrder({
     resourceId: orderId
   })
 
-  return { orderId, btcAddress, paymentMode, ckbtcSubaccount }
+  return {
+    orderId,
+    btcAddress,
+    paymentMode,
+    ckbtcSubaccount,
+    ckbtcEscrowPrincipal
+  }
 }
 
 export async function simulateLicenseFunding({
@@ -955,67 +880,53 @@ export async function completeLicenseSale({
 
   if (paymentMode === 'btc') {
     if (!paymentReference) {
-      throw new Error('Provide a Bitcoin transaction hash for BTC mode finalization')
+      throw new Error(
+        'Provide a Bitcoin transaction hash for BTC mode finalization'
+      )
     }
   } else {
-    try {
-      const settlement = await settleCkbtc(orderId)
-      const mintedSats = Number(settlement.minted)
-      const mintedBlockIndex = Number(settlement.blockIndex)
-      minted = {
-        sats: mintedSats,
-        blockIndex: Number.isNaN(mintedBlockIndex) ? undefined : mintedBlockIndex
-      }
-      const fallbackBlockIndex =
-        typeof minted.blockIndex === 'number' && !Number.isNaN(minted.blockIndex)
-          ? minted.blockIndex
-          : 0
-      paymentReference =
-        settlement.txids && settlement.txids.length > 0
-          ? settlement.txids
-          : `ckbtc-block-${fallbackBlockIndex}`
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      const mintedPending =
-        message.toLowerCase().includes('no ckbtc minted yet') ||
-        message.toLowerCase().includes('temporarily unavailable')
-
-      if (!mintedPending) {
-        throw error
-      }
-
-      if (!env.CKBTC_LEDGER_CANISTER_ID) {
-        throw new Error('ckBTC ledger is not configured; cannot verify direct ledger transfer.')
-      }
-      const escrowPrincipal =
-        env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-      if (!escrowPrincipal) {
-        throw new Error('Escrow principal not configured for ckBTC ledger settlement.')
-      }
-      if (!order.ckbtcSubaccount) {
-        throw new Error('Order is missing ckBTC subaccount metadata.')
-      }
-      const subaccount = hexToUint8Array(order.ckbtcSubaccount)
-      const ledgerBalance = await getLedgerAccountBalance({
-        owner: escrowPrincipal,
-        subaccount
-      })
-      const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
-
-      if (ledgerBalance < required) {
-        throw error
-      }
-
-      if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
-        throw new Error('ckBTC balance exceeds supported range for finalization.')
-      }
-
-      const ledgerAmount = Number(ledgerBalance)
-      minted = {
-        sats: ledgerAmount
-      }
-      paymentReference = `icrc-ledger-${orderId}-${Date.now()}`
+    if (!env.CKBTC_LEDGER_CANISTER_ID) {
+      throw new Error(
+        'ckBTC ledger is not configured; cannot verify direct ledger transfer.'
+      )
     }
+    const escrowPrincipal =
+      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    if (!escrowPrincipal) {
+      throw new Error(
+        'Escrow principal not configured for ckBTC ledger settlement.'
+      )
+    }
+    if (!order.ckbtcSubaccount) {
+      throw new Error('Order is missing ckBTC subaccount metadata.')
+    }
+    const subaccount = hexToUint8Array(order.ckbtcSubaccount)
+    const ledgerBalance = await getLedgerAccountBalance({
+      owner: escrowPrincipal,
+      subaccount
+    })
+    const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
+
+    if (ledgerBalance < required || required === 0n) {
+      throw new Error(
+        'ckBTC transfer not detected yet. Wait for the ledger balance to update.'
+      )
+    }
+
+    if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error(
+        'ckBTC balance exceeds supported range for finalization.'
+      )
+    }
+
+    const ledgerAmount = Number(ledgerBalance)
+    minted = {
+      sats: ledgerAmount
+    }
+    paymentReference =
+      paymentReference && paymentReference.length > 0
+        ? paymentReference
+        : `icrc-ledger-${orderId}-${Date.now()}`
   }
 
   const result = await finalizeOrder({
@@ -1380,24 +1291,51 @@ export async function completeLicenseSaleSystem({
 
   if (paymentMode === 'btc') {
     if (!paymentReference) {
-      throw new Error('Provide a Bitcoin transaction hash for BTC mode finalization')
+      throw new Error(
+        'Provide a Bitcoin transaction hash for BTC mode finalization'
+      )
     }
   } else {
-    const settlement = await settleCkbtc(orderId)
-    const mintedSats = Number(settlement.minted)
-    const blockIndexNumber = Number(settlement.blockIndex)
-    minted = {
-      sats: mintedSats,
-      blockIndex: Number.isNaN(blockIndexNumber) ? undefined : blockIndexNumber
+    if (!env.CKBTC_LEDGER_CANISTER_ID) {
+      throw new Error(
+        'ckBTC ledger is not configured; cannot verify direct ledger transfer.'
+      )
     }
-    const fallbackBlockIndex =
-      typeof minted.blockIndex === 'number' && !Number.isNaN(minted.blockIndex)
-        ? minted.blockIndex
-        : 0
+    const escrowPrincipal =
+      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    if (!escrowPrincipal) {
+      throw new Error(
+        'Escrow principal not configured for ckBTC ledger settlement.'
+      )
+    }
+    if (!order.ckbtcSubaccount) {
+      throw new Error('Order is missing ckBTC subaccount metadata.')
+    }
+    const subaccount = hexToUint8Array(order.ckbtcSubaccount)
+    const ledgerBalance = await getLedgerAccountBalance({
+      owner: escrowPrincipal,
+      subaccount
+    })
+    const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
+
+    if (ledgerBalance < required || required === 0n) {
+      throw new Error('ckBTC transfer not detected yet.')
+    }
+
+    if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new Error(
+        'ckBTC balance exceeds supported range for finalization.'
+      )
+    }
+
+    const ledgerAmount = Number(ledgerBalance)
+    minted = {
+      sats: ledgerAmount
+    }
     paymentReference =
-      settlement.txids && settlement.txids.length > 0
-        ? settlement.txids
-        : `ckbtc-block-${fallbackBlockIndex}`
+      paymentReference && paymentReference.length > 0
+        ? paymentReference
+        : `icrc-ledger-${orderId}-${Date.now()}`
   }
 
   const systemActor: SessionActor = {

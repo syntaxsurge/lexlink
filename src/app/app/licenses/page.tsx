@@ -27,6 +27,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { readPaymentMode } from '@/lib/payment-mode'
+import { env } from '@/lib/env'
 
 const MAINNET_MEMPOOL = 'https://mempool.space'
 const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
@@ -70,6 +71,8 @@ function explorerBase(network?: string) {
 export default async function LicensesPage() {
   const { ips, licenses } = await loadDashboardData()
   const paymentMode = await readPaymentMode()
+  const ckbtcEscrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID ?? ''
 
   const isCkbtcDefault = paymentMode === 'ckbtc'
   const isBtcMode = (mode?: string | null) => mode !== 'ckbtc'
@@ -90,10 +93,10 @@ export default async function LicensesPage() {
   const ipTitleLookup = new Map(ips.map(ip => [ip.ipId, ip.title]))
 
   const orderCardDescription = isCkbtcDefault
-    ? 'Allocates a ckBTC deposit address via the ICP minter for instant UX.'
+    ? 'Generates a ckBTC escrow account so buyers can transfer ckTESTBTC directly.'
     : 'Derives a native Bitcoin address via threshold-ECDSA for on-chain settlement.'
   const finalizeCardDescription = isCkbtcDefault
-    ? 'ckBTC orders finalize automatically once the minter mints into escrow.'
+    ? 'ckBTC orders finalize automatically once the escrow ledger balance updates.'
     : 'Confirm the Bitcoin transaction, mint a Story license token, and anchor Constellation evidence.'
 
   const simulateEnabled = process.env.NODE_ENV !== 'production'
@@ -137,13 +140,12 @@ export default async function LicensesPage() {
       </div>
 
       <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Pending Payments</CardTitle>
-          <CardDescription>
-            Share deposit details with buyers. ckBTC invoices close themselves as
-            soon as the minter detects confirmed funds.
-          </CardDescription>
-        </CardHeader>
+          <CardHeader>
+            <CardTitle>Pending Payments</CardTitle>
+            <CardDescription>
+              Share payment targets with buyers. ckBTC invoices close themselves once the escrow ledger receives the transfer.
+            </CardDescription>
+          </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -153,7 +155,7 @@ export default async function LicensesPage() {
                 <TableHead>Buyer</TableHead>
                 <TableHead>Amount (BTC)</TableHead>
                 <TableHead>Mode</TableHead>
-                <TableHead>Deposit Address</TableHead>
+                <TableHead>Payment Destination</TableHead>
                 <TableHead>Share</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className='text-right'>Actions</TableHead>
@@ -172,11 +174,15 @@ export default async function LicensesPage() {
               )}
               {pendingOrders.map(order => {
                 const base = explorerBase(order.network)
-                const addressUrl = `${base}/address/${order.btcAddress}`
-                const txUrl = order.btcTxId
-                  ? `${base}/tx/${order.btcTxId}`
+                const isBtcPayment = isBtcMode(order.paymentMode)
+                const addressUrl = isBtcPayment
+                  ? `${base}/address/${order.btcAddress}`
                   : undefined
-                const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
+                const txUrl =
+                  isBtcPayment && order.btcTxId
+                    ? `${base}/tx/${order.btcTxId}`
+                    : undefined
+                const modeLabel = isBtcPayment ? 'BTC' : 'ckBTC'
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -194,15 +200,23 @@ export default async function LicensesPage() {
                     </TableCell>
                     <TableCell>
                       <div className='flex flex-col'>
-                        <span className='font-mono text-xs'>{order.btcAddress}</span>
-                        <Link
-                          href={addressUrl}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-xs text-primary underline-offset-4 hover:underline'
-                        >
-                          View address
-                        </Link>
+                        <span className='break-all font-mono text-xs'>
+                          {order.btcAddress}
+                        </span>
+                        {isBtcPayment && addressUrl ? (
+                          <Link
+                            href={addressUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-xs text-primary underline-offset-4 hover:underline'
+                          >
+                            View address
+                          </Link>
+                        ) : (
+                          <span className='text-xs text-muted-foreground'>
+                            Escrow owner: {ckbtcEscrowPrincipal || '—'}
+                          </span>
+                        )}
                         {txUrl && (
                           <Link
                             href={txUrl}

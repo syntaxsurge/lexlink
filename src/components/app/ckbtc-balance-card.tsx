@@ -80,6 +80,18 @@ export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
             </ul>
           </div>
         )}
+        <div className='sm:col-span-2 rounded-lg border border-border/50 bg-muted/10 p-3 text-xs text-muted-foreground'>
+          Need ckTESTBTC? Open{' '}
+          <a
+            className='font-medium text-primary underline-offset-4 hover:underline'
+            href='https://testnet-faucet.ckboost.com/'
+            target='_blank'
+            rel='noreferrer'
+          >
+            testnet-faucet.ckboost.com
+          </a>
+          , paste your operator principal above, and mint directly to the ledger.
+        </div>
       </CardContent>
     </Card>
   )

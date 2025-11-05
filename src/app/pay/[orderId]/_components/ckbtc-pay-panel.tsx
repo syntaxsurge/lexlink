@@ -8,9 +8,7 @@ import type { Identity } from '@dfinity/agent'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ledgerActor, minterActor } from '@/lib/ic/ckbtc/client.browser'
+import { ledgerActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
 type TransferResult =
@@ -41,14 +39,12 @@ export function CkbtcPayPanel({
   const [symbol, setSymbol] = useState('ckBTC')
   const [decimals, setDecimals] = useState(8)
   const [balance, setBalance] = useState<bigint>(0n)
-  const [depositAddress, setDepositAddress] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [transferState, setTransferState] = useState<TransferResult>({
     status: 'idle'
   })
   const [isBusy, setIsBusy] = useState(false)
-  const [isUpdating, setIsUpdating] = useState(false)
 
   const price = useMemo(() => {
     try {
@@ -126,66 +122,6 @@ export function CkbtcPayPanel({
       )
     }
   }, [ensureIdentity, refreshBalances])
-
-  const handleRequestDepositAddress = useCallback(async () => {
-    try {
-      if (!authClient) throw new Error('Auth client not ready')
-      const identity = await ensureIdentity()
-      const minter = await minterActor(identity as Identity)
-      const owner = (identity as { getPrincipal: () => Principal }).getPrincipal()
-      const address = await minter.get_btc_address({
-        owner: [owner],
-        subaccount: []
-      })
-      setDepositAddress(address)
-      setFeedback('Send tBTC to this address, then click “Update balance”.')
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to obtain ckBTC deposit address.'
-      )
-    }
-  }, [authClient, ensureIdentity])
-
-  const handleUpdateBalance = useCallback(async () => {
-    try {
-      if (!authClient) throw new Error('Auth client not ready')
-      setIsUpdating(true)
-      const identity = await ensureIdentity()
-      const minter = await minterActor(identity as Identity)
-      const owner = (identity as { getPrincipal: () => Principal }).getPrincipal()
-      const result = await minter.update_balance({
-        owner: [owner],
-        subaccount: []
-      })
-      if ('Ok' in result) {
-        const minted = BigInt(result.Ok)
-        await refreshBalances(identity)
-        setFeedback(
-          minted > 0n
-            ? `Minted ${formatTokenAmount(minted, decimals)} ${symbol}.`
-            : 'No new ckBTC minted yet. Wait for more confirmations.'
-        )
-      } else if ('Err' in result && 'NoNewUtxos' in result.Err) {
-        setFeedback('No new UTXOs yet. Wait a bit longer and try again.')
-      } else {
-        const err = result.Err
-        if (err.GenericError) {
-          throw new Error(err.GenericError.error_message)
-        }
-        throw new Error('ckBTC minter temporarily unavailable.')
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to mint ckBTC from deposit address.'
-      )
-    } finally {
-      setIsUpdating(false)
-    }
-  }, [authClient, decimals, ensureIdentity, refreshBalances, symbol])
 
   const handlePay = useCallback(async () => {
     try {
@@ -333,38 +269,17 @@ export function CkbtcPayPanel({
             Need ckTESTBTC?
           </div>
           <div className='text-xs text-muted-foreground'>
-            Get a deposit address from the ckBTC minter, send Bitcoin testnet (tBTC) to it, then mint ckTESTBTC into your wallet.
-          </div>
-          <div className='flex flex-wrap gap-2'>
-            <Button
-              variant='outline'
-              onClick={handleRequestDepositAddress}
-              disabled={!authClient || isBusy}
+            Use the public faucet at{' '}
+            <a
+              href='https://testnet-faucet.ckboost.com/'
+              target='_blank'
+              rel='noreferrer'
+              className='text-primary underline-offset-4 hover:underline'
             >
-              Get deposit address
-            </Button>
-            <Button
-              variant='outline'
-              onClick={handleUpdateBalance}
-              disabled={!authClient || isUpdating}
-            >
-              {isUpdating ? 'Minting…' : 'Update balance'}
-            </Button>
+              testnet-faucet.ckboost.com
+            </a>
+            , paste your Internet Identity principal, and mint ckTESTBTC directly to your wallet. Refresh your balance once the transfer appears.
           </div>
-          {depositAddress && (
-            <div className='space-y-2 rounded-md border border-border/60 bg-background p-3'>
-              <Label htmlFor='ckbtc-deposit-address'>ckBTC minter deposit address</Label>
-              <Input
-                id='ckbtc-deposit-address'
-                value={depositAddress}
-                readOnly
-                onFocus={event => event.currentTarget.select()}
-              />
-              <p className='text-xs text-muted-foreground'>
-                Use any Bitcoin testnet wallet or faucet (e.g. mempool.space/testnet). After confirmations, click “Update balance”.
-              </p>
-            </div>
-          )}
         </div>
 
         {feedback && (

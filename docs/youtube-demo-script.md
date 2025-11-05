@@ -35,16 +35,17 @@ This script follows the production build with Internet Identity, shadcn UI, invo
 - Voice-over: “We mint an SPG NFT, attach PIL terms, mirror to Convex, and log `ip_asset.registered`.”
 - On-screen: Highlight the success panel (IP ID, token ID, license terms ID) and open the Story IP Explorer link.
 
-## Segment 5 — Generate Bitcoin invoice (1:55 – 2:25)
-- On-screen: `Licenses → Generate Bitcoin License Order`. Pick the new IP, buyer `0x2222…2222`.
-- Voice-over: “The escrow canister derives a P2WPKH address via threshold ECDSA.”
-- On-screen: Submit → Pending Invoices table shows new row (status Pending, deposit address, amount in BTC).
-- Voice-over: “Orders are persisted immediately for tracking and compliance.”
+## Segment 5 — Generate ckBTC invoice (1:55 – 2:25)
+- On-screen: `Licenses → Generate License Order` with payment mode set to ckBTC. Pick the new IP, buyer `0x2222…2222`.
+- Voice-over: “The order builder derives a deterministic ckBTC subaccount and stores the ICRC-1 escrow account alongside the share link.”
+- On-screen: Submit → Pending Invoices table shows new row (status Pending, ckBTC account string, amount in BTC).
+- Voice-over: “Everything lands in Convex instantly so the automation can monitor balances.”
 
 ## Segment 6 — Funding & auto-finalise (2:25 – 3:20)
-- On-screen: Copy the deposit address, paste into https://mempool.space/testnet/address/<address>, send faucet tBTC.
-- Show the Pending row flip from Pending → Funded (0 conf) → Finalised after worker runs. Toast notes “License minted”.
-- Voice-over: “A cron polls the Bitcoin mempool. Once confirmations hit, LexLink mints the license on Story and anchors evidence automatically.”
+- On-screen: Open `/pay/[orderId]`, click “Pay with ckBTC”, authenticate with Internet Identity, and send ckTESTBTC.
+- Voice-over: “Before recording, mint ckTESTBTC for your principal at https://testnet-faucet.ckboost.com/ — no minter polling needed.”
+- Show the Pending row flip from Pending → Finalised after the ledger balance updates. Toast notes “License minted”.
+- Voice-over: “The worker verifies the ledger balance, mints the Story license, and anchors Constellation evidence automatically.”
 
 ## Segment 7 — Evidence bundle & explorers (3:20 – 3:55)
 - On-screen: In the Finalised section, click “Story IP Explorer” and “StoryScan (address)”.
@@ -81,4 +82,5 @@ This script follows the production build with Internet Identity, shadcn UI, invo
 - StoryScan (Aeneid): `https://aeneid.storyscan.io/`
 - IntegrationNet Explorer: `https://explorer.mainnet.constellationnetwork.io/`
 - Bitcoin testnet explorer: `https://mempool.space/testnet/`
+- ckBTC testnet faucet: `https://testnet-faucet.ckboost.com/`
 - Internet Identity docs: `https://internetcomputer.org/internet-identity`

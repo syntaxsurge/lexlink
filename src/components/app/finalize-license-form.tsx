@@ -137,7 +137,7 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
           </div>
         ) : (
           <div className='rounded-lg border border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground'>
-            ckBTC orders poll the minter directly. Submit without a transaction hash once the deposit is made.
+            ckBTC orders finalize once the escrow ledger balance reaches the amount due. Leave the transaction hash blank unless you want to record a manual reference.
           </div>
         )}
         <div className='space-y-2'>

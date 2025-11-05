@@ -38,6 +38,7 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
     btcAddress: string
     paymentMode: PaymentMode
     ckbtcSubaccount?: string
+    ckbtcEscrowPrincipal?: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -49,9 +50,9 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
   const selectedIpId = form.watch('ipKey')
   const selectedIp = ips.find(ip => ip.ipId === selectedIpId)
   const modeIsCkbtc = paymentMode === 'ckbtc'
-  const buttonLabel = modeIsCkbtc ? 'Allocate ckBTC Deposit' : 'Generate BTC Invoice'
+  const buttonLabel = modeIsCkbtc ? 'Create ckBTC Invoice' : 'Generate BTC Invoice'
   const helperCopy = modeIsCkbtc
-    ? 'Mints ckBTC to the escrow canister via update_balance for instant finality.'
+    ? 'Generates a ckBTC escrow account so buyers can transfer ckTESTBTC directly.'
     : 'Derives a threshold-ECDSA P2WPKH address and waits for Bitcoin confirmations.'
 
   const onSubmit = (values: FormValues) => {
@@ -158,12 +159,18 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
                 </div>
                 <div className='flex flex-col gap-1'>
                   <dt className='font-semibold text-muted-foreground'>
-                    {resultModeIsCkbtc ? 'ckBTC Deposit Address' : 'Bitcoin Deposit Address'}
+                    {resultModeIsCkbtc ? 'ckBTC ICRC Account' : 'Bitcoin Deposit Address'}
                   </dt>
                   <dd className='break-all font-mono text-xs'>{result.btcAddress}</dd>
                 </div>
                 {resultModeIsCkbtc && (
                   <>
+                    <div className='flex flex-col gap-1'>
+                      <dt className='font-semibold text-muted-foreground'>Escrow Owner Principal</dt>
+                      <dd className='break-all font-mono text-xs'>
+                        {result.ckbtcEscrowPrincipal ?? '—'}
+                      </dd>
+                    </div>
                     <div className='flex flex-col gap-1'>
                       <dt className='font-semibold text-muted-foreground'>Order Subaccount (hex)</dt>
                       <dd className='break-all font-mono text-xs'>
@@ -173,9 +180,20 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
                     <div className='space-y-2 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground'>
                       <p className='font-semibold text-foreground'>How the buyer pays</p>
                       <ol className='list-decimal space-y-1 pl-4'>
-                        <li>Send testnet BTC (tBTC) to the deposit address above.</li>
-                        <li>The ckBTC minter mints ckTESTBTC to the escrow canister once confirmations are met.</li>
-                        <li>LexLink auto-finalizes the license; no manual action required.</li>
+                        <li>
+                          Visit{' '}
+                          <a
+                            href='https://testnet-faucet.ckboost.com/'
+                            className='text-primary underline-offset-4 hover:underline'
+                            target='_blank'
+                            rel='noreferrer'
+                          >
+                            testnet-faucet.ckboost.com
+                          </a>{' '}
+                          and mint ckTESTBTC to the buyer&apos;s Internet Identity.
+                        </li>
+                        <li>Transfer ckBTC to the escrow owner + subaccount listed above, or use the Pay link below.</li>
+                        <li>LexLink auto-finalizes as soon as the ledger balance updates.</li>
                       </ol>
                       <p>
                         Shareable instructions:{' '}

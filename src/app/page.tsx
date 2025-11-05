@@ -22,7 +22,7 @@ const featureCards = [
   {
     title: 'ICP escrow with ckBTC practices',
     description:
-      'Borrowing Splitsafe’s ckBTC playbook, LexLink issues deposit addresses, validates attestations, and keeps full audit trails in Convex.',
+      'LexLink provisions ckBTC escrow accounts, monitors ledger balances in real time, and mirrors every movement into Convex for auditable trails.',
     icon: Wallet
   },
   {
@@ -42,7 +42,7 @@ const workflow = [
   {
     title: 'Generate Bitcoin invoices',
     detail:
-      'Our ICP escrow canister derives fresh P2WPKH addresses. Buyers remit BTC, the canister responds with signed ckBTC-style attestations.'
+      'Our ICP escrow canister derives fresh P2WPKH addresses for BTC or escrow subaccounts for ckBTC so buyers can settle with whichever rail fits the demo.'
   },
   {
     title: 'Finalize and evidence',

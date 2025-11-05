@@ -1,7 +1,7 @@
 import { type Identity } from '@dfinity/agent'
 import { Principal } from '@dfinity/principal'
 
-import { ledgerActor, minterActor } from '@/lib/ic/ckbtc/client.server'
+import { ledgerActor } from '@/lib/ic/ckbtc/client.server'
 import { toLedgerAccount } from '@/lib/ic/ckbtc/utils'
 
 export async function getLedgerMetadata(identity?: Identity) {
@@ -29,43 +29,6 @@ export async function getAccountBalance({
   const account = toLedgerAccount(Principal.fromText(owner), subaccount)
   const balance = await ledger.icrc1_balance_of(account)
   return BigInt(balance)
-}
-
-export async function requestCkbtcDepositAddress({
-  owner,
-  subaccount,
-  identity
-}: {
-  owner: string
-  subaccount?: Uint8Array
-  identity?: Identity
-}) {
-  const minter = await minterActor(identity)
-  const principal = Principal.fromText(owner)
-  const args = {
-    owner: [principal],
-    subaccount: subaccount ? [Array.from(subaccount)] : []
-  }
-  const address: string = await minter.get_btc_address(args)
-  return address
-}
-
-export async function updateCkbtcDepositBalance({
-  owner,
-  subaccount,
-  identity
-}: {
-  owner: string
-  subaccount?: Uint8Array
-  identity?: Identity
-}) {
-  const minter = await minterActor(identity)
-  const principal = Principal.fromText(owner)
-  const args = {
-    owner: [principal],
-    subaccount: subaccount ? [Array.from(subaccount)] : []
-  }
-  return minter.update_balance(args)
 }
 
 export async function transferCkbtc({

@@ -15,7 +15,7 @@ const OPTIONS: Array<{
   {
     value: 'ckbtc',
     label: 'ckBTC (Consumer)',
-    description: 'Instant finality via the ckBTC minter. Ideal for demos and judge walkthroughs.'
+    description: 'Direct ckBTC ledger transfers with escrow auto-finalization. Ideal for demos and judge walkthroughs.'
   },
   {
     value: 'btc',

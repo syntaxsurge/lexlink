@@ -303,12 +303,14 @@ pnpm lint
 1. **Register IP** – The console fetches metadata, hashes its contents, and
    calls `StoryClient.ipAsset.mintAndRegisterIpAssetWithPilTerms`. Convex stores
    the mirrored record.
-2. **Create Bitcoin deposit** – `createLicenseOrder` asks the ICP canister for a
-   dedicated address and records the order in Convex.
-3. **Buyer pays in BTC** – Once the transaction is visible (the operator copies
-   the txid), `completeLicenseSale` requests the canister to verify UTXOs, mints
-   a Story license token to the buyer, hashes the attestation, posts an evidence
-   transaction on IntegrationNet, and computes the SHA-256 content hash.
+2. **Create payment request** – `createLicenseOrder` asks the ICP canister for a
+   dedicated P2WPKH deposit address when the mode is `btc`, or derives an ICRC-1
+   escrow account (owner + subaccount) when the mode is `ckbtc`, then records
+   the order in Convex.
+3. **Buyer pays (BTC or ckBTC)** – For BTC orders, operators provide the txid so
+   `completeLicenseSale` can have the canister confirm UTXOs. For ckBTC orders,
+   buyers transfer ckTESTBTC to the escrow account; the server verifies the
+   ledger balance before finalizing.
 4. **C2PA & VC issuance** – The same action produces a downloadable C2PA bundle
    and a signed Ed25519 verifiable credential. Both are stored in Convex and
    exposed through the dashboard.
