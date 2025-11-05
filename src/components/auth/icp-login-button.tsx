@@ -92,7 +92,8 @@ export function IcpLoginButton() {
         redirect: false,
         principal,
         delegation: JSON.stringify(delegation),
-        sessionPublicKey
+        sessionPublicKey,
+        callbackUrl: '/app'
       })
 
       if (result?.ok) {

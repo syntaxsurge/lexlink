@@ -28,6 +28,7 @@ export const authOptions: NextAuthOptions = {
   },
   secret: env.NEXTAUTH_SECRET,
   useSecureCookies: env.NEXTAUTH_URL.startsWith('https://'),
+  debug: process.env.NODE_ENV !== 'production',
   providers: [
     CredentialsProvider({
       id: 'internet-identity',
