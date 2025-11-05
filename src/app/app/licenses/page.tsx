@@ -78,13 +78,15 @@ export default async function LicensesPage() {
   const finalizedOrders = licenses.filter(
     order => order.status === 'finalized'
   )
-  const manualFinalizeOrders = pendingOrders.filter(order => order.status !== 'pending')
+  const manualFinalizeOrders = pendingOrders.filter(
+    order => order.paymentMode === 'btc' && order.status !== 'pending'
+  )
 
   const orderCardDescription = isCkbtcDefault
     ? 'Allocates a ckBTC deposit address via the ICP minter for instant UX.'
     : 'Derives a native Bitcoin address via threshold-ECDSA for on-chain settlement.'
   const finalizeCardDescription = isCkbtcDefault
-    ? 'Calls update_balance on the ckBTC minter, then mints Story & Constellation artifacts.'
+    ? 'ckBTC orders finalize automatically once the minter mints into escrow.'
     : 'Confirm the Bitcoin transaction, mint a Story license token, and anchor Constellation evidence.'
 
   const simulateEnabled = process.env.NODE_ENV !== 'production'
@@ -116,7 +118,13 @@ export default async function LicensesPage() {
             <CardDescription>{finalizeCardDescription}</CardDescription>
           </CardHeader>
           <CardContent>
-            <FinalizeLicenseForm orders={manualFinalizeOrders} />
+            {manualFinalizeOrders.length > 0 ? (
+              <FinalizeLicenseForm orders={manualFinalizeOrders} />
+            ) : (
+              <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground'>
+                All active orders will finalize automatically once ckBTC funds mint into escrow. Manual finalization only appears for native BTC invoices.
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -125,8 +133,8 @@ export default async function LicensesPage() {
         <CardHeader>
           <CardTitle>Pending Payments</CardTitle>
           <CardDescription>
-            Copy deposit addresses, monitor confirmations, or finalize manually
-            once funds land.
+            Share deposit details with buyers. ckBTC invoices close themselves as
+            soon as the minter detects confirmed funds.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -139,6 +147,7 @@ export default async function LicensesPage() {
                 <TableHead>Amount (BTC)</TableHead>
                 <TableHead>Mode</TableHead>
                 <TableHead>Deposit Address</TableHead>
+                <TableHead>Share</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className='text-right'>Actions</TableHead>
               </TableRow>
@@ -147,7 +156,7 @@ export default async function LicensesPage() {
               {pendingOrders.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className='text-center text-sm text-muted-foreground'
                   >
                     No invoices waiting on Bitcoin settlement.
@@ -199,6 +208,20 @@ export default async function LicensesPage() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      {order.paymentMode === 'ckbtc' ? (
+                        <Link
+                          href={`/pay/${order.orderId}`}
+                          className='text-xs text-primary underline-offset-4 hover:underline'
+                          target='_blank'
+                          rel='noreferrer'
+                        >
+                          /pay/{order.orderId}
+                        </Link>
+                      ) : (
+                        <span className='text-xs text-muted-foreground'>—</span>
+                      )}
+                    </TableCell>
                    <TableCell>
                       {(() => {
                         const { variant, className } = statusStyles(order.status)
@@ -215,7 +238,7 @@ export default async function LicensesPage() {
                       )}
                     </TableCell>
                     <TableCell className='flex justify-end gap-2'>
-                      {simulateEnabled && (
+                      {simulateEnabled && order.paymentMode === 'btc' && (
                         <form action={simulateAction} className='inline-flex'>
                           <input type='hidden' name='orderId' value={order.orderId} />
                           <Button type='submit' variant='ghost' size='sm'>

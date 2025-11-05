@@ -40,6 +40,41 @@ export const listByStatus = queryGeneric({
   }
 })
 
+export const getPublic = queryGeneric({
+  args: { orderId: v.string() },
+  handler: async (ctx, args) => {
+    const license = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!license) {
+      return null
+    }
+
+    const ip = await ctx.db
+      .query('ips')
+      .withIndex('by_ipId', q => q.eq('ipId', license.ipId))
+      .unique()
+
+    return {
+      orderId: license.orderId,
+      ipId: license.ipId,
+      ipTitle: ip?.title ?? license.ipId,
+      amountSats: license.amountSats,
+      btcAddress: license.btcAddress,
+      paymentMode: license.paymentMode,
+      status: license.status,
+      ckbtcSubaccount: license.ckbtcSubaccount,
+      ckbtcMintedSats: license.ckbtcMintedSats,
+      ckbtcBlockIndex: license.ckbtcBlockIndex,
+      createdAt: license.createdAt,
+      updatedAt: license.updatedAt,
+      network: license.network
+    }
+  }
+})
+
 export const insert = mutationGeneric({
   args: {
     orderId: v.string(),

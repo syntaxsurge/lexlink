@@ -10,6 +10,7 @@ import { publishEvidence } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
+import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
 import {
   requestDepositAddress,
   confirmPayment,
@@ -370,6 +371,10 @@ export async function createLicenseOrder({
   const paymentMode = await readPaymentMode()
   const network =
     paymentMode === 'ckbtc' ? `ckbtc-${env.BTC_NETWORK}` : env.BTC_NETWORK
+  const ckbtcSubaccount =
+    paymentMode === 'ckbtc'
+      ? formatSubaccountHex(deriveOrderSubaccount(orderId))
+      : undefined
 
   let btcAddress: string
   try {
@@ -406,7 +411,7 @@ export async function createLicenseOrder({
     amountSats,
     network,
     paymentMode,
-    ckbtcSubaccount: undefined
+    ckbtcSubaccount
   })
 
   await recordEvent({
@@ -424,7 +429,7 @@ export async function createLicenseOrder({
     resourceId: orderId
   })
 
-  return { orderId, btcAddress, paymentMode }
+  return { orderId, btcAddress, paymentMode, ckbtcSubaccount }
 }
 
 export async function simulateLicenseFunding({
@@ -963,6 +968,32 @@ export async function updatePaymentModeSetting(mode: PaymentMode) {
   return {
     mode
   }
+}
+
+export async function loadInvoicePublic(orderId: string) {
+  if (!orderId) return null
+  const convex = getConvexClient()
+  const invoice = (await convex.query('licenses:getPublic' as any, {
+    orderId
+  })) as
+    | {
+        orderId: string
+        ipId: string
+        ipTitle: string
+        amountSats?: number
+        btcAddress: string
+        paymentMode?: string
+        status: string
+        ckbtcSubaccount?: string
+        ckbtcMintedSats?: number
+        ckbtcBlockIndex?: number
+        createdAt: number
+        updatedAt?: number
+        network?: string
+      }
+    | null
+
+  return invoice
 }
 
 export async function completeLicenseSaleSystem({

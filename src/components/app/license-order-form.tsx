@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from 'react'
 
+import Link from 'next/link'
+
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
@@ -35,6 +37,7 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
     orderId: string
     btcAddress: string
     paymentMode: PaymentMode
+    ckbtcSubaccount?: string
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -160,9 +163,31 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
                   <dd className='break-all font-mono text-xs'>{result.btcAddress}</dd>
                 </div>
                 {resultModeIsCkbtc && (
-                  <div className='text-xs text-muted-foreground'>
-                    Funds land in the ckBTC minter. The worker polls update_balance and finalizes automatically once minted.
-                  </div>
+                  <>
+                    <div className='flex flex-col gap-1'>
+                      <dt className='font-semibold text-muted-foreground'>Order Subaccount (hex)</dt>
+                      <dd className='break-all font-mono text-xs'>
+                        {result.ckbtcSubaccount}
+                      </dd>
+                    </div>
+                    <div className='space-y-2 rounded-md border border-dashed border-primary/40 bg-primary/5 p-3 text-xs text-muted-foreground'>
+                      <p className='font-semibold text-foreground'>How the buyer pays</p>
+                      <ol className='list-decimal space-y-1 pl-4'>
+                        <li>Send testnet BTC (tBTC) to the deposit address above.</li>
+                        <li>The ckBTC minter mints ckTESTBTC to the escrow canister once confirmations are met.</li>
+                        <li>LexLink auto-finalizes the license; no manual action required.</li>
+                      </ol>
+                      <p>
+                        Shareable instructions:{' '}
+                        <Link
+                          href={`/pay/${result.orderId}`}
+                          className='font-mono text-xs text-primary underline-offset-4 hover:underline'
+                        >
+                          /pay/{result.orderId}
+                        </Link>
+                      </p>
+                    </div>
+                  </>
                 )}
               </>
             )

@@ -65,6 +65,7 @@ const serverEnvSchema = z.object({
   CONSTELLATION_L1_URL: z.string().url(),
   CKBTC_MINTER_CANISTER_ID: z.string().optional(),
   CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
+  CKBTC_MERCHANT_PRINCIPAL: z.string().optional(),
   CONVEX_URL: z.string().url(),
   CONVEX_DEPLOYMENT: z.string(),
   BTC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
@@ -113,6 +114,8 @@ function parseEnv() {
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
     CKBTC_MINTER_CANISTER_ID: process.env.CKBTC_MINTER_CANISTER_ID,
     CKBTC_LEDGER_CANISTER_ID: process.env.CKBTC_LEDGER_CANISTER_ID,
+    CKBTC_MERCHANT_PRINCIPAL:
+      process.env.CKBTC_MERCHANT_PRINCIPAL ?? process.env.ICP_ESCROW_CANISTER_ID,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     BTC_NETWORK: process.env.BTC_NETWORK,
