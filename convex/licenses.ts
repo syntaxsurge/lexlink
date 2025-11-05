@@ -188,7 +188,9 @@ export const updateFundingState = mutationGeneric({
     orderId: v.string(),
     status: v.string(),
     btcTxId: v.optional(v.string()),
-    confirmations: v.optional(v.number())
+    confirmations: v.optional(v.number()),
+    ckbtcMintedSats: v.optional(v.number()),
+    ckbtcBlockIndex: v.optional(v.number())
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -204,8 +206,27 @@ export const updateFundingState = mutationGeneric({
       status: args.status,
       btcTxId: args.btcTxId ?? license.btcTxId,
       confirmations: args.confirmations ?? license.confirmations ?? 0,
+      ckbtcMintedSats:
+        typeof args.ckbtcMintedSats === 'number'
+          ? args.ckbtcMintedSats
+          : license.ckbtcMintedSats,
+      ckbtcBlockIndex:
+        typeof args.ckbtcBlockIndex === 'number'
+          ? args.ckbtcBlockIndex
+          : license.ckbtcBlockIndex,
       fundedAt: args.status === 'funded' ? Date.now() : license.fundedAt,
       updatedAt: Date.now()
     })
+  }
+})
+
+export const listRecent = queryGeneric({
+  args: {
+    limit: v.number()
+  },
+  handler: async (ctx, args) => {
+    const items = await ctx.db.query('licenses').collect()
+    const sorted = items.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt))
+    return sorted.slice(0, Math.max(0, args.limit))
   }
 })

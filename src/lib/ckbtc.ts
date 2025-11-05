@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import crypto from 'node:crypto'
 
 /**
@@ -10,4 +11,12 @@ export function deriveOrderSubaccount(orderId: string): Uint8Array {
 
 export function formatSubaccountHex(bytes: Uint8Array): string {
   return Buffer.from(bytes).toString('hex')
+}
+
+export function parseSubaccountHex(hex: string): Uint8Array {
+  const sanitized = hex.trim().toLowerCase()
+  if (!/^[0-9a-f]{64}$/.test(sanitized)) {
+    throw new Error('Expected a 64-character hex-encoded subaccount')
+  }
+  return new Uint8Array(Buffer.from(sanitized, 'hex'))
 }

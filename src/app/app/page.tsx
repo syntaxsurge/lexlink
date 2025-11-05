@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import {
   loadAuditTrail,
+  loadCkbtcSnapshot,
   loadDashboardData,
   type AuditEventRecord,
   type DisputeRecord,
@@ -30,6 +31,8 @@ import {
   ipAssetExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
+import { CkbtcBalanceCard } from '@/components/app/ckbtc-balance-card'
+import { OperatorTopUpPanel } from '@/components/app/operator-topup-panel'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
@@ -85,8 +88,8 @@ function EventItem({ event }: { event: AuditEventRecord }) {
 }
 
 export default async function OverviewPage() {
-  const [{ ips, licenses, disputes, trainingBatches }, auditTrail] =
-    await Promise.all([loadDashboardData(), loadAuditTrail(8)])
+  const [{ ips, licenses, disputes, trainingBatches }, auditTrail, ckbtcSnapshot] =
+    await Promise.all([loadDashboardData(), loadAuditTrail(8), loadCkbtcSnapshot()])
 
   const pendingOrders = licenses.filter((license: LicenseRecord) =>
     ['pending', 'funded', 'confirmed'].includes(license.status)
@@ -125,12 +128,19 @@ export default async function OverviewPage() {
           hint='Score across completed sales'
           value={`${averageCompliance}/100`}
         />
-        <MetricCard
-          title='Training Units Logged'
-          hint='Constellation-evidenced AI batches'
-          value={totalTrainingUnits.toLocaleString()}
-        />
-      </div>
+      <MetricCard
+        title='Training Units Logged'
+        hint='Constellation-evidenced AI batches'
+        value={totalTrainingUnits.toLocaleString()}
+      />
+    </div>
+
+      {ckbtcSnapshot.enabled && (
+        <div className='grid gap-4 lg:grid-cols-2'>
+          <CkbtcBalanceCard snapshot={ckbtcSnapshot} />
+          <OperatorTopUpPanel snapshot={ckbtcSnapshot} />
+        </div>
+      )}
 
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card className='border-border/60 bg-card/60'>

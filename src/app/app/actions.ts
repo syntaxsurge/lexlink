@@ -10,7 +10,11 @@ import { publishEvidence } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
-import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
+import {
+  deriveOrderSubaccount,
+  formatSubaccountHex,
+  parseSubaccountHex
+} from '@/lib/ckbtc'
 import {
   requestDepositAddress,
   confirmPayment,
@@ -29,6 +33,14 @@ import {
   getDefaultLicensingConfig
 } from '@/lib/story'
 import { generateLicenseCredential } from '@/lib/vc'
+import {
+  fetchLedgerMetadata,
+  formatTokenAmount,
+  getAccountBalance,
+  requestCkbtcDepositAddress,
+  summarizeUpdateBalance,
+  updateCkbtcBalance
+} from '@/lib/ckbtc-ledger'
 
 export type IpRecord = {
   ipId: string
@@ -235,6 +247,184 @@ function calculateComplianceScore({
   if (hasConstellationEvidence) score += 25
   const trainingBonus = Math.min(25, trainingUnits)
   return Math.min(100, score + trainingBonus)
+}
+
+export type CkbtcSnapshot =
+  | { enabled: false }
+  | {
+      enabled: true
+      symbol: string
+      decimals: number
+      network: string
+      operator: {
+        principal: string
+        balance: string
+        formatted: string
+      }
+      escrow: {
+        principal: string
+        openBalance: string
+        formattedOpenBalance: string
+        openOrders: Array<{
+          orderId: string
+          balance: string
+          formatted: string
+        }>
+      } | null
+      warnings: string[]
+    }
+
+export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
+  const actor = await requireSession()
+
+  if (!env.CKBTC_LEDGER_CANISTER_ID) {
+    return { enabled: false }
+  }
+
+  const convex = getConvexClient()
+  const [metadata, operatorBalanceRaw, licensesRaw] = await Promise.all([
+    fetchLedgerMetadata(),
+    getAccountBalance(actor.principal),
+    convex.query('licenses:list' as any, {})
+  ])
+
+  const escrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+  const openOrders =
+    (licensesRaw as LicenseRecord[]).filter(
+      license =>
+        license.paymentMode === 'ckbtc' &&
+        ['pending', 'funded', 'confirmed'].includes(license.status)
+    ) ?? []
+
+  let escrowOpenTotal = 0n
+  const orderBalances: Array<{
+    orderId: string
+    balance: string
+    formatted: string
+  }> = []
+  const warnings: string[] = []
+
+  if (escrowPrincipal) {
+    await Promise.all(
+      openOrders.map(async order => {
+        if (!order.ckbtcSubaccount) {
+          warnings.push(
+            `Order ${order.orderId} missing ckBTC subaccount metadata.`
+          )
+          return
+        }
+        try {
+          const balance = await getAccountBalance(
+            escrowPrincipal,
+            parseSubaccountHex(order.ckbtcSubaccount)
+          )
+          escrowOpenTotal += balance
+          orderBalances.push({
+            orderId: order.orderId,
+            balance: balance.toString(),
+            formatted: formatTokenAmount(balance, metadata.decimals)
+          })
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : 'Unable to fetch balance'
+          warnings.push(`Order ${order.orderId}: ${message}`)
+        }
+      })
+    )
+  }
+
+  return {
+    enabled: true,
+    symbol: metadata.symbol,
+    decimals: metadata.decimals,
+    network: env.BTC_NETWORK,
+    operator: {
+      principal: actor.principal,
+      balance: operatorBalanceRaw.toString(),
+      formatted: formatTokenAmount(operatorBalanceRaw, metadata.decimals)
+    },
+    escrow: escrowPrincipal
+      ? {
+          principal: escrowPrincipal,
+          openBalance: escrowOpenTotal.toString(),
+          formattedOpenBalance: formatTokenAmount(
+            escrowOpenTotal,
+            metadata.decimals
+          ),
+          openOrders: orderBalances
+        }
+      : null,
+    warnings
+  }
+}
+
+export async function allocateOperatorTopUp() {
+  const actor = await requireRole(['operator', 'creator'])
+  if (!env.CKBTC_MINTER_CANISTER_ID) {
+    throw new Error('ckBTC minter not configured. Set CKBTC_MINTER_CANISTER_ID in the environment.')
+  }
+
+  try {
+    const depositAddress = await requestCkbtcDepositAddress({
+      owner: actor.principal,
+      network: env.BTC_NETWORK
+    })
+
+    await recordEvent({
+      actor,
+      action: 'ckbtc.topup_address_allocated',
+      payload: {
+        principal: actor.principal,
+        network: env.BTC_NETWORK,
+        depositAddress
+      },
+      resourceId: actor.principal
+    })
+
+    return {
+      depositAddress,
+      principal: actor.principal,
+      network: env.BTC_NETWORK
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to allocate deposit address'
+    throw new Error(`ckBTC minter rejected the request: ${message}`)
+  }
+}
+
+export async function mintOperatorTopUp() {
+  const actor = await requireRole(['operator', 'creator'])
+
+  try {
+    const response = await updateCkbtcBalance({
+      owner: actor.principal
+    })
+    const summary = summarizeUpdateBalance(response)
+
+    await recordEvent({
+      actor,
+      action: summary.pending
+        ? 'ckbtc.topup_pending'
+        : 'ckbtc.topup_minted',
+      payload: {
+        principal: actor.principal,
+        mintedSats: summary.mintedAmount.toString(),
+        pending: summary.pending
+      },
+      resourceId: actor.principal
+    })
+
+    return {
+      pending: summary.pending,
+      mintedSats: summary.mintedAmount.toString()
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to mint ckBTC'
+    throw new Error(message)
+  }
 }
 
 async function recordEvent({

@@ -13,12 +13,13 @@ function formatDate(value?: number) {
   return new Date(value).toLocaleString()
 }
 
-export default async function PayInvoicePage({
-  params
-}: {
-  params: { orderId: string }
-}) {
-  const invoice = await loadInvoicePublic(params.orderId)
+type PayInvoicePageProps = {
+  params: Promise<{ orderId: string }>
+}
+
+export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
+  const { orderId } = await params
+  const invoice = await loadInvoicePublic(orderId)
 
   if (!invoice) {
     notFound()

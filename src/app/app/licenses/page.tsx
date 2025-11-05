@@ -83,6 +83,11 @@ export default async function LicensesPage() {
   const manualFinalizeOrders = pendingOrders.filter(
     order => isBtcMode(order.paymentMode) && order.status !== 'pending'
   )
+  const orderHistory = [...licenses].sort(
+    (a, b) =>
+      (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt)
+  )
+  const ipTitleLookup = new Map(ips.map(ip => [ip.ipId, ip.title]))
 
   const orderCardDescription = isCkbtcDefault
     ? 'Allocates a ckBTC deposit address via the ICP minter for instant UX.'
@@ -248,6 +253,71 @@ export default async function LicensesPage() {
                           </Button>
                         </form>
                       )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Card className='border-border/60 bg-card/60'>
+        <CardHeader>
+          <CardTitle>Invoice History</CardTitle>
+          <CardDescription>
+            Chronological ledger of all license invoices with settlement status.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Order</TableHead>
+                <TableHead>IP Asset</TableHead>
+                <TableHead>Amount (BTC)</TableHead>
+                <TableHead>Mode</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Deposit Address</TableHead>
+                <TableHead>Updated</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orderHistory.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className='text-center text-sm text-muted-foreground'
+                  >
+                    No invoices recorded yet.
+                  </TableCell>
+                </TableRow>
+              )}
+              {orderHistory.map(order => {
+                const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
+                const statusBadge = statusStyles(order.status)
+                const ipTitle =
+                  ipTitleLookup.get(order.ipId) ?? order.ipId.slice(0, 10) + '…'
+                return (
+                  <TableRow key={`history-${order.orderId}`}>
+                    <TableCell className='font-mono text-xs'>
+                      {order.orderId.slice(0, 8)}…
+                    </TableCell>
+                    <TableCell className='text-sm'>{ipTitle}</TableCell>
+                    <TableCell>{formatBtc(order.amountSats)}</TableCell>
+                    <TableCell>
+                      <Badge variant='outline'>{modeLabel}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={statusBadge.variant} className={statusBadge.className}>
+                        {order.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className='font-mono text-xs break-all'>
+                      {order.btcAddress}
+                    </TableCell>
+                    <TableCell className='text-xs text-muted-foreground'>
+                      {new Date(order.updatedAt ?? order.createdAt).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 )
