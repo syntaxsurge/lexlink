@@ -347,11 +347,16 @@ export async function createLicenseOrder({
 
   let btcAddress: string
   try {
-    const invoice = await requestDepositAddress(orderId, ipRecord.priceSats)
+    const invoice = await requestDepositAddress(orderId)
     btcAddress = invoice.address
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Unknown escrow canister error'
+    if (message.includes('Requested unknown threshold key')) {
+      throw new Error(
+        'Escrow canister rejected the ECDSA request. Ensure your canister uses the `dfx_test_key` (local) or the appropriate subnet key via `ECDSA_KEY_NAME`.'
+      )
+    }
     if (message.includes('canister_not_found')) {
       throw new Error(
         'ICP escrow canister not found. Verify ICP_ESCROW_CANISTER_ID and ICP_HOST point to a deployed canister before generating invoices.'

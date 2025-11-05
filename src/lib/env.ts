@@ -12,8 +12,7 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000'),
   NEXT_PUBLIC_STORY_NETWORK: z.enum(['aeneid', 'mainnet']).default('aeneid'),
   NEXT_PUBLIC_ICP_HOST: z.string().url().optional(),
-  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional(),
-  NEXT_PUBLIC_USE_MOCK_BTC_INVOICE: z.coerce.boolean().default(false)
+  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional()
 })
 
 const serverEnvSchema = z.object({
@@ -84,9 +83,7 @@ function parseEnv() {
     NEXT_PUBLIC_STORY_NETWORK: process.env.NEXT_PUBLIC_STORY_NETWORK,
     NEXT_PUBLIC_ICP_HOST: process.env.NEXT_PUBLIC_ICP_HOST,
     NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID:
-      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID,
-    NEXT_PUBLIC_USE_MOCK_BTC_INVOICE:
-      process.env.NEXT_PUBLIC_USE_MOCK_BTC_INVOICE
+      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   })
 
   const serverEnv = serverEnvSchema.parse({
