@@ -1,8 +1,4 @@
-import {
-  DelegationChain,
-  Ed25519PublicKey,
-  isDelegationValid
-} from '@dfinity/identity'
+import { DelegationChain, isDelegationValid } from '@dfinity/identity'
 import { Principal } from '@dfinity/principal'
 
 export type DelegationChainJson = ReturnType<DelegationChain['toJSON']>
@@ -37,17 +33,16 @@ export function verifyInternetIdentity({
   }
 
   const sessionKeyDer = Uint8Array.from(Buffer.from(sessionPublicKey, 'base64'))
-  const sessionKey = Ed25519PublicKey.fromDer(sessionKeyDer)
-  const derivedPrincipal = Principal.selfAuthenticating(
-    sessionKey.toDer()
-  ).toText()
+  // Do not assume Ed25519; Internet Identity can delegate to multiple key types.
+  // The self-authenticating principal derives directly from the DER-encoded key bytes.
+  const derivedPrincipal = Principal.selfAuthenticating(sessionKeyDer).toText()
 
   if (derivedPrincipal !== principal) {
     return null
   }
 
   const tail = chain.delegations.at(-1)
-  if (!tail || !buffersEqual(tail.delegation.pubkey, sessionKey.toDer())) {
+  if (!tail || !buffersEqual(tail.delegation.pubkey, sessionKeyDer)) {
     return null
   }
 
