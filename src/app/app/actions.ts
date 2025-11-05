@@ -176,7 +176,6 @@ async function recordEvent({
     action,
     payload: JSON.stringify(payload),
     resourceId,
-    actorAddress: actor.address,
     actorPrincipal: actor.principal
   })
 }

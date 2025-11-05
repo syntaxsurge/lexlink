@@ -36,11 +36,9 @@
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tabs": "^1.0.4",
-    "@rainbow-me/rainbowkit": "^2.2.9",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@stardust-collective/dag4": "^2.4.3",
     "@story-protocol/core-sdk": "^1.4.1",
-    "@tanstack/react-query": "^5.24.1",
     "c2pa": "^0.30.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -57,21 +55,16 @@
     "react-dom": "18.3.1",
     "react-hook-form": "^7.53.0",
     "react-textarea-autosize": "^8.5.9",
-    "siwe": "^3.0.0",
     "sonner": "^1.4.3",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "viem": "^2.38.6",
-    "wagmi": "^2.19.2",
     "ws": "^8.18.0",
     "zod": "^3.22.4"
   },
   "pnpm": {
     "overrides": {
-      "viem": "2.38.6",
-      "@wagmi/core": "2.22.1",
-      "@gemini-wallet/core>viem": "2.38.6",
-      "porto>viem": "2.38.6"
+      "viem": "2.38.6"
     }
   },
   "devDependencies": {

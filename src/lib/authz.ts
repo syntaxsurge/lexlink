@@ -5,8 +5,7 @@ import { authOptions } from '@/lib/auth'
 type Role = 'operator' | 'creator' | 'viewer'
 
 export type SessionActor = {
-  address?: `0x${string}`
-  principal?: string
+  principal: string
   role: Role
 }
 
@@ -17,12 +16,11 @@ export async function requireSession(): Promise<SessionActor> {
     throw new Error('Authentication required')
   }
 
-  if (!session.address && !session.principal) {
+  if (!session.principal) {
     throw new Error('Authentication required')
   }
 
   return {
-    address: session.address,
     principal: session.principal,
     role: (session.role as Role) ?? 'viewer'
   }

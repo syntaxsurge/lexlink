@@ -18,9 +18,8 @@ LexLink is a production-ready, cross-protocol legaltech stack:
 - **Convex** stores operational mirrors (IP catalogue, license orders, evidence
   hashes, C2PA bundles, VC documents, and training batches) to power the
   dashboard.
-- **NextAuth + RainbowKit + Internet Identity** provide wallet-based operator
-  access and passwordless consumer sessions, with Convex-backed roles and a
-  full audit ledger.
+- **NextAuth + Internet Identity** provide delegated operator sessions with
+  Convex-backed roles and a full audit ledger.
 
 This repository contains the full end-to-end implementation for Days 2 and 3 of
 the build plan, ready to deploy without placeholders.
@@ -49,7 +48,6 @@ values must point to real infrastructure—no placeholders remain in the code.
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="replace-with-64-char-secret"
 NEXT_PUBLIC_SITE_DOMAIN="localhost:3000"
-NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID="wc_your_project_id"
 
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
@@ -97,9 +95,7 @@ Use this checklist to source every value in `.env.local`.
 - `NEXTAUTH_SECRET`
   - Generate once: `openssl rand -hex 32`
 - `NEXT_PUBLIC_SITE_DOMAIN`
-  - Hostname the browser will use for SIWE domain checking (e.g. `localhost:3000` or `lexlink.app`)
-- `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
-  - Create a free project at https://cloud.walletconnect.com/
+  - Hostname used by the browser (e.g. `localhost:3000` or `lexlink.app`)
 - `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
   - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
 - `CONVEX_DEPLOYMENT`
@@ -209,7 +205,7 @@ pnpm convex:dev          # optional if you prefer local Convex
 pnpm dev
 ```
 
-Visit http://localhost:3000/signin, authenticate with either SIWE or Internet Identity, and you will be redirected into the protected `/app` console.
+Visit http://localhost:3000/signin, authenticate with Internet Identity, and you will be redirected into the protected `/app` console.
 
 ## 5. ICP canister (optional but recommended)
 

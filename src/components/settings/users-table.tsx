@@ -18,13 +18,12 @@ import {
 
 type Props = {
   users: UserRecord[]
-  currentAddress?: `0x${string}`
   currentPrincipal?: string
 }
 
 const roles: Array<UserRecord['role']> = ['operator', 'creator', 'viewer']
 
-export function UsersTable({ users, currentAddress, currentPrincipal }: Props) {
+export function UsersTable({ users, currentPrincipal }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
 
@@ -64,20 +63,21 @@ export function UsersTable({ users, currentAddress, currentPrincipal }: Props) {
         )}
         {users.map(user => {
           const isSelf =
-            (!!currentAddress && user.address === currentAddress) ||
-            (!!currentPrincipal && user.principal === currentPrincipal)
+            !!currentPrincipal && user.principal === currentPrincipal
 
           return (
             <TableRow key={user.id}>
               <TableCell className='text-sm'>
                 <div className='flex flex-col gap-1'>
-                  {user.address && (
-                    <span className='font-mono text-xs'>{user.address}</span>
-                  )}
                   {user.principal && (
                     <span className='font-mono text-xs'>{user.principal}</span>
                   )}
-                  {!user.address && !user.principal && (
+                  {user.address && (
+                    <span className='font-mono text-xs text-muted-foreground'>
+                      {user.address}
+                    </span>
+                  )}
+                  {!user.principal && !user.address && (
                     <span className='text-muted-foreground'>—</span>
                   )}
                 </div>

@@ -16,8 +16,8 @@ export function SiteHeader() {
   const { data: session, status } = useSession()
   const isAuthenticated = status === 'authenticated'
 
-  const shortAddress = session?.address
-    ? `${session.address.slice(0, 6)}…${session.address.slice(-4)}`
+  const principalLabel = session?.principal
+    ? `${session.principal.split('-').slice(0, 2).join('-')}…`
     : null
 
   return (
@@ -53,7 +53,7 @@ export function SiteHeader() {
                   void signOut({ callbackUrl: '/' })
                 }}
               >
-                {shortAddress ?? session?.principal ?? 'Sign out'}
+                {principalLabel ?? session?.principal ?? 'Sign out'}
               </Button>
             </>
           ) : (

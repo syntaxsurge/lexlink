@@ -16,6 +16,48 @@ function toBase64(bytes: Uint8Array) {
   return btoa(binary)
 }
 
+const SESSION_TTL_NS = 7n * 24n * 60n * 60n * 1_000_000_000n
+
+function isBrowser() {
+  return typeof window !== 'undefined'
+}
+
+function isHostedOnMainnet() {
+  if (!isBrowser()) return false
+  const hostname = window.location.hostname
+  return (
+    hostname.includes('.ic0.app') ||
+    hostname.includes('.icp0.io') ||
+    hostname.includes('.raw.icp0.io')
+  )
+}
+
+function getFrontendCanisterId() {
+  return (
+    process.env.NEXT_PUBLIC_CANISTER_ID_FRONTEND ??
+    process.env.CANISTER_ID_FRONTEND ??
+    ''
+  )
+}
+
+function getDerivationOrigin() {
+  if (!isHostedOnMainnet()) return undefined
+  const canisterId = getFrontendCanisterId()
+  if (!canisterId) return undefined
+  return `https://${canisterId}.icp0.io`
+}
+
+function getIdentityProvider() {
+  if (isHostedOnMainnet()) {
+    return 'https://id.ai/'
+  }
+  const canisterId =
+    process.env.NEXT_PUBLIC_CANISTER_ID_INTERNET_IDENTITY ??
+    process.env.CANISTER_ID_INTERNET_IDENTITY ??
+    'rdmx6-jaaaa-aaaaa-aaadq-cai'
+  return `http://${canisterId}.localhost:4943`
+}
+
 export function IcpLoginButton() {
   const [loading, setLoading] = useState(false)
 
@@ -23,9 +65,19 @@ export function IcpLoginButton() {
     try {
       setLoading(true)
       const authClient = await AuthClient.create()
+      const identityProvider = getIdentityProvider()
+      const derivationOrigin = getDerivationOrigin()
+
       await authClient.login({
-        identityProvider: 'https://identity.ic0.app/#authorize'
+        identityProvider,
+        ...(derivationOrigin ? { derivationOrigin } : {}),
+        maxTimeToLive: SESSION_TTL_NS
       })
+
+      const isAuthenticated = await authClient.isAuthenticated()
+      if (!isAuthenticated) {
+        throw new Error('Authentication cancelled')
+      }
 
       const identity = authClient.getIdentity() as unknown as {
         getPrincipal: () => { toText: () => string }

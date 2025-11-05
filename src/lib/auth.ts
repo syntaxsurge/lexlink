@@ -4,29 +4,15 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 import { verifyInternetIdentity } from '@/lib/internet-identity'
-import { verifySiwe } from '@/lib/siwe-server'
 
 const convex = getConvexClient()
 
 type Role = 'operator' | 'creator' | 'viewer'
 
-async function upsertAddressUser(address: `0x${string}`) {
-  return await convex.mutation('users:upsertByAddress' as any, {
-    address,
-    defaultRole: 'operator'
-  })
-}
-
 async function upsertPrincipalUser(principal: string) {
   return await convex.mutation('users:upsertByPrincipal' as any, {
     principal,
-    defaultRole: 'viewer'
-  })
-}
-
-async function fetchRoleFromAddress(address: string) {
-  return await convex.query('users:getByAddress' as any, {
-    address
+    defaultRole: 'operator'
   })
 }
 
@@ -43,32 +29,6 @@ export const authOptions: NextAuthOptions = {
   secret: env.NEXTAUTH_SECRET,
   useSecureCookies: env.NEXTAUTH_URL.startsWith('https://'),
   providers: [
-    CredentialsProvider({
-      id: 'siwe',
-      name: 'Sign-In with Ethereum',
-      credentials: {
-        message: { label: 'Message', type: 'text' },
-        signature: { label: 'Signature', type: 'text' }
-      },
-      async authorize(credentials) {
-        if (!credentials?.message || !credentials?.signature) {
-          return null
-        }
-        const verification = await verifySiwe({
-          message: credentials.message,
-          signature: credentials.signature
-        })
-        if (!verification) {
-          return null
-        }
-        const profile = await upsertAddressUser(verification.address)
-        return {
-          id: profile.id,
-          address: verification.address,
-          role: profile.role
-        }
-      }
-    }),
     CredentialsProvider({
       id: 'internet-identity',
       name: 'Internet Identity',
@@ -111,20 +71,9 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user?.address) {
-        token.address = user.address
-        token.role = user.role as Role
-      }
       if (user?.principal) {
         token.principal = user.principal
         token.role = user.role as Role
-      }
-
-      if (token.address && !token.role) {
-        const profile = await fetchRoleFromAddress(token.address as string)
-        if (profile) {
-          token.role = profile.role as Role
-        }
       }
 
       if (token.principal && !token.role) {
@@ -137,9 +86,6 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      if (token.address) {
-        session.address = token.address as `0x${string}`
-      }
       if (token.principal) {
         session.principal = token.principal as string
       }

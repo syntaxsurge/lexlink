@@ -27,18 +27,10 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle>Current Session</CardTitle>
           <CardDescription>
-            Wallet or Internet Identity used to access protected console routes.
+            Internet Identity principal associated with the active console session.
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3 text-sm'>
-          {session.address && (
-            <div>
-              <p className='text-xs uppercase text-muted-foreground'>
-                EVM Address
-              </p>
-              <p className='font-mono text-xs'>{session.address}</p>
-            </div>
-          )}
           {session.principal && (
             <div>
               <p className='text-xs uppercase text-muted-foreground'>
@@ -53,8 +45,8 @@ export default async function SettingsPage() {
           </div>
           <p className='text-xs text-muted-foreground'>
             Roles are stored in Convex and determine access to operator tooling.
-            SIWE sign-ins default to <strong>operator</strong>; Internet
-            Identity sign-ins default to <strong>viewer</strong>.
+            New Internet Identity sessions default to <strong>operator</strong>
+            so you can manage licensing workflows immediately.
           </p>
         </CardContent>
       </Card>
@@ -71,7 +63,6 @@ export default async function SettingsPage() {
           <CardContent>
             <UsersTable
               users={users}
-              currentAddress={session.address}
               currentPrincipal={session.principal}
             />
           </CardContent>

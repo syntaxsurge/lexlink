@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ReactNode } from 'react'
 
-import { ConnectButton } from '@rainbow-me/rainbowkit'
 import {
   BarChart3,
   BookOpen,
@@ -39,13 +38,14 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname()
   const { data: session } = useSession()
 
-  const identityLabel =
-    session?.address ??
-    session?.principal ??
-    session?.user?.email ??
-    'Signed in'
+  const principal = session?.principal ?? null
+  const identityLabel = principal
+    ? principal.split('-').slice(0, 2).join('-') + '…'
+    : session?.user?.email ?? 'Signed in'
 
-  const fallback = identityLabel.slice(0, 2).toUpperCase()
+  const fallback = principal
+    ? principal.replace(/-/g, '').slice(0, 2).toUpperCase()
+    : 'ID'
 
   const navItems = routes.map(route => {
     const Icon = route.icon
@@ -76,6 +76,11 @@ export function AppShell({ children }: AppShellProps) {
           </Avatar>
           <div className='flex flex-col'>
             <span className='text-sm font-medium'>{identityLabel}</span>
+            {principal && (
+              <span className='text-xs font-mono text-muted-foreground'>
+                {principal}
+              </span>
+            )}
             {session?.role && (
               <span className='text-xs uppercase tracking-wide text-muted-foreground'>
                 {session.role}
@@ -84,8 +89,9 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
         <nav className='mt-6 grid gap-1'>{navItems}</nav>
-        <div className='mt-auto pt-6'>
-          <ConnectButton />
+        <div className='mt-auto pt-6 text-xs text-muted-foreground'>
+          Internet Identity sessions refresh every 7 days. Rotate credentials
+          from the settings panel when needed.
         </div>
       </aside>
 
@@ -105,6 +111,11 @@ export function AppShell({ children }: AppShellProps) {
                   </Avatar>
                   <div className='flex flex-col'>
                     <span className='text-sm font-medium'>{identityLabel}</span>
+                    {principal && (
+                      <span className='text-xs font-mono text-muted-foreground'>
+                        {principal}
+                      </span>
+                    )}
                     {session?.role && (
                       <span className='text-xs uppercase tracking-wide text-muted-foreground'>
                         {session.role}
@@ -113,8 +124,8 @@ export function AppShell({ children }: AppShellProps) {
                   </div>
                 </div>
                 <nav className='mt-6 grid gap-1'>{navItems}</nav>
-                <div className='mt-6'>
-                  <ConnectButton />
+                <div className='mt-6 text-xs text-muted-foreground'>
+                  Manage your session under Settings.
                 </div>
               </SheetContent>
             </Sheet>
@@ -129,7 +140,9 @@ export function AppShell({ children }: AppShellProps) {
             </p>
           </div>
           <div className='hidden md:flex'>
-            <ConnectButton />
+            <Button variant='outline' size='sm' asChild>
+              <Link href='/app/settings'>Session settings</Link>
+            </Button>
           </div>
         </header>
         <main className='mt-4 flex-1'>{children}</main>

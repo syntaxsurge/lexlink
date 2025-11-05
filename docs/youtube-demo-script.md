@@ -9,10 +9,10 @@ This script matches the production build with authentication, shadcn UI, and the
 - Voice-over: “This is LexLink — Story Protocol licensing, ICP Bitcoin escrow, and Constellation audit trails in one console.”
 
 ## Segment 2 — Identity choice (0:25 – 0:55)
-- On-screen: Navigate to `/signin`. Call out the two cards (SIWE + Internet Identity).
-- Voice-over: “Operators authenticate with Sign-In with Ethereum via RainbowKit and NextAuth. Buyers or reviewers can sign in passwordlessly with Internet Identity.”
-- On-screen: Click `Connect Wallet`, sign the SIWE prompt in RainbowKit.
-- Voice-over: “The SIWE signature lands us in the protected `/app` routes.”
+- On-screen: Navigate to `/signin`. Highlight the hero copy on the left and the Internet Identity card on the right.
+- Voice-over: “LexLink borrows Proofly’s Internet Identity hardening. Operators sign in with a principal, receive a seven-day delegation, and land inside the protected console.”
+- On-screen: Click `Sign in with Internet Identity`, approve in the II window, and return to LexLink.
+- Voice-over: “The delegation is verified server-side, Convex seeds the operator role, and the AppShell unlocks.”
 
 ## Segment 3 — Dashboard tour (0:55 – 1:35)
 - On-screen: Overview page shows the new AppShell – sidebar, KPI cards, pending invoices, disputes, and audit log.
@@ -61,7 +61,7 @@ This script matches the production build with authentication, shadcn UI, and the
 
 ## Segment 9 — Compliance ledger & roles (4:40 – 5:20)
 - On-screen: Open `Compliance` to show the full audit trail table. Scroll through a couple of payloads.
-- Voice-over: “The compliance tab is the single ledger. Every action includes actor address/principal, resource ID, and payload JSON.”
+- Voice-over: “The compliance tab is the single ledger. Every action includes actor principal, resource ID, and payload JSON.”
 - On-screen: Navigate to `Settings`. Point out the current session info and the operators table (if logged in as operator).
 - Voice-over: “Roles live in Convex. Operators can promote creators or viewers; viewers authenticate with Internet Identity without a wallet.”
 
