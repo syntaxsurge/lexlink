@@ -14,6 +14,8 @@
     "typecheck": "tsc --noEmit",
     "convex:dev": "npx convex dev",
     "convex:deploy": "npx convex deploy -y",
+    "convex:redeploy": "pnpm convex:deploy && pnpm convex:dev",
+    "convex:reset": "pnpm convex:deploy && npx convex run admin.js:reset '{\"confirm\":\"DROP_ALL\"}'",
     "spg:create": "tsx scripts/create_spg_collection.ts"
   },
   "dependencies": {

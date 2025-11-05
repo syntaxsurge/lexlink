@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as disputes from "../disputes.js";
 import type * as events from "../events.js";
 import type * as ipAssets from "../ipAssets.js";
@@ -30,6 +31,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   disputes: typeof disputes;
   events: typeof events;
   ipAssets: typeof ipAssets;
