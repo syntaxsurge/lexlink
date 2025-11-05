@@ -123,18 +123,74 @@ function ensurePercent(creators: CreatorInput[]) {
 }
 
 async function hashFromUrl(url: string): Promise<`0x${string}`> {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch ${url}: ${response.status} ${response.statusText}`
-    )
+  const candidateUrls = resolveCandidateAssetUrls(url)
+  let lastError: unknown = null
+
+  for (const candidate of candidateUrls) {
+    try {
+      const response = await fetch(candidate, { cache: 'no-store' })
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch ${candidate}: ${response.status} ${response.statusText}`
+        )
+      }
+      const arrayBuffer = await response.arrayBuffer()
+      const hash = crypto
+        .createHash('sha256')
+        .update(Buffer.from(arrayBuffer))
+        .digest('hex')
+      return `0x${hash}` as const
+    } catch (error) {
+      lastError = error
+    }
   }
-  const arrayBuffer = await response.arrayBuffer()
-  const hash = crypto
-    .createHash('sha256')
-    .update(Buffer.from(arrayBuffer))
-    .digest('hex')
-  return `0x${hash}` as const
+
+  const message =
+    lastError instanceof Error ? lastError.message : 'Unknown network failure'
+  throw new Error(`Unable to download asset ${url}: ${message}`)
+}
+
+const IPFS_GATEWAYS = [
+  'https://ipfs.io/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://gateway.pinata.cloud/ipfs/',
+  'https://dweb.link/ipfs/'
+]
+
+function resolveCandidateAssetUrls(source: string): string[] {
+  const candidates = new Set<string>()
+  candidates.add(source)
+
+  try {
+    const url = new URL(source)
+
+    if (url.protocol === 'ipfs:') {
+      const cidPath = url.pathname.replace(/^\/+/, '')
+      for (const gateway of IPFS_GATEWAYS) {
+        candidates.add(`${gateway}${cidPath}`)
+      }
+      return Array.from(candidates)
+    }
+
+    const pathname = url.pathname
+    const ipfsIndex = pathname.indexOf('/ipfs/')
+    if (ipfsIndex !== -1) {
+      const cidPath = pathname.slice(ipfsIndex + '/ipfs/'.length)
+      for (const gateway of IPFS_GATEWAYS) {
+        candidates.add(`${gateway}${cidPath}`)
+      }
+    }
+  } catch {
+    // If URL constructor fails (plain CID), treat as IPFS hash
+    const cid = source.replace(/^ipfs:\/\//, '').replace(/^\/+/, '')
+    if (cid) {
+      for (const gateway of IPFS_GATEWAYS) {
+        candidates.add(`${gateway}${cid}`)
+      }
+    }
+  }
+
+  return Array.from(candidates)
 }
 
 function calculateComplianceScore({
