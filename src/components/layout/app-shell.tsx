@@ -13,7 +13,7 @@ import {
   ScrollText,
   Settings
 } from 'lucide-react'
-import { useSession } from 'next-auth/react'
+import { signOut, useSession } from 'next-auth/react'
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -89,9 +89,19 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         </div>
         <nav className='mt-6 grid gap-1'>{navItems}</nav>
-        <div className='mt-auto pt-6 text-xs text-muted-foreground'>
-          Internet Identity sessions refresh every 7 days. Rotate credentials
-          from the settings panel when needed.
+        <div className='mt-auto pt-6 flex items-center justify-between'>
+          <p className='text-xs text-muted-foreground'>
+            Sessions refresh every 7 days.
+          </p>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => {
+              void signOut({ callbackUrl: '/' })
+            }}
+          >
+            Sign out
+          </Button>
         </div>
       </aside>
 
@@ -139,9 +149,18 @@ export function AppShell({ children }: AppShellProps) {
               Story, ICP, and Constellation.
             </p>
           </div>
-          <div className='hidden md:flex'>
+          <div className='hidden items-center gap-2 md:flex'>
             <Button variant='outline' size='sm' asChild>
               <Link href='/app/settings'>Session settings</Link>
+            </Button>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={() => {
+                void signOut({ callbackUrl: '/' })
+              }}
+            >
+              Sign out
             </Button>
           </div>
         </header>
