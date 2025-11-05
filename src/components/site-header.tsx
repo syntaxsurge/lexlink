@@ -8,10 +8,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { logoutInternetIdentity } from '@/lib/internet-identity-client'
 
-const links = [
-  { href: '/', label: 'Home' },
-  { href: '/playbook', label: 'Playbook' }
-]
+const links = [{ href: '/', label: 'Home' }]
 
 export function SiteHeader() {
   const { data: session, status } = useSession()

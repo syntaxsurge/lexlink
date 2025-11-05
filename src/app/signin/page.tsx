@@ -91,7 +91,7 @@ export default function SignInPage() {
             <p className='mt-1 text-muted-foreground'>
               Your principal is stored securely client-side. LexLink only
               receives a short-lived delegation that the backend validates using
-              the same checks deployed in Proofly&apos;s AuthContext.
+              the same checks enforced across our AuthContext.
             </p>
             <div className='mt-4'>
               <IcpLoginButton />

@@ -63,14 +63,11 @@ export default function HomePage() {
             Story Protocol IP, ICP Bitcoin escrow, and Constellation evidence in one console.
           </h1>
           <p className='text-lg text-slate-300 md:text-xl'>
-            LexLink fuses the high-signal practices from Proofly’s Internet Identity flow and Splitsafe’s ckBTC settlement model so teams can operate with confidence and regulators get verifiable telemetry.
+            LexLink fuses hardened Internet Identity guardrails with ckBTC-native settlement controls so teams can operate with confidence and regulators get verifiable telemetry.
           </p>
           <div className='flex flex-wrap items-center justify-center gap-3'>
             <Button size='lg' asChild className='bg-white text-slate-900 hover:bg-slate-200'>
               <Link href='/app'>Launch the console</Link>
-            </Button>
-            <Button size='lg' variant='secondary' asChild className='border-white/40 text-white hover:bg-white/10'>
-              <Link href='/playbook'>Playbook reference</Link>
             </Button>
           </div>
         </div>
@@ -99,7 +96,7 @@ export default function HomePage() {
         <div className='space-y-5'>
           <h2 className='text-2xl font-semibold'>Three-step operator workflow</h2>
           <p className='text-sm text-muted-foreground'>
-            Each step maps to a server action that orchestrates Story, ICP, and Constellation calls. We reused Splitsafe&apos;s ckBTC validation playbook to harden payment checks and Proofly&apos;s delegation guardrails for Internet Identity.
+            Each step maps to a server action that orchestrates Story, ICP, and Constellation calls, with ckBTC validation and Internet Identity delegation safeguards baked into the flow.
           </p>
           <ul className='space-y-4'>
             {workflow.map(step => (
