@@ -8,9 +8,17 @@ import Text "mo:base/Text";
 import Time "mo:base/Time";
 import Trie "mo:base/Trie";
 
+import Prim "mo:prim";
+
 import Bitcoin "../lib/Bitcoin";
 
 persistent actor btc_escrow {
+  let versionText : Text = "0.1.0-dev";
+
+  let keyName : Text = switch (Prim.envVar("ECDSA_KEY_NAME")) {
+    case (?value) { value };
+    case null { "dfx_test_key" };
+  };
   func key(orderId : Text) : Trie.Key<Text> {
     { hash = Text.hash(orderId); key = orderId }
   };
@@ -59,7 +67,7 @@ persistent actor btc_escrow {
           Blob.toArray(Text.encodeUtf8("lexlink")),
           Blob.toArray(Text.encodeUtf8(orderId)),
         ];
-        let address = await Bitcoin.get_p2wpkh_address(network, "lexlink-btc", derivationPath);
+        let address = await Bitcoin.get_p2wpkh_address(network, keyName, derivationPath);
         addressBook := Trie.put(addressBook, key(orderId), Text.equal, address).0;
         address
       };
@@ -131,5 +139,9 @@ persistent actor btc_escrow {
       "\"confirmed\":" # confirmed # "," #
       "\"timestamp\":\"" # now # "\"" #
     "}"
+  };
+
+  public query func version() : async Text {
+    versionText
   };
 }
