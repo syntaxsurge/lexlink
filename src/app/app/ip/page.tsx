@@ -1,4 +1,8 @@
+import type { ComponentProps } from 'react'
+
 import Link from 'next/link'
+
+import { format } from 'date-fns'
 
 import { loadDashboardData, type IpRecord } from '@/app/app/actions'
 import { RegisterIpForm } from '@/components/app/register-ip-form'
@@ -19,11 +23,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 
-const STORY_EXPLORER_BASE = 'https://aeneid.storyscan.io/ipa/'
-
-function formatDate(ms: number) {
-  return new Date(ms).toLocaleString()
-}
+const STORY_EXPLORER_BASE = 'https://aeneid.storyscan.io/ip-asset/'
 
 export default async function IpRegistryPage() {
   const { ips } = await loadDashboardData()
@@ -87,9 +87,9 @@ export default async function IpRegistryPage() {
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>IP ID</TableHead>
-                <TableHead>Price (sats)</TableHead>
+                <TableHead>Price (BTC)</TableHead>
                 <TableHead>Royalty</TableHead>
-                <TableHead>Media</TableHead>
+                <TableHead>Links</TableHead>
                 <TableHead>Created</TableHead>
               </TableRow>
             </TableHeader>
@@ -107,43 +107,36 @@ export default async function IpRegistryPage() {
               {ips.map((ip: IpRecord) => (
                 <TableRow key={ip.ipId}>
                   <TableCell className='font-medium'>{ip.title}</TableCell>
-                  <TableCell className='font-mono text-xs'>{ip.ipId}</TableCell>
+                  <TableCell className='font-mono text-xs'>
+                    <a
+                      href={`${STORY_EXPLORER_BASE}${ip.ipId}`}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='underline'
+                    >
+                      {ip.ipId}
+                    </a>
+                  </TableCell>
                   <TableCell>
-                    {Intl.NumberFormat('en-US').format(ip.priceSats)}
+                    {(ip.priceSats / 100_000_000).toFixed(6)}
                   </TableCell>
                   <TableCell>{(ip.royaltyBps / 100).toFixed(2)}%</TableCell>
                   <TableCell>
                     <div className='flex flex-wrap gap-2'>
-                      <Badge asChild>
-                        <Link
-                          href={ip.mediaUrl}
-                          target='_blank'
-                          rel='noreferrer'
-                        >
-                          Media
-                        </Link>
-                      </Badge>
-                      <Badge asChild variant='outline'>
-                        <Link
-                          href={ip.ipMetadataUri}
-                          target='_blank'
-                          rel='noreferrer'
-                        >
-                          IP Metadata
-                        </Link>
-                      </Badge>
-                      <Badge asChild variant='outline'>
-                        <Link
-                          href={`${STORY_EXPLORER_BASE}${ip.ipId}`}
-                          target='_blank'
-                          rel='noreferrer'
-                        >
-                          StoryScan
-                        </Link>
-                      </Badge>
+                      <AssetLink label='Media' href={resolveMediaUrl(ip.mediaUrl)} />
+                      <AssetLink
+                        label='IP Metadata'
+                        href={resolveMediaUrl(ip.ipMetadataUri)}
+                        variant='outline'
+                      />
+                      <AssetLink
+                        label='NFT Metadata'
+                        href={resolveMediaUrl(ip.nftMetadataUri)}
+                        variant='outline'
+                      />
                     </div>
                   </TableCell>
-                  <TableCell>{formatDate(ip.createdAt)}</TableCell>
+                  <TableCell>{format(ip.createdAt, 'PPpp')}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -152,4 +145,35 @@ export default async function IpRegistryPage() {
       </Card>
     </div>
   )
+}
+
+type AssetLinkProps = {
+  label: string
+  href: string
+  variant?: ComponentProps<typeof Badge>['variant']
+}
+
+function AssetLink({ label, href, variant }: AssetLinkProps) {
+  return (
+    <Badge asChild variant={variant}>
+      <Link href={href} target='_blank' rel='noreferrer'>
+        {label}
+      </Link>
+    </Badge>
+  )
+}
+
+function resolveMediaUrl(url: string) {
+  if (url.startsWith('ipfs://')) {
+    return `https://ipfs.io/ipfs/${url.replace('ipfs://', '')}`
+  }
+  try {
+    const parsed = new URL(url)
+    if (parsed.pathname.includes('/ipfs/')) {
+      return `https://ipfs.io${parsed.pathname}`
+    }
+    return parsed.toString()
+  } catch {
+    return `https://ipfs.io/ipfs/${url}`
+  }
 }

@@ -13,24 +13,37 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 const formSchema = z.object({
-  title: z.string().min(3),
-  description: z.string().min(20),
-  createdAt: z.string().min(4),
-  imageUrl: z.string().url(),
-  mediaUrl: z.string().url(),
-  mediaType: z.string().min(3),
-  priceSats: z.coerce.number().int().positive(),
-  royaltyBps: z.coerce
-    .number()
-    .int()
-    .min(0)
-    .max(10_000, 'Royalty BPS cannot exceed 10,000 (100%)'),
-  creatorName: z.string().min(2),
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  description: z.string().min(20, 'Description must be at least 20 characters'),
+  createdAt: z.string().min(1, 'Select the creation date'),
+  imageUrl: z
+    .string()
+    .min(1, 'Provide a cover image URL')
+    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID'),
+  mediaUrl: z
+    .string()
+    .min(1, 'Provide the media URL')
+    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID'),
+  mediaType: z.string().min(3, 'Provide a MIME type (e.g. audio/mpeg)'),
+  priceBtc: z
+    .number({ required_error: 'Set a license price in BTC' })
+    .min(0.00000001, 'Price must be at least 0.00000001 BTC'),
+  royaltyPercent: z
+    .number({ required_error: 'Set the royalty share' })
+    .min(0, 'Royalties cannot be negative')
+    .max(100, 'Royalties cannot exceed 100%'),
+  creatorName: z.string().min(2, 'Creator name is required'),
   creatorAddress: z
     .string()
-    .regex(/^0x[a-fA-F0-9]{40}$/, 'Creator address must be 0x-prefixed'),
-  ipMetadataUri: z.string().url(),
-  nftMetadataUri: z.string().url()
+    .regex(/^0x[a-fA-F0-9]{40}$/, 'Creator address must be a 0x-prefixed EVM address'),
+  ipMetadataUri: z
+    .string()
+    .min(1, 'Provide the IP metadata URI')
+    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID'),
+  nftMetadataUri: z
+    .string()
+    .min(1, 'Provide the NFT metadata URI')
+    .refine(isUrlOrIpfs, 'Provide a valid URL or ipfs:// CID')
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -47,7 +60,18 @@ export function RegisterIpForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      createdAt: new Date().toISOString()
+      title: '',
+      description: '',
+      createdAt: defaultDateTimeLocal(),
+      imageUrl: '',
+      mediaUrl: '',
+      mediaType: 'audio/mpeg',
+      priceBtc: 0.001,
+      royaltyPercent: 10,
+      creatorName: '',
+      creatorAddress: '',
+      ipMetadataUri: '',
+      nftMetadataUri: ''
     }
   })
 
@@ -56,17 +80,21 @@ export function RegisterIpForm() {
     setResult(null)
     startTransition(async () => {
       try {
+        const createdAtIso = new Date(values.createdAt).toISOString()
+        const priceSats = Math.round(values.priceBtc * 100_000_000)
+        const royaltyBps = Math.round(values.royaltyPercent * 100)
+
         const response = await registerIpAsset({
           title: values.title,
           description: values.description,
-          createdAt: values.createdAt,
-          imageUrl: values.imageUrl,
-          mediaUrl: values.mediaUrl,
+          createdAt: createdAtIso,
+          imageUrl: resolveUrl(values.imageUrl),
+          mediaUrl: resolveUrl(values.mediaUrl),
           mediaType: values.mediaType,
-          priceSats: values.priceSats,
-          royaltyBps: values.royaltyBps,
-          ipMetadataUri: values.ipMetadataUri,
-          nftMetadataUri: values.nftMetadataUri,
+          priceSats,
+          royaltyBps,
+          ipMetadataUri: resolveUrl(values.ipMetadataUri),
+          nftMetadataUri: resolveUrl(values.nftMetadataUri),
           creators: [
             {
               name: values.creatorName,
@@ -88,146 +116,147 @@ export function RegisterIpForm() {
     })
   }
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = form
+
   return (
     <div className='space-y-6'>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className='flex flex-col gap-4'
-      >
+      <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
         <div className='grid gap-3 md:grid-cols-2'>
-          <div className='space-y-2'>
-            <Label htmlFor='title'>Title</Label>
-            <Input id='title' {...form.register('title')} />
-            {form.formState.errors.title && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.title.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='createdAt'>Created At</Label>
-            <Input id='createdAt' {...form.register('createdAt')} />
-            {form.formState.errors.createdAt && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.createdAt.message}
-              </p>
-            )}
-          </div>
+          <Field label='Title' error={errors.title?.message}>
+            <Input
+              id='title'
+              placeholder='Midnight Marriage'
+              {...register('title')}
+            />
+          </Field>
+          <Field label='Creation timestamp' error={errors.createdAt?.message}>
+            <Input
+              id='createdAt'
+              type='datetime-local'
+              {...register('createdAt')}
+            />
+          </Field>
         </div>
-        <div className='space-y-2'>
-          <Label htmlFor='description'>Description</Label>
+
+        <Field label='Description' error={errors.description?.message}>
           <Textarea
             id='description'
             rows={4}
-            {...form.register('description')}
+            placeholder='Describe the work, collaborators, and licensing intent.'
+            {...register('description')}
           />
-          {form.formState.errors.description && (
-            <p className='text-sm text-destructive'>
-              {form.formState.errors.description.message}
-            </p>
-          )}
-        </div>
+          <Hint>
+            This copy appears in your IP metadata bundle and Story Protocol
+            notes.
+          </Hint>
+        </Field>
+
         <div className='grid gap-3 md:grid-cols-2'>
-          <div className='space-y-2'>
-            <Label htmlFor='imageUrl'>Cover Image URL</Label>
-            <Input id='imageUrl' {...form.register('imageUrl')} />
-            {form.formState.errors.imageUrl && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.imageUrl.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='mediaUrl'>Media URL</Label>
-            <Input id='mediaUrl' {...form.register('mediaUrl')} />
-            {form.formState.errors.mediaUrl && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.mediaUrl.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='mediaType'>Media Type (MIME)</Label>
-            <Input id='mediaType' {...form.register('mediaType')} />
-            {form.formState.errors.mediaType && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.mediaType.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='priceSats'>License Price (sats)</Label>
+          <Field label='Cover image URL' error={errors.imageUrl?.message}>
             <Input
-              id='priceSats'
-              type='number'
-              min={1}
-              {...form.register('priceSats', { valueAsNumber: true })}
+              id='imageUrl'
+              placeholder='https://cdn.example.com/cover.jpg or ipfs://CID'
+              {...register('imageUrl')}
             />
-            {form.formState.errors.priceSats && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.priceSats.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='royaltyBps'>Royalty (BPS)</Label>
+          </Field>
+          <Field label='Media URL' error={errors.mediaUrl?.message}>
             <Input
-              id='royaltyBps'
+              id='mediaUrl'
+              placeholder='https://cdn.example.com/audio.mp3 or ipfs://CID'
+              {...register('mediaUrl')}
+            />
+          </Field>
+          <Field label='Media type (MIME)' error={errors.mediaType?.message}>
+            <Input
+              id='mediaType'
+              placeholder='audio/mpeg'
+              {...register('mediaType')}
+            />
+          </Field>
+          <Field label='License price (BTC)' error={errors.priceBtc?.message}>
+            <Input
+              id='priceBtc'
+              type='number'
+              min={0.00000001}
+              step={0.00000001}
+              placeholder='0.0025'
+              inputMode='decimal'
+              {...register('priceBtc', { valueAsNumber: true })}
+            />
+            <Hint>
+              Buyers pay this amount in BTC. We convert it to satoshis for Story
+              Protocol.
+            </Hint>
+          </Field>
+          <Field
+            label='Royalty share (%)'
+            error={errors.royaltyPercent?.message}
+          >
+            <Input
+              id='royaltyPercent'
               type='number'
               min={0}
-              max={10000}
-              {...form.register('royaltyBps', { valueAsNumber: true })}
+              max={100}
+              step={0.1}
+              placeholder='10'
+              inputMode='decimal'
+              {...register('royaltyPercent', { valueAsNumber: true })}
             />
-            {form.formState.errors.royaltyBps && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.royaltyBps.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='creatorName'>Creator Name</Label>
-            <Input id='creatorName' {...form.register('creatorName')} />
-            {form.formState.errors.creatorName && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.creatorName.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='creatorAddress'>Creator Wallet</Label>
-            <Input id='creatorAddress' {...form.register('creatorAddress')} />
-            {form.formState.errors.creatorAddress && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.creatorAddress.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='ipMetadataUri'>IP Metadata URI</Label>
-            <Input id='ipMetadataUri' {...form.register('ipMetadataUri')} />
-            {form.formState.errors.ipMetadataUri && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.ipMetadataUri.message}
-              </p>
-            )}
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='nftMetadataUri'>NFT Metadata URI</Label>
-            <Input id='nftMetadataUri' {...form.register('nftMetadataUri')} />
-            {form.formState.errors.nftMetadataUri && (
-              <p className='text-sm text-destructive'>
-                {form.formState.errors.nftMetadataUri.message}
-              </p>
-            )}
-          </div>
+            <Hint>
+              Percentage of downstream revenue routed back to the licensor.
+            </Hint>
+          </Field>
         </div>
+
+        <div className='grid gap-3 md:grid-cols-2'>
+          <Field label='Creator name' error={errors.creatorName?.message}>
+            <Input
+              id='creatorName'
+              placeholder='LexLink Demo'
+              {...register('creatorName')}
+            />
+          </Field>
+          <Field
+            label='Creator wallet'
+            error={errors.creatorAddress?.message}
+          >
+            <Input
+              id='creatorAddress'
+              placeholder='0xabc123…'
+              {...register('creatorAddress')}
+            />
+          </Field>
+          <Field label='IP metadata URI' error={errors.ipMetadataUri?.message}>
+            <Input
+              id='ipMetadataUri'
+              placeholder='https://cdn.example.com/ip.json or ipfs://CID'
+              {...register('ipMetadataUri')}
+            />
+          </Field>
+          <Field
+            label='NFT metadata URI'
+            error={errors.nftMetadataUri?.message}
+          >
+            <Input
+              id='nftMetadataUri'
+              placeholder='https://cdn.example.com/nft.json or ipfs://CID'
+              {...register('nftMetadataUri')}
+            />
+          </Field>
+        </div>
+
         <div className='flex items-center gap-3'>
           <Button type='submit' disabled={isPending}>
-            {isPending ? 'Publishing…' : 'Register IP Asset'}
+            {isPending ? 'Registering…' : 'Register IP Asset'}
           </Button>
           {error && <span className='text-sm text-destructive'>{error}</span>}
         </div>
       </form>
+
       {result && (
         <dl className='grid gap-2 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
           <div className='flex flex-col gap-1'>
@@ -250,4 +279,48 @@ export function RegisterIpForm() {
       )}
     </div>
   )
+}
+
+type FieldProps = {
+  label: string
+  error?: string
+  children: React.ReactNode
+}
+
+function Field({ label, error, children }: FieldProps) {
+  return (
+    <div className='space-y-2'>
+      <Label className='text-sm font-medium text-foreground'>{label}</Label>
+      {children}
+      {error && <p className='text-sm text-destructive'>{error}</p>}
+    </div>
+  )
+}
+
+function Hint({ children }: { children: React.ReactNode }) {
+  return <p className='text-xs text-muted-foreground'>{children}</p>
+}
+
+function defaultDateTimeLocal() {
+  const iso = new Date().toISOString()
+  return iso.slice(0, 16)
+}
+
+function resolveUrl(value: string) {
+  if (value.startsWith('ipfs://')) {
+    return value.replace('ipfs://', 'https://ipfs.io/ipfs/')
+  }
+  return value
+}
+
+function isUrlOrIpfs(value: string) {
+  if (value.startsWith('ipfs://')) {
+    return value.length > 'ipfs://'.length
+  }
+  try {
+    new URL(value)
+    return true
+  } catch {
+    return false
+  }
 }
