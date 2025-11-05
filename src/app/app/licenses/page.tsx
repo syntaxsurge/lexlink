@@ -22,8 +22,14 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { env } from '@/lib/env'
+import {
+  ipAccountOnBlockExplorer,
+  ipAssetExplorerUrl,
+  type StoryNetwork
+} from '@/lib/story-links'
 
-const STORY_EXPLORER_BASE = 'https://aeneid.storyscan.io/ipa/'
+const network = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
 const INTEGRATIONNET_EXPLORER =
   'https://explorer.mainnet.constellationnetwork.io/transactions/'
 
@@ -107,7 +113,27 @@ export default async function LicensesPage() {
                     {order.orderId.slice(0, 10)}…
                   </TableCell>
                   <TableCell className='font-mono text-xs'>
-                    {order.ipId}
+                    <div className='flex flex-col gap-1'>
+                      <span className='break-all text-xs text-muted-foreground'>
+                        {order.ipId}
+                      </span>
+                      <Link
+                        href={ipAssetExplorerUrl(order.ipId, network)}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='text-primary underline-offset-4 hover:underline'
+                      >
+                        Story IP Explorer
+                      </Link>
+                      <Link
+                        href={ipAccountOnBlockExplorer(order.ipId, network)}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='text-xs text-muted-foreground underline-offset-4 hover:underline'
+                      >
+                        StoryScan address
+                      </Link>
+                    </div>
                   </TableCell>
                   <TableCell className='font-mono text-xs'>
                     {order.buyer}
@@ -184,15 +210,26 @@ export default async function LicensesPage() {
                       Story IP ID {order.ipId}
                     </p>
                   </div>
-                  <Button asChild size='sm' variant='outline'>
-                    <Link
-                      href={`${STORY_EXPLORER_BASE}${order.ipId}`}
-                      target='_blank'
-                      rel='noreferrer'
-                    >
-                      StoryScan
-                    </Link>
-                  </Button>
+                  <div className='flex items-center gap-2'>
+                    <Button asChild size='sm' variant='outline'>
+                      <Link
+                        href={ipAssetExplorerUrl(order.ipId, network)}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        Story IP Explorer
+                      </Link>
+                    </Button>
+                    <Button asChild size='sm' variant='ghost'>
+                      <Link
+                        href={ipAccountOnBlockExplorer(order.ipId, network)}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        StoryScan
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
                 <div className='mt-3 flex flex-wrap gap-2 text-xs'>
                   {c2paHref && (

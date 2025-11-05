@@ -7,6 +7,12 @@ import { format } from 'date-fns'
 import { loadDashboardData, type IpRecord } from '@/app/app/actions'
 import { RegisterIpForm } from '@/components/app/register-ip-form'
 import { Badge } from '@/components/ui/badge'
+import { env } from '@/lib/env'
+import {
+  ipAccountOnBlockExplorer,
+  ipAssetExplorerUrl,
+  type StoryNetwork
+} from '@/lib/story-links'
 import {
   Card,
   CardContent,
@@ -23,7 +29,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 
-const STORY_EXPLORER_BASE = 'https://aeneid.storyscan.io/ip-asset/'
+const network = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
 
 export default async function IpRegistryPage() {
   const { ips } = await loadDashboardData()
@@ -107,16 +113,7 @@ export default async function IpRegistryPage() {
               {ips.map((ip: IpRecord) => (
                 <TableRow key={ip.ipId}>
                   <TableCell className='font-medium'>{ip.title}</TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    <a
-                      href={`${STORY_EXPLORER_BASE}${ip.ipId}`}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='underline'
-                    >
-                      {ip.ipId}
-                    </a>
-                  </TableCell>
+                  <TableCell className='font-mono text-xs'>{ip.ipId}</TableCell>
                   <TableCell>
                     {(ip.priceSats / 100_000_000).toFixed(6)}
                   </TableCell>
@@ -132,6 +129,16 @@ export default async function IpRegistryPage() {
                       <AssetLink
                         label='NFT Metadata'
                         href={resolveMediaUrl(ip.nftMetadataUri)}
+                        variant='outline'
+                      />
+                      <AssetLink
+                        label='Story IP Explorer'
+                        href={ipAssetExplorerUrl(ip.ipId, network)}
+                        variant='outline'
+                      />
+                      <AssetLink
+                        label='StoryScan (address)'
+                        href={ipAccountOnBlockExplorer(ip.ipId, network)}
                         variant='outline'
                       />
                     </div>

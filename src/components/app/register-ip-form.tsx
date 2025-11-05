@@ -1,5 +1,7 @@
 'use client'
 
+import type { ComponentProps, ReactNode } from 'react'
+
 import { useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,6 +13,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  ipAccountOnBlockExplorer,
+  ipAssetExplorerUrl,
+  type StoryNetwork
+} from '@/lib/story-links'
+
+const storyNetwork: StoryNetwork =
+  process.env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet' ? 'mainnet' : 'aeneid'
 
 const formSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -262,6 +272,17 @@ export function RegisterIpForm() {
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>IP ID</dt>
             <dd className='break-all font-mono text-xs'>{result.ipId}</dd>
+            <div className='flex flex-wrap gap-2 pt-1'>
+              <ResultLink href={ipAssetExplorerUrl(result.ipId, storyNetwork)}>
+                View in Story IP Explorer
+              </ResultLink>
+              <ResultLink
+                href={ipAccountOnBlockExplorer(result.ipId, storyNetwork)}
+                variant='outline'
+              >
+                View on StoryScan
+              </ResultLink>
+            </div>
           </div>
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>
@@ -297,8 +318,24 @@ function Field({ label, error, children }: FieldProps) {
   )
 }
 
-function Hint({ children }: { children: React.ReactNode }) {
+function Hint({ children }: { children: ReactNode }) {
   return <p className='text-xs text-muted-foreground'>{children}</p>
+}
+
+type ResultLinkProps = {
+  href: string
+  variant?: ComponentProps<typeof Button>['variant']
+  children: ReactNode
+}
+
+function ResultLink({ href, variant = 'outline', children }: ResultLinkProps) {
+  return (
+    <Button asChild size='sm' variant={variant} className='text-xs'>
+      <a href={href} target='_blank' rel='noreferrer'>
+        {children}
+      </a>
+    </Button>
+  )
 }
 
 function defaultDateTimeLocal() {

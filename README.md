@@ -49,6 +49,7 @@ NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="replace-with-64-char-secret"
 NEXT_PUBLIC_SITE_DOMAIN="localhost:3000"
 NEXT_PUBLIC_IDENTITY_PROVIDER_URL="https://identity.internetcomputer.org" # optional override
+NEXT_PUBLIC_STORY_NETWORK="aeneid" # or 'mainnet'
 
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
@@ -99,6 +100,8 @@ Use this checklist to source every value in `.env.local`.
   - Hostname used by the browser (e.g. `localhost:3000` or `lexlink.app`)
 - `NEXT_PUBLIC_IDENTITY_PROVIDER_URL` (optional)
   - Override when pointing to a custom Internet Identity deployment; defaults to `https://identity.internetcomputer.org`
+- `NEXT_PUBLIC_STORY_NETWORK`
+  - Switch Story explorer links between `aeneid` (testnet, default) and `mainnet`
 - `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
   - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
 - `CONVEX_DEPLOYMENT`

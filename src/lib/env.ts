@@ -9,7 +9,8 @@ const publicEnvSchema = z.object({
       /^DAG[0-9A-Za-z]{20,64}$/,
       'NEXT_PUBLIC_DAG_ADDRESS must be a DAG address'
     ),
-  NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000')
+  NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000'),
+  NEXT_PUBLIC_STORY_NETWORK: z.enum(['aeneid', 'mainnet']).default('aeneid')
 })
 
 const serverEnvSchema = z.object({
@@ -76,7 +77,8 @@ function parseEnv() {
     NEXT_PUBLIC_AENEID_RPC: process.env.NEXT_PUBLIC_AENEID_RPC,
     NEXT_PUBLIC_CONVEX_URL: process.env.NEXT_PUBLIC_CONVEX_URL,
     NEXT_PUBLIC_DAG_ADDRESS: process.env.NEXT_PUBLIC_DAG_ADDRESS,
-    NEXT_PUBLIC_SITE_DOMAIN: process.env.NEXT_PUBLIC_SITE_DOMAIN
+    NEXT_PUBLIC_SITE_DOMAIN: process.env.NEXT_PUBLIC_SITE_DOMAIN,
+    NEXT_PUBLIC_STORY_NETWORK: process.env.NEXT_PUBLIC_STORY_NETWORK
   })
 
   const serverEnv = serverEnvSchema.parse({

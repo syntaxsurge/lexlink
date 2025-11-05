@@ -24,12 +24,18 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { env } from '@/lib/env'
+import {
+  ipAccountOnBlockExplorer,
+  ipAssetExplorerUrl,
+  type StoryNetwork
+} from '@/lib/story-links'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
 }
 
-const STORY_EXPLORER_BASE = 'https://aeneid.storyscan.io/ipa/'
+const network = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
 
 function MetricCard({
   title,
@@ -266,15 +272,26 @@ export default async function OverviewPage() {
                       Compliance score {order.complianceScore}/100
                     </p>
                   </div>
-                  <Button asChild size='sm' variant='outline'>
-                    <Link
-                      href={`${STORY_EXPLORER_BASE}${order.ipId}`}
-                      target='_blank'
-                      rel='noreferrer'
-                    >
-                      StoryScan
-                    </Link>
-                  </Button>
+                  <div className='flex items-center gap-2'>
+                    <Button asChild size='sm' variant='outline'>
+                      <Link
+                        href={ipAssetExplorerUrl(order.ipId, network)}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        View IP Explorer
+                      </Link>
+                    </Button>
+                    <Button asChild size='sm' variant='ghost'>
+                      <Link
+                        href={ipAccountOnBlockExplorer(order.ipId, network)}
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        StoryScan
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
                 <dl className='mt-3 grid gap-1 text-xs'>
                   <div>
