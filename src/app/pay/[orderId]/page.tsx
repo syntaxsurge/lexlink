@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { loadInvoicePublic } from '@/app/app/actions'
 import { InvoicePageClient } from '@/app/pay/[orderId]/_components/invoice-page-client'
 import { env } from '@/lib/env'
+import type { ConstellationNetworkId } from '@/lib/constellation-links'
+import type { StoryNetwork } from '@/lib/story-links'
 
 type PayInvoicePageProps = {
   params: Promise<{ orderId: string }>
@@ -42,6 +44,11 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
       escrowPrincipal={escrowPrincipal}
       ckbtcNetwork={env.CKBTC_NETWORK}
       fallbackNetwork={invoice.network ?? env.BTC_NETWORK}
+      storyNetwork={env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork}
+      storyLicenseAddress={env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`}
+      storyChainId={env.STORY_CHAIN_ID}
+      constellationNetwork={env.CONSTELLATION_NETWORK as ConstellationNetworkId}
+      constellationEnabled={env.CONSTELLATION_ENABLED}
     />
   )
 }

@@ -1982,28 +1982,53 @@ export async function updatePaymentModeSetting(mode: PaymentMode) {
   }
 }
 
+type PublicLicenseRecord = {
+  orderId: string
+  ipId: string
+  ipTitle: string
+  amountSats?: number
+  btcAddress: string
+  buyer: string
+  paymentMode?: string
+  status: string
+  ckbtcSubaccount?: string
+  ckbtcMintedSats?: number
+  ckbtcBlockIndex?: number
+  btcTxId?: string
+  attestationHash?: string
+  constellationTx?: string
+  tokenOnChainId?: string
+  licenseTermsId?: string
+  createdAt: number
+  updatedAt?: number
+  fundedAt?: number
+  finalizedAt?: number
+  network?: string
+  c2paArchiveUri?: string | null
+  c2paArchiveFileName?: string | null
+  c2paArchiveSize?: number | null
+  c2paArchiveUrl?: string | null
+  vcHash?: string
+  complianceScore?: number
+}
+
 export async function loadInvoicePublic(orderId: string) {
   if (!orderId) return null
   const convex = getConvexClient()
   const invoice = (await convex.query('licenses:getPublic' as any, {
     orderId
-  })) as {
-    orderId: string
-    ipId: string
-    ipTitle: string
-    amountSats?: number
-    btcAddress: string
-    paymentMode?: string
-    status: string
-    ckbtcSubaccount?: string
-    ckbtcMintedSats?: number
-    ckbtcBlockIndex?: number
-    createdAt: number
-    updatedAt?: number
-    network?: string
-  } | null
+  })) as PublicLicenseRecord | null
 
-  return invoice
+  if (!invoice) {
+    return null
+  }
+
+  return {
+    ...invoice,
+    c2paArchiveUrl: invoice.c2paArchiveUri
+      ? ipfsGatewayUrl(invoice.c2paArchiveUri)
+      : null
+  }
 }
 
 export async function completeLicenseSaleSystem({

@@ -63,14 +63,27 @@ export const getPublic = queryGeneric({
       ipTitle: ip?.title ?? license.ipId,
       amountSats: license.amountSats,
       btcAddress: license.btcAddress,
+      buyer: license.buyer,
       paymentMode: license.paymentMode,
       status: license.status,
       ckbtcSubaccount: license.ckbtcSubaccount,
       ckbtcMintedSats: license.ckbtcMintedSats,
       ckbtcBlockIndex: license.ckbtcBlockIndex,
+      btcTxId: license.btcTxId,
+      attestationHash: license.attestationHash,
+      constellationTx: license.constellationTx,
+      tokenOnChainId: license.tokenOnChainId,
+      licenseTermsId: license.licenseTermsId,
       createdAt: license.createdAt,
       updatedAt: license.updatedAt,
-      network: license.network
+      fundedAt: license.fundedAt,
+      finalizedAt: license.finalizedAt,
+      network: license.network,
+      c2paArchiveUri: license.c2paArchiveUri ?? null,
+      c2paArchiveFileName: license.c2paArchiveFileName ?? null,
+      c2paArchiveSize: license.c2paArchiveSize ?? null,
+      vcHash: license.vcHash,
+      complianceScore: license.complianceScore
     }
   }
 })

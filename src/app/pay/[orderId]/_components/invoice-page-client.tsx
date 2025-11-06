@@ -8,6 +8,9 @@ import {
   InvoiceStatusProvider,
   type InvoiceSnapshot
 } from '@/app/pay/[orderId]/_components/invoice-status-provider'
+import { FinalizationTimeline } from '@/app/pay/[orderId]/_components/finalization-timeline'
+import type { ConstellationNetworkId } from '@/lib/constellation-links'
+import type { StoryNetwork } from '@/lib/story-links'
 
 type InvoicePageClientProps = {
   initialInvoice: InvoiceSnapshot
@@ -16,6 +19,11 @@ type InvoicePageClientProps = {
   escrowPrincipal?: string | null
   ckbtcNetwork: 'ckbtc-mainnet' | 'ckbtc-testnet'
   fallbackNetwork: string
+  storyNetwork: StoryNetwork
+  storyLicenseAddress: `0x${string}`
+  storyChainId: number
+  constellationNetwork: ConstellationNetworkId
+  constellationEnabled: boolean
 }
 
 export function InvoicePageClient({
@@ -24,7 +32,12 @@ export function InvoicePageClient({
   showCkbtcPay,
   escrowPrincipal,
   ckbtcNetwork,
-  fallbackNetwork
+  fallbackNetwork,
+  storyNetwork,
+  storyLicenseAddress,
+  storyChainId,
+  constellationNetwork,
+  constellationEnabled
 }: InvoicePageClientProps) {
   return (
     <InvoiceStatusProvider
@@ -64,9 +77,29 @@ export function InvoicePageClient({
             {escrowPrincipal ? (
               <CkbtcManualInstructions escrowPrincipal={escrowPrincipal} />
             ) : null}
+            <FinalizationTimeline
+              escrowPrincipal={escrowPrincipal}
+              ckbtcNetwork={ckbtcNetwork}
+              storyNetwork={storyNetwork}
+              storyLicenseAddress={storyLicenseAddress}
+              storyChainId={storyChainId}
+              constellationNetwork={constellationNetwork}
+              constellationEnabled={constellationEnabled}
+            />
           </>
         ) : (
           <BtcManualInstructions />
+        )}
+        {!isCkbtc && (
+          <FinalizationTimeline
+            ckbtcNetwork={ckbtcNetwork}
+            escrowPrincipal={escrowPrincipal}
+            storyNetwork={storyNetwork}
+            storyLicenseAddress={storyLicenseAddress}
+            storyChainId={storyChainId}
+            constellationNetwork={constellationNetwork}
+            constellationEnabled={constellationEnabled}
+          />
         )}
       </div>
     </InvoiceStatusProvider>

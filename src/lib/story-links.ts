@@ -26,3 +26,11 @@ export function ipAccountOnBlockExplorer(
   return `${storyScanBase(network)}/address/${ipId}`
 }
 
+export function licenseTokenExplorerUrl(
+  contractAddress: string,
+  tokenId: string,
+  network: StoryNetwork = 'aeneid'
+) {
+  const normalizedTokenId = tokenId.trim()
+  return `${storyScanBase(network)}/token/${contractAddress}?a=${normalizedTokenId}`
+}

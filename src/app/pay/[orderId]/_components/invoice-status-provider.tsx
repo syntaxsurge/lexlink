@@ -17,14 +17,28 @@ export type InvoiceSnapshot = {
   ipTitle: string
   amountSats?: number
   btcAddress: string
+  buyer: string
   paymentMode?: string
   status: string
   ckbtcSubaccount?: string
   ckbtcMintedSats?: number
   ckbtcBlockIndex?: number
+  btcTxId?: string
+  attestationHash?: string
+  constellationTx?: string
+  tokenOnChainId?: string
+  licenseTermsId?: string
   createdAt: number
   updatedAt?: number
   network?: string
+  fundedAt?: number
+  finalizedAt?: number
+  c2paArchiveUri?: string | null
+  c2paArchiveFileName?: string | null
+  c2paArchiveSize?: number | null
+  c2paArchiveUrl?: string | null
+  vcHash?: string
+  complianceScore?: number
 }
 
 type InvoiceStatusContextValue = {

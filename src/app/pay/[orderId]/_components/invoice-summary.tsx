@@ -68,6 +68,17 @@ export function InvoiceSummary({ fallbackNetwork }: { fallbackNetwork: string })
           </p>
         )}
       </div>
+      <div className='space-y-1'>
+        <h2 className='text-sm font-semibold text-muted-foreground'>
+          License recipient
+        </h2>
+        <p className='break-all font-mono text-xs text-foreground'>
+          {invoice.buyer}
+        </p>
+        <p className='text-xs text-muted-foreground'>
+          Address that receives the Story Protocol license token.
+        </p>
+      </div>
     </section>
   )
 }
