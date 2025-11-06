@@ -234,9 +234,6 @@ Sanity checks
   the dashboard can render deep links without exposing the private key.
 - Use `CONSTELLATION_ENABLED` to disable ledger writes in lower envs and
   `CONSTELLATION_NETWORK` to flip between IntegrationNet, testnet, and mainnet.
-- Override the default IntegrationNet endpoints with
-  `CONSTELLATION_BE_URL` / `CONSTELLATION_L0_URL` / `CONSTELLATION_L1_URL` when
-  targeting non-standard hosts.
 - `VC_ISSUER_DID` and `VC_PRIVATE_KEY` sign the verifiable credentials that
   accompany each license passport. Use a dedicated Ed25519 key pair for demos.
 

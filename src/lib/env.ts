@@ -89,9 +89,6 @@ const serverEnvSchema = z.object({
   CONSTELLATION_NETWORK: z
     .enum(['integrationnet', 'testnet', 'mainnet'])
     .default('integrationnet'),
-  CONSTELLATION_BE_URL: z.string().url().optional(),
-  CONSTELLATION_L0_URL: z.string().url().optional(),
-  CONSTELLATION_L1_URL: z.string().url().optional(),
   PINATA_JWT: z.string().min(10).optional(),
   PINATA_GATEWAY: z.string().url().default('https://gateway.pinata.cloud'),
   PINATA_API_URL: z.string().url().default('https://api.pinata.cloud'),
@@ -153,9 +150,6 @@ function parseEnv() {
     CONSTELLATION_ADDRESS: process.env.CONSTELLATION_ADDRESS,
     CONSTELLATION_SINK_ADDRESS: process.env.CONSTELLATION_SINK_ADDRESS,
     CONSTELLATION_NETWORK: process.env.CONSTELLATION_NETWORK,
-    CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
-    CONSTELLATION_L0_URL: process.env.CONSTELLATION_L0_URL,
-    CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
     PINATA_JWT: process.env.PINATA_JWT,
     PINATA_GATEWAY: process.env.PINATA_GATEWAY,
     PINATA_API_URL: process.env.PINATA_API_URL,

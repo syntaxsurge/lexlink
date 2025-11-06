@@ -17,7 +17,7 @@ type NetworkInfo = {
 const LOCAL_STORAGE_NAMESPACE = 'lexlink-evidence'
 const DAG_CACHE_PATH = './lexlink-dag-cache'
 
-const DEFAULT_NETWORKS: Partial<Record<ConstellationNetwork, NetworkInfo>> = {
+const DEFAULT_NETWORKS: Record<ConstellationNetwork, NetworkInfo> = {
   integrationnet: {
     id: 'integrationnet',
     beUrl: 'https://be-integrationnet.constellationnetwork.io',
@@ -25,6 +25,22 @@ const DEFAULT_NETWORKS: Partial<Record<ConstellationNetwork, NetworkInfo>> = {
     l1Url: 'https://l1-lb-integrationnet.constellationnetwork.io',
     networkVersion: '2.0',
     testnet: true
+  },
+  testnet: {
+    id: 'testnet',
+    beUrl: 'https://be-testnet.constellationnetwork.io',
+    l0Url: 'https://l0-lb-testnet.constellationnetwork.io',
+    l1Url: 'https://l1-lb-testnet.constellationnetwork.io',
+    networkVersion: '2.0',
+    testnet: true
+  },
+  mainnet: {
+    id: 'mainnet',
+    beUrl: 'https://be-mainnet.constellationnetwork.io',
+    l0Url: 'https://l0-lb-mainnet.constellationnetwork.io',
+    l1Url: 'https://l1-lb-mainnet.constellationnetwork.io',
+    networkVersion: '2.0',
+    testnet: false
   }
 }
 
@@ -32,24 +48,11 @@ function resolveNetworkInfo(): NetworkInfo {
   const network = env.CONSTELLATION_NETWORK
   const defaults = DEFAULT_NETWORKS[network]
 
-  const beUrl = env.CONSTELLATION_BE_URL ?? defaults?.beUrl
-  const l0Url = env.CONSTELLATION_L0_URL ?? defaults?.l0Url
-  const l1Url = env.CONSTELLATION_L1_URL ?? defaults?.l1Url
-
-  if (!beUrl || !l0Url || !l1Url) {
-    throw new Error(
-      `Missing Constellation endpoints for ${network}. Provide CONSTELLATION_BE_URL, CONSTELLATION_L0_URL, and CONSTELLATION_L1_URL.`
-    )
+  if (!defaults) {
+    throw new Error(`Unsupported Constellation network "${network}".`)
   }
 
-  return {
-    id: network,
-    beUrl,
-    l0Url,
-    l1Url,
-    networkVersion: defaults?.networkVersion ?? '2.0',
-    testnet: network !== 'mainnet'
-  }
+  return defaults
 }
 
 /**
