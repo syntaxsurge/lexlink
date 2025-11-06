@@ -13,9 +13,9 @@ import {
 import { getConvexClient } from '@/lib/convex'
 
 type ReportPageProps = {
-  searchParams?: {
+  searchParams?: Promise<{
     ipId?: string
-  }
+  }>
 }
 
 export default async function ReportPage({ searchParams }: ReportPageProps) {
@@ -25,8 +25,9 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     title: string
   }>
 
+  const params = searchParams ? await searchParams : undefined
   const defaultIpId =
-    typeof searchParams?.ipId === 'string' ? searchParams.ipId : undefined
+    typeof params?.ipId === 'string' ? params.ipId : undefined
 
   return (
     <div className='mx-auto flex max-w-3xl flex-col gap-6 py-10'>
@@ -89,4 +90,3 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
     </div>
   )
 }
-

@@ -2,7 +2,7 @@
 
 import crypto from 'node:crypto'
 
-import { DisputeTargetTag } from '@story-protocol/core-sdk'
+import { DisputeTargetTag, convertCIDtoHashIPFS } from '@story-protocol/core-sdk'
 import { getAddress, parseAbi } from 'viem'
 
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
@@ -476,6 +476,50 @@ function parseDisputeId(value: string): bigint {
   } catch (error) {
     throw new Error('Invalid disputeId – expected a numeric identifier.')
   }
+}
+
+function normalizeEvidenceCid(input: string): string {
+  let candidate = input.trim()
+  if (!candidate) {
+    throw new Error('Evidence CID is required.')
+  }
+
+  if (candidate.startsWith('ipfs://')) {
+    candidate = candidate.slice('ipfs://'.length)
+  }
+
+  if (candidate.includes('://')) {
+    try {
+      const url = new URL(candidate)
+      const pathSegments = url.pathname.split('/').filter(Boolean)
+      if (pathSegments.length > 0) {
+        candidate = pathSegments[pathSegments.length - 1]
+      } else if (url.hostname.includes('ipfs')) {
+        candidate = url.hostname.split('.').find(part => part.length > 10) ?? candidate
+      }
+    } catch {
+      const parts = candidate.split('/').filter(Boolean)
+      if (parts.length > 0) {
+        candidate = parts[parts.length - 1]
+      }
+    }
+  }
+
+  candidate = candidate.split('?')[0].split('#')[0].replace(/\/$/, '').trim()
+
+  if (!candidate) {
+    throw new Error('Evidence CID is required.')
+  }
+
+  try {
+    convertCIDtoHashIPFS(candidate)
+  } catch {
+    throw new Error(
+      'Provide a valid IPFS CID (e.g. baf… or Qm…) or an ipfs:// link pointing to one.'
+    )
+  }
+
+  return candidate
 }
 
 async function writeDisputeJudgementTx(
@@ -2303,6 +2347,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
   })) as IpRecord | null
 
   const storyClient = getStoryClient()
+  const evidenceInput = payload.evidenceCid.trim()
   const defaultLiveness =
     env.STORY_DISPUTE_DEFAULT_LIVENESS > 0
       ? env.STORY_DISPUTE_DEFAULT_LIVENESS
@@ -2317,9 +2362,10 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     ownerPrincipal = await ensureIpOwner(ip, convex)
   }
 
+  const normalizedEvidenceCid = normalizeEvidenceCid(evidenceInput)
   const response = await storyClient.dispute.raiseDispute({
     targetIpId: payload.ipId as `0x${string}`,
-    cid: payload.evidenceCid,
+    cid: normalizedEvidenceCid,
     targetTag: payload.targetTag,
     liveness: BigInt(livenessSeconds),
     bond: payload.bond && payload.bond > 0 ? BigInt(payload.bond) : undefined
@@ -2334,7 +2380,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     disputeId,
     ipId: payload.ipId,
     targetTag: payload.targetTag,
-    evidenceCid: payload.evidenceCid,
+    evidenceCid: evidenceInput,
     livenessSeconds,
     bond: payload.bond ?? 0,
     reporterPrincipal: actor.principal,
@@ -2382,7 +2428,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
       disputeId,
       ipId: payload.ipId,
       targetTag: payload.targetTag,
-      evidenceCid: payload.evidenceCid,
+      evidenceCid: evidenceInput,
       constellationTx,
       constellationExplorerUrl,
       txHash

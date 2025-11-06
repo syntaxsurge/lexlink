@@ -13,7 +13,8 @@ import { logoutInternetIdentity } from '@/lib/internet-identity-client'
 const links = [
   { href: '/', label: 'Home' },
   { href: '/gallery', label: 'Gallery' },
-  { href: '/marketplace', label: 'Marketplace' }
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/report', label: 'Report IP' }
 ]
 
 export function SiteHeader() {
