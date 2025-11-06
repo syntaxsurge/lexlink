@@ -521,6 +521,76 @@ function normalizeCustomMetadata(
   }, {})
 }
 
+async function assertDerivativeCompatibility({
+  convex,
+  storyClient,
+  relationships,
+  newLicense
+}: {
+  convex: ConvexClient
+  storyClient: ReturnType<typeof getStoryClient>
+  relationships: Array<{ parentIpId: string; type: string }>
+  newLicense: {
+    commercialUse: boolean
+    derivativesAllowed: boolean
+    royaltyBps: number
+  }
+}) {
+  if (!relationships.length) {
+    return
+  }
+
+  for (const relationship of relationships) {
+    const parentIp = (await convex.query('ipAssets:getById' as any, {
+      ipId: relationship.parentIpId
+    })) as IpRecord | null
+
+    if (!parentIp) {
+      throw new Error(
+        `Relationship references unknown parent IP ${relationship.parentIpId}`
+      )
+    }
+
+    const parentTermsResponse = await storyClient.license.getLicenseTerms(
+      BigInt(parentIp.licenseTermsId)
+    )
+    const parentTerms = parentTermsResponse.terms
+    const parentLabel = parentIp.title || parentIp.ipId
+
+    if (!parentTerms.derivativesAllowed) {
+      throw new Error(
+        `${parentLabel} forbids derivatives. Remove the relationship or adjust the license terms.`
+      )
+    }
+
+    if (!parentTerms.commercialUse && newLicense.commercialUse) {
+      throw new Error(
+        `${parentLabel} is registered for non-commercial use. Derivative licenses must remain non-commercial.`
+      )
+    }
+
+    if (
+      parentTerms.derivativesReciprocal &&
+      (!newLicense.derivativesAllowed ||
+        newLicense.royaltyBps < parentIp.royaltyBps)
+    ) {
+      throw new Error(
+        `${parentLabel} enforces reciprocal derivatives. Keep derivatives allowed and royalties at least ${(
+          parentIp.royaltyBps / 100
+        ).toFixed(2)}%.`
+      )
+    }
+
+    if (newLicense.royaltyBps < parentIp.royaltyBps) {
+      throw new Error(
+        `Derivative royalty share must be ≥ parent share (${(
+          parentIp.royaltyBps / 100
+        ).toFixed(2)}%) for ${parentLabel}.`
+      )
+    }
+  }
+}
+
 type ResolvedAsset = {
   bytes: Uint8Array
   mimeType?: string
@@ -1003,6 +1073,15 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   const creators = sanitizeCreators(payload.creators)
   const relationships = sanitizeRelationships(payload.relationships)
   ensurePercent(creators)
+  const convex = getConvexClient()
+  const storyClient = getStoryClient()
+
+  const ddexParticipants = creators.map(creator => ({
+    name: creator.name,
+    role: creator.role ?? 'Contributor',
+    contributionPercent: creator.contributionPercent,
+    address: creator.address
+  }))
 
   const createdAtIso = new Date(payload.createdAt).toISOString()
   const assetSlug = slugify(payload.title)
@@ -1043,6 +1122,16 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     mediaHash: mediaAsset.hash,
     mediaType,
     creators: creatorMetadata,
+    ddex: {
+      workTitle: payload.title,
+      resourceType: mediaType,
+      participants: ddexParticipants,
+      rights: {
+        commercialUse: payload.commercialUse,
+        derivativesAllowed: payload.derivativesAllowed,
+        royaltyBps: payload.royaltyBps
+      }
+    },
     license: {
       commercialUse: payload.commercialUse,
       derivativesAllowed: payload.derivativesAllowed,
@@ -1079,7 +1168,6 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   const ipMetadataHash = sha256Hex(Buffer.from(ipMetadataUpload.bytes))
   const nftMetadataHash = sha256Hex(Buffer.from(nftMetadataUpload.bytes))
 
-  const storyClient = getStoryClient()
   const royaltyPercent = Math.min(payload.royaltyBps / 100, 100)
 
   const licenseTerms = getDefaultLicenseTerms({
@@ -1089,6 +1177,17 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   })
   const licensingConfig = getDefaultLicensingConfig({
     commercialRevSharePercent: royaltyPercent
+  })
+
+  await assertDerivativeCompatibility({
+    convex,
+    storyClient,
+    relationships,
+    newLicense: {
+      commercialUse: payload.commercialUse,
+      derivativesAllowed: payload.derivativesAllowed,
+      royaltyBps: payload.royaltyBps
+    }
   })
 
   const registerResponse =
@@ -1113,7 +1212,6 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     throw new Error('Story Protocol did not return an IP identifier')
   }
 
-  const convex = getConvexClient()
   await convex.mutation('ipAssets:insert' as any, {
     ipId: registerResponse.ipId,
     title: payload.title,
@@ -1996,6 +2094,7 @@ export async function recordTrainingBatch({
     units,
     evidenceHash,
     constellationTx,
+    payload: payloadJson,
     ownerPrincipal: ip.ownerPrincipal ?? actor.principal
   })
 
@@ -2170,31 +2269,78 @@ type PublicLicenseRecord = {
   c2paArchiveUri?: string | null
   c2paArchiveFileName?: string | null
   c2paArchiveSize?: number | null
-  c2paArchiveUrl?: string | null
+  contentHash?: string
+  c2paHash?: string
+  vcDocument?: string | null
   vcHash?: string
+  evidencePayload?: string | null
+  trainingUnits?: number
   complianceScore?: number
 }
 
-export async function loadInvoicePublic(orderId: string) {
+type PublicTrainingBatchRecord = {
+  batchId: string
+  ipId: string
+  units: number
+  evidenceHash: string
+  constellationTx: string
+  payload?: string | null
+  createdAt: number
+}
+
+export async function loadOrderReceipt(orderId: string) {
   if (!orderId) return null
   const convex = getConvexClient()
-  const invoice = (await convex.query('licenses:getPublic' as any, {
+  const record = (await convex.query('licenses:getPublic' as any, {
     orderId
   })) as PublicLicenseRecord | null
 
-  if (!invoice) {
+  if (!record) {
     return null
   }
 
-  const mintTo = invoice.mintTo ?? invoice.buyer ?? null
+  const mintTo = record.mintTo ?? record.buyer ?? null
 
   return {
-    ...invoice,
+    ...record,
     buyer: mintTo ?? undefined,
     mintTo,
-    c2paArchiveUrl: invoice.c2paArchiveUri
-      ? ipfsGatewayUrl(invoice.c2paArchiveUri)
+    vcDocument: record.vcDocument ?? null,
+    evidencePayload: record.evidencePayload ?? null,
+    c2paArchiveUrl: record.c2paArchiveUri
+      ? ipfsGatewayUrl(record.c2paArchiveUri)
       : null
+  }
+}
+
+export async function loadInvoicePublic(orderId: string) {
+  const receipt = await loadOrderReceipt(orderId)
+  if (!receipt) {
+    return null
+  }
+  const { vcDocument, evidencePayload, ...publicInvoice } = receipt
+  return publicInvoice
+}
+
+export async function loadTrainingReceipt(batchId: string) {
+  if (!batchId) return null
+  const convex = getConvexClient()
+  const record = (await convex.query('trainingBatches:get' as any, {
+    batchId
+  })) as (PublicTrainingBatchRecord & { ownerPrincipal?: string }) | null
+
+  if (!record) {
+    return null
+  }
+
+  const ip = (await convex.query('ipAssets:getById' as any, {
+    ipId: record.ipId
+  })) as IpRecord | null
+
+  return {
+    ...record,
+    ipTitle: ip?.title ?? record.ipId,
+    payload: record.payload ?? null
   }
 }
 

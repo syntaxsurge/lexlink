@@ -19,6 +19,7 @@ export const insert = mutationGeneric({
     units: v.number(),
     evidenceHash: v.string(),
     constellationTx: v.string(),
+    payload: v.optional(v.string()),
     ownerPrincipal: v.string()
   },
   handler: async (ctx, args) => {
@@ -33,6 +34,16 @@ export const list = queryGeneric({
   handler: async ctx => {
     const batches = await ctx.db.query('trainingBatches').collect()
     return batches.sort((a, b) => b.createdAt - a.createdAt)
+  }
+})
+
+export const get = queryGeneric({
+  args: { batchId: v.string() },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query('trainingBatches')
+      .withIndex('by_batchId', q => q.eq('batchId', args.batchId))
+      .unique()
   }
 })
 

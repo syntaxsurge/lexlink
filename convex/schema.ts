@@ -90,6 +90,7 @@ export default defineSchema({
     units: v.number(),
     evidenceHash: v.string(),
     constellationTx: v.string(),
+    payload: v.optional(v.string()),
     createdAt: v.number(),
     ownerPrincipal: v.optional(v.string())
   })

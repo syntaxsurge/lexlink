@@ -58,14 +58,15 @@ export default async function TrainingPage() {
                 <TableHead>Batch</TableHead>
                 <TableHead>IP ID</TableHead>
                 <TableHead>Units</TableHead>
-                <TableHead>Evidence Hash</TableHead>
-                <TableHead>Constellation Tx</TableHead>
-                <TableHead>Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {trainingBatches.length === 0 && (
-                <TableRow>
+              <TableHead>Evidence Hash</TableHead>
+              <TableHead>Constellation Tx</TableHead>
+              <TableHead>Timestamp</TableHead>
+              <TableHead>Verify</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {trainingBatches.length === 0 && (
+              <TableRow>
                   <TableCell
                     colSpan={6}
                     className='text-center text-sm text-muted-foreground'
@@ -101,6 +102,14 @@ export default async function TrainingPage() {
                     </Link>
                   </TableCell>
                   <TableCell>{formatDate(batch.createdAt)}</TableCell>
+                  <TableCell className='text-xs'>
+                    <Link
+                      href={`/verify/training/${batch.batchId}`}
+                      className='text-primary underline-offset-4 hover:underline'
+                    >
+                      View proof
+                    </Link>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

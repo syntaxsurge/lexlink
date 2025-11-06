@@ -6,9 +6,23 @@ import {
   loadBuyerPurchases
 } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table'
 import { env } from '@/lib/env'
+import { ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
@@ -18,6 +32,7 @@ import {
   licenseTokenExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
+import { Buffer } from 'node:buffer'
 
 function short(value: string | null | undefined, length = 10) {
   if (!value) return '—'
@@ -134,6 +149,19 @@ export default async function PurchasesPage() {
                         order.constellationTx
                       )
                     : null
+                const c2paLink = order.c2paArchiveUri
+                  ? ipfsGatewayUrl(order.c2paArchiveUri)
+                  : null
+                const c2paFileName =
+                  order.c2paArchiveFileName ??
+                  `lexlink-license-${order.orderId}.zip`
+                const vcHref = order.vcDocument
+                  ? `data:application/json;base64,${Buffer.from(
+                      order.vcDocument,
+                      'utf-8'
+                    ).toString('base64')}`
+                  : null
+                const receiptHref = `/verify/${order.orderId}`
                 const statusBadge =
                   order.status === 'finalized'
                     ? { variant: 'default' as const, className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' }
@@ -188,16 +216,38 @@ export default async function PurchasesPage() {
                         <span className='text-muted-foreground'>—</span>
                       )}
                     </TableCell>
-                    <TableCell className='text-xs'>
-                      {order.status === 'finalized' ? (
-                        <span className='text-muted-foreground'>Settled</span>
-                      ) : (
+                    <TableCell className='space-y-1 text-xs'>
+                      <Link
+                        href={receiptHref}
+                        className='block text-primary underline-offset-4 hover:underline'
+                      >
+                        View receipt
+                      </Link>
+                      {order.status !== 'finalized' && (
                         <Link
                           href={`/pay/${order.orderId}`}
-                          className='text-primary underline-offset-4 hover:underline'
+                          className='block text-primary underline-offset-4 hover:underline'
                         >
                           Review invoice
                         </Link>
+                      )}
+                      {c2paLink && (
+                        <a
+                          href={c2paLink}
+                          download={c2paFileName}
+                          className='block text-primary underline-offset-4 hover:underline'
+                        >
+                          Download C2PA
+                        </a>
+                      )}
+                      {vcHref && (
+                        <a
+                          href={vcHref}
+                          download={`lexlink-license-vc-${order.orderId}.json`}
+                          className='block text-primary underline-offset-4 hover:underline'
+                        >
+                          Download VC
+                        </a>
                       )}
                     </TableCell>
                   </TableRow>

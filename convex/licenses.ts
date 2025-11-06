@@ -83,10 +83,15 @@ export const getPublic = queryGeneric({
       fundedAt: license.fundedAt,
       finalizedAt: license.finalizedAt,
       network: license.network,
+      contentHash: license.contentHash,
+      c2paHash: license.c2paHash,
       c2paArchiveUri: license.c2paArchiveUri ?? null,
       c2paArchiveFileName: license.c2paArchiveFileName ?? null,
       c2paArchiveSize: license.c2paArchiveSize ?? null,
+      vcDocument: license.vcDocument,
       vcHash: license.vcHash,
+      evidencePayload: license.evidencePayload ?? null,
+      trainingUnits: license.trainingUnits,
       complianceScore: license.complianceScore
     }
   }
