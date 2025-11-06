@@ -28,7 +28,8 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   NEXT_PUBLIC_ICP_CKBTC_NETWORK: z
     .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
-    .optional()
+    .optional(),
+  NEXT_PUBLIC_CONSTELLATION_METAGRAPH_L0_URL: z.string().url().optional()
 })
 
 const serverEnvSchema = z.object({
@@ -107,7 +108,17 @@ const serverEnvSchema = z.object({
   VC_ISSUER_DID: z.string().min(4),
   VC_PRIVATE_KEY: z
     .string()
-    .regex(/^0x[0-9a-fA-F]{64}$/, 'VC_PRIVATE_KEY must be a 32-byte hex string')
+    .regex(/^0x[0-9a-fA-F]{64}$/, 'VC_PRIVATE_KEY must be a 32-byte hex string'),
+  CONSTELLATION_METAGRAPH_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(value => value === 'true'),
+  CONSTELLATION_METAGRAPH_DATA_L1_URL: z.string().url().optional(),
+  CONSTELLATION_METAGRAPH_L0_URL: z.string().url().optional(),
+  CONSTELLATION_METAGRAPH_PRIVATE_KEY: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{64}$/, 'CONSTELLATION_METAGRAPH_PRIVATE_KEY must be hex')
+    .optional()
 })
 
 type PublicEnv = z.infer<typeof publicEnvSchema>
@@ -126,7 +137,9 @@ function parseEnv() {
     NEXT_PUBLIC_ICP_CKBTC_HOST: process.env.NEXT_PUBLIC_ICP_CKBTC_HOST,
     NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
       process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID,
-    NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK
+    NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK,
+    NEXT_PUBLIC_CONSTELLATION_METAGRAPH_L0_URL:
+      process.env.NEXT_PUBLIC_CONSTELLATION_METAGRAPH_L0_URL
   })
 
   const serverEnv = serverEnvSchema.parse({
@@ -165,7 +178,13 @@ function parseEnv() {
     BTC_NETWORK: process.env.BTC_NETWORK,
     MEMPOOL_API_BASE: process.env.MEMPOOL_API_BASE,
     VC_ISSUER_DID: process.env.VC_ISSUER_DID,
-    VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY
+    VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY,
+    CONSTELLATION_METAGRAPH_ENABLED: process.env.CONSTELLATION_METAGRAPH_ENABLED,
+    CONSTELLATION_METAGRAPH_DATA_L1_URL:
+      process.env.CONSTELLATION_METAGRAPH_DATA_L1_URL,
+    CONSTELLATION_METAGRAPH_L0_URL: process.env.CONSTELLATION_METAGRAPH_L0_URL,
+    CONSTELLATION_METAGRAPH_PRIVATE_KEY:
+      process.env.CONSTELLATION_METAGRAPH_PRIVATE_KEY
   })
 
   return { publicEnv, serverEnv }

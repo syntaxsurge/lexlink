@@ -1498,18 +1498,52 @@ async function finalizeOrder({
   const attestationHash = sha256Hex(attestationJson)
 
   const storyClient = getStoryClient()
-  const mintResponse = await storyClient.license.mintLicenseTokens({
-    licensorIpId: order.ipId as `0x${string}`,
-    licenseTermsId: BigInt(order.licenseTermsId),
-    licenseTemplate: env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`,
-    amount: 1,
-    receiver,
-    maxMintingFee: 0,
-    maxRevenueShare: 100
-  })
 
-  if (!mintResponse.licenseTokenIds?.length) {
-    throw new Error('Failed to mint license token on Story Protocol')
+  // Retry logic for nonce errors (max 3 attempts with exponential backoff)
+  let mintResponse: Awaited<ReturnType<typeof storyClient.license.mintLicenseTokens>> | null = null
+  let lastError: Error | null = null
+  const maxRetries = 3
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`[Story] Minting license token (attempt ${attempt}/${maxRetries})...`)
+      mintResponse = await storyClient.license.mintLicenseTokens({
+        licensorIpId: order.ipId as `0x${string}`,
+        licenseTermsId: BigInt(order.licenseTermsId),
+        licenseTemplate: env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`,
+        amount: 1,
+        receiver,
+        maxMintingFee: 0,
+        maxRevenueShare: 100
+      })
+      console.log(`[Story] ✅ License token minted successfully on attempt ${attempt}`)
+      break // Success - exit retry loop
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      const errorMessage = lastError.message.toLowerCase()
+
+      // Check if it's a nonce error
+      const isNonceError =
+        errorMessage.includes('nonce') &&
+        (errorMessage.includes('lower') || errorMessage.includes('already known'))
+
+      if (isNonceError && attempt < maxRetries) {
+        const waitTime = Math.pow(2, attempt) * 1000 // Exponential backoff: 2s, 4s, 8s
+        console.warn(`[Story] ⚠️ Nonce error on attempt ${attempt}, retrying in ${waitTime}ms...`)
+        console.warn(`[Story] Error: ${errorMessage.slice(0, 200)}`)
+        await new Promise(resolve => setTimeout(resolve, waitTime))
+        continue // Retry
+      }
+
+      // Not a nonce error or max retries reached - throw
+      console.error(`[Story] ❌ Failed to mint license token on attempt ${attempt}`)
+      console.error(`[Story] Error: ${errorMessage}`)
+      throw new Error(`Failed to mint license tokens: ${errorMessage}`)
+    }
+  }
+
+  if (!mintResponse?.licenseTokenIds?.length) {
+    throw new Error('Failed to mint license token on Story Protocol - no token IDs returned')
   }
 
   const licenseTokenId = mintResponse.licenseTokenIds[0].toString()

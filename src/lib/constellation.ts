@@ -110,15 +110,18 @@ export async function publishEvidence(
           : undefined
 
     if (!message || message.length === 0) {
+      console.warn('[Constellation] Skipping: empty payload')
       return { status: 'skipped', reason: 'empty_payload' }
     }
 
     if (Buffer.byteLength(message, 'utf8') > 60_000) {
+      console.error('[Constellation] Payload exceeds 60KB limit')
       throw new Error(
         'Evidence payload exceeds Constellation memo size (~60KB).'
       )
     }
 
+    console.log(`[Constellation] Connecting to ${networkInfo.id}...`)
     dag4.account.connect(
       {
         id: networkInfo.id,
@@ -130,21 +133,39 @@ export async function publishEvidence(
       false
     )
 
+    console.log('[Constellation] Authenticating with private key...')
     dag4.account.loginPrivateKey(privateKey.replace(/^0x/, ''))
 
     const derivedAddress = dag4.account.address
+    console.log(`[Constellation] Derived address: ${derivedAddress}`)
+
     if (derivedAddress !== sourceAddress) {
       console.warn(
-        `Constellation signer address mismatch (configured ${sourceAddress}, derived ${derivedAddress}).`
+        `[Constellation] Address mismatch! Configured: ${sourceAddress}, Derived: ${derivedAddress}`
       )
     }
 
-    const transferResult = await (dag4.account as any).transferDag({
-      toAddress: sinkAddress,
-      amount: '0.0000001',
-      fee: '0',
-      message
-    })
+    console.log(`[Constellation] Sending transaction to ${sinkAddress}...`)
+    console.log(`[Constellation] Payload size: ${Buffer.byteLength(message, 'utf8')} bytes`)
+
+    let transferResult: any
+    try {
+      transferResult = await (dag4.account as any).transferDag({
+        toAddress: sinkAddress,
+        amount: '0.0000001',
+        fee: '0',
+        message
+      })
+      console.log('[Constellation] Transfer result:', JSON.stringify(transferResult, null, 2))
+    } catch (transferError: any) {
+      console.error('[Constellation] Transfer failed!')
+      console.error('[Constellation] Error type:', typeof transferError)
+      console.error('[Constellation] Error object:', transferError)
+      console.error('[Constellation] Error message:', transferError?.message || 'No message')
+      console.error('[Constellation] Error response:', transferError?.response?.data || 'No response data')
+      console.error('[Constellation] Error status:', transferError?.response?.status || 'No status')
+      throw new Error(`DAG transfer failed: ${transferError?.message || transferError?.response?.data || String(transferError)}`)
+    }
 
     const txHash =
       typeof transferResult === 'string'
@@ -152,11 +173,29 @@ export async function publishEvidence(
         : transferResult?.hash ?? ''
 
     if (!txHash) {
+      console.error('[Constellation] No transaction hash returned!')
+      console.error('[Constellation] Transfer result:', transferResult)
       return { status: 'skipped', reason: 'missing_tx_hash' }
     }
 
+    console.log(`[Constellation] Transaction hash: ${txHash}`)
+    console.log('[Constellation] Waiting for checkpoint acceptance...')
+
     if (typeof dag4.account.waitForCheckPointAccepted === 'function') {
-      await dag4.account.waitForCheckPointAccepted(txHash)
+      try {
+        await Promise.race([
+          dag4.account.waitForCheckPointAccepted(txHash),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Checkpoint timeout after 30s')), 30000)
+          )
+        ])
+        console.log('[Constellation] Checkpoint accepted!')
+      } catch (checkpointError) {
+        console.warn('[Constellation] Checkpoint wait failed:', checkpointError)
+        // Continue anyway - the transaction might still be valid
+      }
+    } else {
+      console.warn('[Constellation] waitForCheckPointAccepted not available, skipping wait')
     }
 
     if (storage) {
@@ -173,13 +212,18 @@ export async function publishEvidence(
             : {})
         })
       )
+      console.log(`[Constellation] Stored transaction metadata in local storage`)
     }
 
+    console.log(`[Constellation] ✅ Successfully published evidence: ${txHash}`)
     return { status: 'ok', txHash }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : String(error ?? 'unknown')
-    console.warn('Constellation evidence publishing skipped:', error)
+    console.error('[Constellation] ❌ Publishing failed:', error)
+    if (error instanceof Error && error.stack) {
+      console.error('[Constellation] Stack trace:', error.stack)
+    }
     return { status: 'skipped', reason: message }
   }
 }
