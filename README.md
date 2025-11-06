@@ -341,9 +341,6 @@ pnpm lint
 6. **Raise disputes** – Operators can submit UMA-backed disputes against any
    registered IP, log the evidence hash to Constellation, and track the status
    inside the console for downstream compliance teams.
-7. **Meter AI training** – The `/train` console records streamed micro-payments,
-   anchors each batch to IntegrationNet, and increments the compliance bonus
-   (capped at +25 points).
 
 ## 10. Deploying to production
 

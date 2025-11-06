@@ -140,12 +140,12 @@ export default async function OverviewPage() {
           hint='Score across completed sales'
           value={`${averageCompliance}/100`}
         />
-      <MetricCard
-        title='Training Units Logged'
-        hint='Constellation-evidenced AI batches'
-        value={totalTrainingUnits.toLocaleString()}
-      />
-    </div>
+        <MetricCard
+          title='Training Units Logged'
+          hint='Constellation-evidenced AI batches'
+          value={totalTrainingUnits.toLocaleString()}
+        />
+      </div>
 
       <div className='grid gap-4 lg:grid-cols-2'>
         <CkbtcBalanceCard snapshot={ckbtcSnapshot} />
@@ -419,9 +419,6 @@ export default async function OverviewPage() {
               Constellation IntegrationNet heartbeats emitted for AI usage.
             </CardDescription>
           </div>
-          <Button asChild variant='outline' size='sm'>
-            <Link href='/dashboard/train'>Log batch</Link>
-          </Button>
         </CardHeader>
         <CardContent>
           <Table>

@@ -7,7 +7,6 @@ import { ReactNode } from 'react'
 import {
   BarChart3,
   BookOpen,
-  Cpu,
   LayoutDashboard,
   Scale,
   ScrollText,
@@ -32,7 +31,6 @@ const routes = [
   { href: '/dashboard/ip', label: 'IP Registry', icon: BookOpen },
   { href: '/dashboard/licenses', label: 'Licenses', icon: ScrollText },
   { href: '/dashboard/disputes', label: 'Disputes', icon: Scale },
-  { href: '/dashboard/train', label: 'Training', icon: Cpu },
   { href: '/dashboard/compliance', label: 'Compliance', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings }
 ]

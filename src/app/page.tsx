@@ -60,7 +60,7 @@ const painPoints = [
     sourceUrl:
       'https://digital-strategy.ec.europa.eu/en/policies/european-approach-artificial-intelligence',
     lexlink:
-      'Operators record training batches inside LexLink; the ledger emits Constellation proofs and shareable receipts at /verify/training.'
+      'LexLink tracks licensed training batches and publishes Constellation-backed receipts at /verify/training.'
   },
   {
     problem: 'Licensing flows still depend on emails, PDFs, and manual invoices.',

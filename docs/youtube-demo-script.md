@@ -52,26 +52,21 @@ This script follows the production build with Internet Identity, shadcn UI, invo
 - Scroll the result panel with C2PA + VC downloads and Constellation link.
 - Voice-over: “Compliance jumps to 100, `license.sale_completed` lands in the audit trail, and downstream artefacts are ready to download.”
 
-## Segment 8 — Log training batch (3:55 – 4:15)
-- On-screen: `Training` → record `150` units for the same IP.
-- Voice-over: “Every AI batch emits an IntegrationNet transaction and boosts compliance.”
-- On-screen: Show the audit event `training.batch_recorded`.
-
-## Segment 9 — Raise dispute (4:15 – 4:40)
+## Segment 8 — Raise dispute (4:15 – 4:40)
 - On-screen: `Disputes` → new dispute (`IMPROPER_USAGE`, CID `ipfs://bafkreihdwdcej3m2vxxevidencelexlinkdemo`, liveness `259200`, bond `0`).
 - Voice-over: “Disputes route through Story’s UMA integration and the evidence hash anchors on Constellation.”
 
-## Segment 10 — Compliance ledger & roles (4:40 – 5:15)
+## Segment 9 — Compliance ledger & roles (4:40 – 5:15)
 - On-screen: `Compliance` tab. Scroll JSON payloads.
 - Voice-over: “The compliance tab is the ledger of record. Every action includes actor principal, resource ID, and payload JSON.”
 - On-screen: `Settings` → current session + operators table.
 - Voice-over: “Roles live in Convex. Operators can elevate creators and viewers; viewers authenticate with Internet Identity only.”
 
-## Segment 11 — Viewer cameo (5:15 – 5:35)
+## Segment 10 — Viewer cameo (5:15 – 5:35)
 - On-screen: Sign out, sign in again as a viewer.
 - Voice-over: “Viewers retain read access to audit data without touching operator tooling.”
 
-## Segment 12 — Wrap (5:35 – 6:00)
+## Segment 11 — Wrap (5:35 – 6:00)
 - On-screen: Return to the dashboard, KPIs update.
 - Voice-over: “LexLink unifies Story licensing, ICP escrow, Constellation evidence, and compliance-ready audits. Production-ready, no placeholders.”
 
