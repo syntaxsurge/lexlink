@@ -28,6 +28,8 @@ export type InvoiceSnapshot = {
   btcTxId?: string
   attestationHash?: string
   constellationTx?: string
+  constellationExplorerUrl?: string | null
+  constellationAnchoredAt?: number | null
   tokenOnChainId?: string
   licenseTermsId?: string
   createdAt: number

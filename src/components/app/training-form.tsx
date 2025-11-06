@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,6 +35,7 @@ export function TrainingForm({ ips }: TrainingFormProps) {
     | {
         batchId: string
         constellationTx: string
+        constellationExplorerUrl?: string | null
         constellationStatus: string
         evidenceHash: string
       }
@@ -122,9 +124,20 @@ export function TrainingForm({ ips }: TrainingFormProps) {
               Constellation Tx
             </dt>
             <dd className='break-all font-mono text-xs'>
-              {result.constellationTx
-                ? result.constellationTx
-                : `skipped (${result.constellationStatus})`}
+              {result.constellationExplorerUrl && result.constellationTx ? (
+                <Link
+                  href={result.constellationExplorerUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='text-primary underline-offset-4 hover:underline'
+                >
+                  {result.constellationTx}
+                </Link>
+              ) : result.constellationTx ? (
+                result.constellationTx
+              ) : (
+                `skipped (${result.constellationStatus})`
+              )}
             </dd>
           </div>
           <div className='flex flex-col gap-1'>

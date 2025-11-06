@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Buffer } from 'buffer'
 
 import { useEffect, useMemo, useState, useTransition } from 'react'
@@ -28,6 +29,8 @@ type FinalizeResult = {
   licenseTokenId: string
   attestationHash: string
   constellationTx: string
+  constellationExplorerUrl?: string | null
+  constellationAnchoredAt?: number | null
   constellationStatus?: string
   contentHash: string
   complianceScore: number
@@ -188,13 +191,34 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
               Constellation Tx
             </dt>
             <dd className='break-all font-mono text-xs'>
-              {result.constellationTx
-                ? result.constellationTx
-                : result.constellationStatus === 'ok'
-                  ? 'pending-reference'
-                  : `skipped (${result.constellationStatus ?? 'unknown'})`}
+              {result.constellationExplorerUrl && result.constellationTx ? (
+                <Link
+                  href={result.constellationExplorerUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='text-primary underline-offset-4 hover:underline'
+                >
+                  {result.constellationTx}
+                </Link>
+              ) : result.constellationTx ? (
+                result.constellationTx
+              ) : result.constellationStatus === 'ok' ? (
+                'pending-reference'
+              ) : (
+                `skipped (${result.constellationStatus ?? 'unknown'})`
+              )}
             </dd>
           </div>
+          {result.constellationAnchoredAt && (
+            <div className='flex flex-col gap-1'>
+              <dt className='font-semibold text-muted-foreground'>
+                Anchored At
+              </dt>
+              <dd className='text-xs'>
+                {new Date(result.constellationAnchoredAt).toLocaleString()}
+              </dd>
+            </div>
+          )}
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>
               Content Hash

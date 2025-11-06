@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -45,6 +46,7 @@ export function DisputeForm({ ips }: DisputeFormProps) {
     txHash: string
     evidenceHash: string
     constellationTx: string
+    constellationExplorerUrl?: string | null
   }>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -184,7 +186,18 @@ export function DisputeForm({ ips }: DisputeFormProps) {
               Constellation Tx
             </dt>
             <dd className='break-all font-mono text-xs'>
-              {result.constellationTx}
+              {result.constellationExplorerUrl ? (
+                <Link
+                  href={result.constellationExplorerUrl}
+                  target='_blank'
+                  rel='noreferrer'
+                  className='text-primary underline-offset-4 hover:underline'
+                >
+                  {result.constellationTx}
+                </Link>
+              ) : (
+                result.constellationTx || 'pending'
+              )}
             </dd>
           </div>
         </dl>

@@ -15,7 +15,54 @@ export function getStoryClient() {
       account
     })
   }
+
+  patchLicenseNonceHandling(cachedClient)
   return cachedClient
+}
+
+function isNonceError(error: unknown) {
+  const message =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+  if (!message) {
+    return false
+  }
+  const normalized = message.toLowerCase()
+  return normalized.includes('nonce') && (normalized.includes('lower') || normalized.includes('known'))
+}
+
+function patchLicenseNonceHandling(client: StoryClient) {
+  const license = client.license as any
+  const wallet = license.wallet as {
+    account: { address: `0x${string}` }
+    writeContract: (args: any) => Promise<unknown>
+    __noncePatched?: boolean
+  }
+  if (wallet.__noncePatched) {
+    return
+  }
+
+  const originalWrite = wallet.writeContract.bind(wallet)
+  const signerAddress = wallet.account.address
+
+  wallet.writeContract = async (args: any) => {
+    try {
+      return await originalWrite(args)
+    } catch (error) {
+      if (!isNonceError(error)) {
+        throw error
+      }
+      const pendingNonce = await (license.rpcClient as any).getTransactionCount({
+        address: signerAddress,
+        blockTag: 'pending'
+      })
+      return await originalWrite({
+        ...args,
+        nonce: pendingNonce
+      })
+    }
+  }
+
+  wallet.__noncePatched = true
 }
 
 export function getDefaultLicenseTerms({

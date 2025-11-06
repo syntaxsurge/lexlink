@@ -75,6 +75,8 @@ export type LicenseRecord = {
   btcTxId: string
   attestationHash: string
   constellationTx: string
+  constellationExplorerUrl?: string | null
+  constellationAnchoredAt?: number | null
   tokenOnChainId: string
   licenseTermsId: string
   status: string
@@ -104,6 +106,7 @@ export type DisputeRecord = {
   txHash: string
   evidenceHash: string
   constellationTx: string
+  constellationExplorerUrl?: string | null
   status: string
   livenessSeconds: number
   bond: number
@@ -117,6 +120,7 @@ export type TrainingBatchRecord = {
   units: number
   evidenceHash: string
   constellationTx: string
+  constellationExplorerUrl?: string | null
   createdAt: number
   ownerPrincipal?: string
 }
@@ -1588,6 +1592,10 @@ async function finalizeOrder({
   })
   const constellationTx =
     evidenceResult.status === 'ok' ? evidenceResult.txHash : ''
+  const constellationExplorerUrl =
+    evidenceResult.status === 'ok' ? evidenceResult.explorerUrl : ''
+  const constellationAnchoredAt =
+    evidenceResult.status === 'ok' ? Date.now() : undefined
 
   const archive = await createLicenseArchive({
     assetBuffer: mediaBuffer,
@@ -1642,6 +1650,8 @@ async function finalizeOrder({
     btcTxId: paymentReference,
     attestationHash,
     constellationTx,
+    constellationExplorerUrl,
+    constellationAnchoredAt,
     tokenOnChainId: licenseTokenId,
     contentHash,
     c2paHash: archive.archiveHash,
@@ -1664,6 +1674,8 @@ async function finalizeOrder({
       ipId: order.ipId,
       btcTxId: paymentReference,
       constellationTx,
+      constellationExplorerUrl,
+      constellationAnchoredAt,
       licenseTokenId,
       paymentMode,
       constellationStatus: evidenceResult.status,
@@ -1678,6 +1690,8 @@ async function finalizeOrder({
     attestation,
     attestationHash,
     constellationTx,
+    constellationExplorerUrl,
+    constellationAnchoredAt,
     complianceScore,
     contentHash,
     c2paArchive: {
@@ -1823,6 +1837,8 @@ export async function completeLicenseSale({
     attestation: result.attestation,
     attestationHash: result.attestationHash,
     constellationTx: result.constellationTx,
+    constellationExplorerUrl: result.constellationExplorerUrl,
+    constellationAnchoredAt: result.constellationAnchoredAt,
     constellationStatus: result.constellationStatus,
     contentHash: result.contentHash,
     complianceScore: result.complianceScore,
@@ -1895,6 +1911,8 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
   })
   const constellationTx =
     disputeEvidence.status === 'ok' ? disputeEvidence.txHash : ''
+  const constellationExplorerUrl =
+    disputeEvidence.status === 'ok' ? disputeEvidence.explorerUrl : ''
 
   await convex.mutation('disputes:insert' as any, {
     disputeId,
@@ -1904,6 +1922,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     txHash,
     evidenceHash,
     constellationTx,
+    constellationExplorerUrl,
     status: 'raised',
     livenessSeconds,
     bond: payload.bond ?? 0,
@@ -1919,6 +1938,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
       targetTag: payload.targetTag,
       evidenceCid: payload.evidenceCid,
       constellationTx,
+      constellationExplorerUrl,
       txHash
     },
     resourceId: disputeId
@@ -1928,7 +1948,8 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     disputeId,
     txHash,
     evidenceHash,
-    constellationTx
+    constellationTx,
+    constellationExplorerUrl
   }
 }
 
@@ -2078,7 +2099,9 @@ export async function loadBuyerPurchases() {
   return (ordersRaw as LicenseRecord[]).map(order => ({
     ...order,
     ipTitle: ipMap.get(order.ipId)?.title ?? order.ipId,
-    mintTo: order.mintTo ?? order.buyer ?? null
+    mintTo: order.mintTo ?? order.buyer ?? null,
+    constellationExplorerUrl: order.constellationExplorerUrl ?? null,
+    constellationAnchoredAt: order.constellationAnchoredAt ?? null
   }))
 }
 
@@ -2121,6 +2144,8 @@ export async function recordTrainingBatch({
   })
   const constellationTx =
     trainingEvidence.status === 'ok' ? trainingEvidence.txHash : ''
+  const constellationExplorerUrl =
+    trainingEvidence.status === 'ok' ? trainingEvidence.explorerUrl : ''
 
   await convex.mutation('trainingBatches:insert' as any, {
     batchId,
@@ -2128,6 +2153,7 @@ export async function recordTrainingBatch({
     units,
     evidenceHash,
     constellationTx,
+    constellationExplorerUrl,
     payload: payloadJson,
     ownerPrincipal: ip.ownerPrincipal ?? actor.principal
   })
@@ -2161,6 +2187,7 @@ export async function recordTrainingBatch({
       ipId,
       units,
       constellationTx,
+      constellationExplorerUrl,
       constellationStatus: trainingEvidence.status,
       evidenceHash
     },
@@ -2170,6 +2197,7 @@ export async function recordTrainingBatch({
   return {
     batchId,
     constellationTx,
+    constellationExplorerUrl,
     constellationStatus: trainingEvidence.status,
     evidenceHash
   }
@@ -2293,6 +2321,8 @@ type PublicLicenseRecord = {
   btcTxId?: string
   attestationHash?: string
   constellationTx?: string
+  constellationExplorerUrl?: string | null
+  constellationAnchoredAt?: number | null
   tokenOnChainId?: string
   licenseTermsId?: string
   createdAt: number
@@ -2318,6 +2348,7 @@ type PublicTrainingBatchRecord = {
   units: number
   evidenceHash: string
   constellationTx: string
+  constellationExplorerUrl?: string | null
   payload?: string | null
   createdAt: number
 }
@@ -2339,6 +2370,8 @@ export async function loadOrderReceipt(orderId: string) {
     ...record,
     buyer: mintTo ?? undefined,
     mintTo,
+    constellationExplorerUrl: record.constellationExplorerUrl ?? null,
+    constellationAnchoredAt: record.constellationAnchoredAt ?? null,
     vcDocument: record.vcDocument ?? null,
     evidencePayload: record.evidencePayload ?? null,
     c2paArchiveUrl: record.c2paArchiveUri
@@ -2374,7 +2407,8 @@ export async function loadTrainingReceipt(batchId: string) {
   return {
     ...record,
     ipTitle: ip?.title ?? record.ipId,
-    payload: record.payload ?? null
+    payload: record.payload ?? null,
+    constellationExplorerUrl: record.constellationExplorerUrl ?? null
   }
 }
 

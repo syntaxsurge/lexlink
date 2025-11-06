@@ -27,6 +27,10 @@ import {
 } from '@/components/ui/table'
 import { env } from '@/lib/env'
 import {
+  constellationExplorerUrl,
+  type ConstellationNetworkId
+} from '@/lib/constellation-links'
+import {
   ipAccountOnBlockExplorer,
   ipAssetExplorerUrl,
   type StoryNetwork
@@ -40,6 +44,8 @@ function formatDate(ms: number) {
 }
 
 const network = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
+const constellationNetwork =
+  (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
 function MetricCard({
   title,
@@ -222,11 +228,22 @@ export default async function OverviewPage() {
                 No disputes at the moment.
               </p>
             )}
-            {disputes.slice(0, 4).map((dispute: DisputeRecord) => (
-              <div
-                key={dispute.disputeId}
-                className='rounded-lg border border-border bg-background/60 p-4'
-              >
+            {disputes.slice(0, 4).map((dispute: DisputeRecord) => {
+              const disputeExplorerUrl =
+                dispute.constellationExplorerUrl &&
+                dispute.constellationExplorerUrl.length > 0
+                  ? dispute.constellationExplorerUrl
+                  : dispute.constellationTx
+                    ? constellationExplorerUrl(
+                        constellationNetwork,
+                        dispute.constellationTx
+                      )
+                    : null
+              return (
+                <div
+                  key={dispute.disputeId}
+                  className='rounded-lg border border-border bg-background/60 p-4'
+                >
                 <div className='flex items-center justify-between gap-2'>
                   <span className='font-medium'>
                     {dispute.disputeId.slice(0, 10)}…
@@ -245,12 +262,24 @@ export default async function OverviewPage() {
                   <div>
                     <dt className='text-muted-foreground'>Constellation Tx</dt>
                     <dd className='font-mono'>
-                      {dispute.constellationTx || 'pending'}
+                      {disputeExplorerUrl ? (
+                        <Link
+                          href={disputeExplorerUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {dispute.constellationTx}
+                        </Link>
+                      ) : (
+                        dispute.constellationTx || 'pending'
+                      )}
                     </dd>
                   </div>
                 </dl>
-              </div>
-            ))}
+                </div>
+              )
+            })}
           </CardContent>
         </Card>
       </div>
@@ -275,57 +304,85 @@ export default async function OverviewPage() {
                 No completed licenses yet.
               </p>
             )}
-            {finalizedOrders.slice(0, 3).map(order => (
-              <div
-                key={order.orderId}
-                className='rounded-lg border border-border bg-background/60 p-4'
-              >
-                <div className='flex items-center justify-between gap-2'>
-                  <div>
-                    <p className='text-sm font-medium'>
-                      Order {order.orderId.slice(0, 10)}…
-                    </p>
-                    <p className='text-xs text-muted-foreground'>
-                      Compliance score {order.complianceScore}/100
-                    </p>
+            {finalizedOrders.slice(0, 3).map(order => {
+              const orderExplorerUrl =
+                order.constellationExplorerUrl &&
+                order.constellationExplorerUrl.length > 0
+                  ? order.constellationExplorerUrl
+                  : order.constellationTx
+                    ? constellationExplorerUrl(
+                        constellationNetwork,
+                        order.constellationTx
+                      )
+                    : null
+
+              return (
+                <div
+                  key={order.orderId}
+                  className='rounded-lg border border-border bg-background/60 p-4'
+                >
+                  <div className='flex items-center justify-between gap-2'>
+                    <div>
+                      <p className='text-sm font-medium'>
+                        Order {order.orderId.slice(0, 10)}…
+                      </p>
+                      <p className='text-xs text-muted-foreground'>
+                        Compliance score {order.complianceScore}/100
+                      </p>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Button asChild size='sm' variant='outline'>
+                        <Link
+                          href={ipAssetExplorerUrl(order.ipId, network)}
+                          target='_blank'
+                          rel='noreferrer'
+                        >
+                          View IP Explorer
+                        </Link>
+                      </Button>
+                      <Button asChild size='sm' variant='ghost'>
+                        <Link
+                          href={ipAccountOnBlockExplorer(order.ipId, network)}
+                          target='_blank'
+                          rel='noreferrer'
+                        >
+                          StoryScan
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
-                  <div className='flex items-center gap-2'>
-                    <Button asChild size='sm' variant='outline'>
-                      <Link
-                        href={ipAssetExplorerUrl(order.ipId, network)}
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        View IP Explorer
-                      </Link>
-                    </Button>
-                    <Button asChild size='sm' variant='ghost'>
-                      <Link
-                        href={ipAccountOnBlockExplorer(order.ipId, network)}
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        StoryScan
-                      </Link>
-                    </Button>
-                  </div>
+
+                  <dl className='mt-3 grid gap-1 text-xs'>
+                    <div>
+                      <dt className='text-muted-foreground'>Bitcoin Tx</dt>
+                      <dd className='font-mono'>{order.btcTxId}</dd>
+                    </div>
+                    <div>
+                      <dt className='text-muted-foreground'>Constellation Tx</dt>
+                      <dd className='font-mono'>
+                        {orderExplorerUrl ? (
+                          <Link
+                            href={orderExplorerUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary underline-offset-4 hover:underline'
+                          >
+                            {order.constellationTx}
+                          </Link>
+                        ) : (
+                          order.constellationTx || 'pending'
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className='text-muted-foreground'>License Token</dt>
+                      <dd className='font-mono'>{order.tokenOnChainId}</dd>
+                    </div>
+                  </dl>
                 </div>
-                <dl className='mt-3 grid gap-1 text-xs'>
-                  <div>
-                    <dt className='text-muted-foreground'>Bitcoin Tx</dt>
-                    <dd className='font-mono'>{order.btcTxId}</dd>
-                  </div>
-                  <div>
-                    <dt className='text-muted-foreground'>Constellation Tx</dt>
-                    <dd className='font-mono'>{order.constellationTx}</dd>
-                  </div>
-                  <div>
-                    <dt className='text-muted-foreground'>License Token</dt>
-                    <dd className='font-mono'>{order.tokenOnChainId}</dd>
-                  </div>
-                </dl>
-              </div>
-            ))}
+              )
+            })}
+
           </CardContent>
         </Card>
 
@@ -388,21 +445,44 @@ export default async function OverviewPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {trainingBatches.slice(0, 6).map(batch => (
-                <TableRow key={batch.batchId}>
-                  <TableCell className='font-medium'>
-                    {batch.batchId.slice(0, 10)}…
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {batch.ipId}
-                  </TableCell>
-                  <TableCell>{batch.units.toLocaleString()}</TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {batch.constellationTx}
-                  </TableCell>
-                  <TableCell>{formatDate(batch.createdAt)}</TableCell>
-                </TableRow>
-              ))}
+              {trainingBatches.slice(0, 6).map(batch => {
+                const batchExplorerUrl =
+                  batch.constellationExplorerUrl &&
+                  batch.constellationExplorerUrl.length > 0
+                    ? batch.constellationExplorerUrl
+                    : batch.constellationTx
+                      ? constellationExplorerUrl(
+                          constellationNetwork,
+                          batch.constellationTx
+                        )
+                      : null
+                return (
+                  <TableRow key={batch.batchId}>
+                    <TableCell className='font-medium'>
+                      {batch.batchId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {batch.ipId}
+                    </TableCell>
+                    <TableCell>{batch.units.toLocaleString()}</TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {batchExplorerUrl ? (
+                        <Link
+                          href={batchExplorerUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {batch.constellationTx}
+                        </Link>
+                      ) : (
+                        batch.constellationTx || 'pending'
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDate(batch.createdAt)}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>

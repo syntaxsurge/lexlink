@@ -143,12 +143,11 @@ export default async function PurchasesPage() {
                       )
                     : ipAssetExplorerUrl(order.ipId, storyNetwork)
                 const constellationLink =
-                  order.constellationTx?.length
-                    ? constellationExplorerUrl(
-                        constellationNetwork,
-                        order.constellationTx
-                      )
-                    : null
+                  order.constellationExplorerUrl && order.constellationExplorerUrl.length > 0
+                    ? order.constellationExplorerUrl
+                    : order.constellationTx?.length
+                      ? constellationExplorerUrl(constellationNetwork, order.constellationTx)
+                      : null
                 const c2paLink = order.c2paArchiveUri
                   ? ipfsGatewayUrl(order.c2paArchiveUri)
                   : null
@@ -210,7 +209,7 @@ export default async function PurchasesPage() {
                           rel='noreferrer'
                           className='text-primary underline-offset-4 hover:underline'
                         >
-                          {short(order.constellationTx, 12)}
+                          {short(order.constellationTx ?? null, 12)}
                         </Link>
                       ) : (
                         <span className='text-muted-foreground'>—</span>

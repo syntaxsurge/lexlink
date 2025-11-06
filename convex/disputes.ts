@@ -18,6 +18,7 @@ export const insert = mutationGeneric({
     txHash: v.string(),
     evidenceHash: v.string(),
     constellationTx: v.string(),
+    constellationExplorerUrl: v.optional(v.string()),
     status: v.string(),
     livenessSeconds: v.number(),
     bond: v.number(),

@@ -94,9 +94,12 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
 
   const constellationNetwork =
     (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
-  const constellationLink = receipt.constellationTx
-    ? constellationExplorerUrl(constellationNetwork, receipt.constellationTx)
-    : null
+  const constellationLink =
+    receipt.constellationExplorerUrl && receipt.constellationExplorerUrl.length > 0
+      ? receipt.constellationExplorerUrl
+      : receipt.constellationTx
+        ? constellationExplorerUrl(constellationNetwork, receipt.constellationTx)
+        : null
 
   const btcExplorer = explorerBase(receipt.network)
   const btcTxLink =
@@ -229,6 +232,12 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
                 : '0'}
             </p>
           </div>
+          {receipt.constellationAnchoredAt && (
+            <p className='text-xs text-muted-foreground'>
+              Constellation anchoring completed{' '}
+              {new Date(receipt.constellationAnchoredAt).toLocaleString()}.
+            </p>
+          )}
         </CardContent>
       </Card>
 

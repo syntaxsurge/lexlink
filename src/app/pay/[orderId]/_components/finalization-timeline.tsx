@@ -194,14 +194,21 @@ export function FinalizationTimeline({
       return null
     }
     const txHash = invoice.constellationTx
+    const explorerUrl =
+      invoice.constellationExplorerUrl &&
+      invoice.constellationExplorerUrl.length > 0
+        ? invoice.constellationExplorerUrl
+        : constellationExplorerUrl(constellationNetwork, txHash)
     return {
-      explorerUrl: constellationExplorerUrl(constellationNetwork, txHash),
+      explorerUrl,
       apiUrl: constellationTransactionApiUrl(constellationNetwork, txHash),
       txHash
     }
   }, [
     constellationEnabled,
     constellationNetwork,
+    invoice.constellationAnchoredAt,
+    invoice.constellationExplorerUrl,
     invoice.constellationTx
   ])
 
@@ -301,6 +308,15 @@ export function FinalizationTimeline({
                     </span>
                     .
                   </p>
+                  {invoice.constellationAnchoredAt && (
+                    <p>
+                      Anchored{' '}
+                      <span className='font-semibold text-foreground'>
+                        {formatDate(invoice.constellationAnchoredAt)}
+                      </span>
+                      .
+                    </p>
+                  )}
                   <p className='space-x-2'>
                     <Link
                       href={constellationLinks.explorerUrl}

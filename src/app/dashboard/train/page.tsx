@@ -18,9 +18,14 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import {
+  constellationExplorerUrl,
+  type ConstellationNetworkId
+} from '@/lib/constellation-links'
+import { env } from '@/lib/env'
 
-const INTEGRATIONNET_EXPLORER =
-  'https://explorer.mainnet.constellationnetwork.io/transactions/'
+const CONSTELLATION_NETWORK =
+  (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
@@ -75,43 +80,60 @@ export default async function TrainingPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {trainingBatches.map(batch => (
-                <TableRow key={batch.batchId}>
-                  <TableCell className='font-medium'>
-                    {batch.batchId.slice(0, 10)}…
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {batch.ipId}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant='outline'>
-                      {batch.units.toLocaleString()} units
-                    </Badge>
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {batch.evidenceHash}
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    <Link
-                      href={`${INTEGRATIONNET_EXPLORER}${batch.constellationTx}`}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      {batch.constellationTx.slice(0, 14)}…
-                    </Link>
-                  </TableCell>
-                  <TableCell>{formatDate(batch.createdAt)}</TableCell>
-                  <TableCell className='text-xs'>
-                    <Link
-                      href={`/verify/training/${batch.batchId}`}
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      View proof
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {trainingBatches.map(batch => {
+                const constellationLink =
+                  batch.constellationExplorerUrl &&
+                  batch.constellationExplorerUrl.length > 0
+                    ? batch.constellationExplorerUrl
+                    : batch.constellationTx
+                      ? constellationExplorerUrl(
+                          CONSTELLATION_NETWORK,
+                          batch.constellationTx
+                        )
+                      : null
+
+                return (
+                  <TableRow key={batch.batchId}>
+                    <TableCell className='font-medium'>
+                      {batch.batchId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {batch.ipId}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant='outline'>
+                        {batch.units.toLocaleString()} units
+                      </Badge>
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {batch.evidenceHash}
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {constellationLink ? (
+                        <Link
+                          href={constellationLink}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {batch.constellationTx}
+                        </Link>
+                      ) : (
+                        batch.constellationTx || 'pending'
+                      )}
+                    </TableCell>
+                    <TableCell>{formatDate(batch.createdAt)}</TableCell>
+                    <TableCell className='text-xs'>
+                      <Link
+                        href={`/verify/training/${batch.batchId}`}
+                        className='text-primary underline-offset-4 hover:underline'
+                      >
+                        View proof
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>

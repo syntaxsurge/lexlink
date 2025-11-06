@@ -19,6 +19,7 @@ export const insert = mutationGeneric({
     units: v.number(),
     evidenceHash: v.string(),
     constellationTx: v.string(),
+    constellationExplorerUrl: v.optional(v.string()),
     payload: v.optional(v.string()),
     ownerPrincipal: v.string()
   },

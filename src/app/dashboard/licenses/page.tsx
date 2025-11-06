@@ -27,10 +27,16 @@ import {
 import { readPaymentMode } from '@/lib/payment-mode'
 import { env } from '@/lib/env'
 import { ipfsGatewayUrl } from '@/lib/ipfs'
+import {
+  constellationExplorerUrl,
+  type ConstellationNetworkId
+} from '@/lib/constellation-links'
 import { Buffer } from 'node:buffer'
 
 const MAINNET_MEMPOOL = 'https://mempool.space'
 const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
+const CONSTELLATION_NETWORK =
+  (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
 function formatBtc(sats?: number) {
   if (!sats) return '—'
@@ -377,6 +383,17 @@ export default async function LicensesPage() {
                 const base = explorerBase(order.network)
                 const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
                 const mintTarget = order.mintTo ?? order.buyer ?? null
+                const constellationLink =
+                  order.constellationExplorerUrl &&
+                  order.constellationExplorerUrl.length > 0
+                    ? order.constellationExplorerUrl
+                    : order.constellationTx
+                      ? constellationExplorerUrl(
+                          CONSTELLATION_NETWORK,
+                          order.constellationTx
+                        )
+                      : null
+
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -414,14 +431,14 @@ export default async function LicensesPage() {
                         : '—'}
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.constellationTx ? (
+                      {constellationLink ? (
                         <Link
-                          href={`https://explorer.mainnet.constellationnetwork.io/transactions/${order.constellationTx}`}
+                          href={constellationLink}
                           target='_blank'
                           rel='noreferrer'
                           className='text-primary underline-offset-4 hover:underline'
                         >
-                          {order.constellationTx.slice(0, 14)}…
+                          {order.constellationTx?.slice(0, 14)}…
                         </Link>
                       ) : (
                         '—'

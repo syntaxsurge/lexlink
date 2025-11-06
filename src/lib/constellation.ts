@@ -1,69 +1,106 @@
+import { dag4 } from '@stardust-collective/dag4'
+
 import { env } from '@/lib/env'
 
 type ConstellationNetwork = 'integrationnet' | 'testnet' | 'mainnet'
 
-type NetworkInfo = {
-  id: ConstellationNetwork
+type NetworkConfig = {
   beUrl: string
   l0Url: string
   l1Url: string
-  networkVersion: string
+  explorerUrl: string
+  networkVersion: '2.0'
   testnet: boolean
 }
 
 export type EvidenceResult =
   | { status: 'disabled'; reason: string }
   | { status: 'skipped'; reason: string }
-  | { status: 'ok'; txHash: string }
+  | { status: 'ok'; txHash: string; explorerUrl: string }
 
-const LOCAL_STORAGE_NAMESPACE = 'lexlink-evidence'
-const DAG_CACHE_PATH = './lexlink-dag-cache'
-
-const DEFAULT_NETWORKS: Record<ConstellationNetwork, NetworkInfo> = {
+const NETWORKS: Record<ConstellationNetwork, NetworkConfig> = {
   integrationnet: {
-    id: 'integrationnet',
     beUrl: 'https://be-integrationnet.constellationnetwork.io',
     l0Url: 'https://l0-lb-integrationnet.constellationnetwork.io',
     l1Url: 'https://l1-lb-integrationnet.constellationnetwork.io',
+    explorerUrl: 'https://explorer.integrationnet.constellationnetwork.io',
     networkVersion: '2.0',
     testnet: true
   },
   testnet: {
-    id: 'testnet',
     beUrl: 'https://be-testnet.constellationnetwork.io',
     l0Url: 'https://l0-lb-testnet.constellationnetwork.io',
     l1Url: 'https://l1-lb-testnet.constellationnetwork.io',
+    explorerUrl: 'https://explorer.testnet.constellationnetwork.io',
     networkVersion: '2.0',
     testnet: true
   },
   mainnet: {
-    id: 'mainnet',
     beUrl: 'https://be-mainnet.constellationnetwork.io',
     l0Url: 'https://l0-lb-mainnet.constellationnetwork.io',
     l1Url: 'https://l1-lb-mainnet.constellationnetwork.io',
+    explorerUrl: 'https://explorer.constellationnetwork.io',
     networkVersion: '2.0',
     testnet: false
   }
 }
 
-function resolveNetworkInfo(): NetworkInfo {
-  const network = env.CONSTELLATION_NETWORK
-  const defaults = DEFAULT_NETWORKS[network]
+export const runtime = 'nodejs'
 
-  if (!defaults) {
-    throw new Error(`Unsupported Constellation network "${network}".`)
+const MAX_MEMO_BYTES = 60_000
+const DEFAULT_TIMEOUT = 60_000
+const POLL_INTERVAL = 2_000
+
+function resolveNetworkConfig(): NetworkConfig {
+  const config = NETWORKS[env.CONSTELLATION_NETWORK]
+  if (!config) {
+    throw new Error(`Unsupported Constellation network "${env.CONSTELLATION_NETWORK}".`)
   }
-
-  return defaults
+  return config
 }
 
-/**
- * Publishes an evidence heartbeat to Constellation. Returns a structured result so
- * callers can treat anchoring as best-effort without throwing.
- */
-export async function publishEvidence(
-  evidence: unknown
-): Promise<EvidenceResult> {
+function isNonceLikeError(error: unknown) {
+  if (!error) {
+    return false
+  }
+  const message =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+  if (!message) {
+    return false
+  }
+  const normalized = message.toLowerCase()
+  return normalized.includes('nonce') && (normalized.includes('lower') || normalized.includes('known'))
+}
+
+async function waitForAcceptance(txHash: string, config: NetworkConfig) {
+  const deadline = Date.now() + DEFAULT_TIMEOUT
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(`${config.beUrl}/transactions/${txHash}`, {
+        cache: 'no-store'
+      })
+      if (response.ok) {
+        const payload = await response.json().catch(() => null)
+        if (
+          payload &&
+          (payload.hash ||
+            payload.transaction ||
+            payload.depth >= 0 ||
+            payload.accepted ||
+            payload.status === 'Accepted')
+        ) {
+          return
+        }
+      }
+    } catch (error) {
+      console.warn('[Constellation] Polling error while awaiting acceptance:', error)
+    }
+    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL))
+  }
+  throw new Error('Timed out waiting for Constellation transaction acceptance')
+}
+
+export async function publishEvidence(evidence: unknown): Promise<EvidenceResult> {
   if (!env.CONSTELLATION_ENABLED) {
     return { status: 'disabled', reason: 'constellation_disabled' }
   }
@@ -77,153 +114,80 @@ export async function publishEvidence(
   }
 
   if (sinkAddress === sourceAddress) {
-    console.warn('Constellation anchoring skipped: sink equals source.')
+    console.warn('[Constellation] Skipping: sink address matches source address.')
     return { status: 'skipped', reason: 'sink_equals_source' }
   }
 
+  const networkConfig = resolveNetworkConfig()
+  const memo =
+    typeof evidence === 'string'
+      ? evidence
+      : evidence
+        ? JSON.stringify(evidence)
+        : ''
+
+  if (!memo) {
+    return { status: 'skipped', reason: 'empty_payload' }
+  }
+
+  if (Buffer.byteLength(memo, 'utf8') > MAX_MEMO_BYTES) {
+    return { status: 'skipped', reason: 'payload_too_large' }
+  }
+
+  console.log(`[Constellation] Connecting to ${env.CONSTELLATION_NETWORK}...`)
+  const networkInfo = {
+    id: env.CONSTELLATION_NETWORK,
+    beUrl: networkConfig.beUrl,
+    l0Url: networkConfig.l0Url,
+    l1Url: networkConfig.l1Url,
+    networkVersion: networkConfig.networkVersion
+  }
+
+  dag4.network.config(networkInfo)
+  dag4.account.connect(networkInfo, networkConfig.testnet)
+
+  console.log('[Constellation] Authenticating with private key...')
+  dag4.account.loginPrivateKey(privateKey.replace(/^0x/, ''))
+
+  const derivedAddress = dag4.account.address
+  if (derivedAddress !== sourceAddress) {
+    console.warn(
+      `[Constellation] Address mismatch. Derived ${derivedAddress}, expected ${sourceAddress}.`
+    )
+  }
+
   try {
-    const [{ dag4 }, { LocalStorage }] = await Promise.all([
-      import('@stardust-collective/dag4'),
-      import('node-localstorage')
-    ])
-
-    if (typeof (globalThis as any).localStorage === 'undefined') {
-      const storage = new LocalStorage(DAG_CACHE_PATH)
-      ;(globalThis as any).localStorage = storage as unknown as Storage
-    }
-
-    const storage = (globalThis as any).localStorage as Storage | undefined
-    const networkInfo = resolveNetworkInfo()
-    const message =
-      typeof evidence === 'string'
-        ? evidence
-        : JSON.stringify(evidence, null, 2)
-
-    const evidenceHashValue =
-      typeof evidence === 'string'
-        ? evidence
-        : typeof evidence === 'object' &&
-            evidence !== null &&
-            'evidenceHash' in evidence &&
-            typeof (evidence as Record<string, unknown>).evidenceHash === 'string'
-          ? ((evidence as Record<string, unknown>).evidenceHash as string)
-          : undefined
-
-    if (!message || message.length === 0) {
-      console.warn('[Constellation] Skipping: empty payload')
-      return { status: 'skipped', reason: 'empty_payload' }
-    }
-
-    if (Buffer.byteLength(message, 'utf8') > 60_000) {
-      console.error('[Constellation] Payload exceeds 60KB limit')
-      throw new Error(
-        'Evidence payload exceeds Constellation memo size (~60KB).'
-      )
-    }
-
-    console.log(`[Constellation] Connecting to ${networkInfo.id}...`)
-    dag4.account.connect(
-      {
-        id: networkInfo.id,
-        networkVersion: networkInfo.networkVersion,
-        beUrl: networkInfo.beUrl,
-        l0Url: networkInfo.l0Url,
-        l1Url: networkInfo.l1Url
-      },
-      false
+    console.log(`[Constellation] Sending memo to ${sinkAddress} (${Buffer.byteLength(memo, 'utf8')} bytes)...`)
+    const { transaction, hash } = await dag4.account.generateSignedTransactionWithHash(
+      sinkAddress,
+      0,
+      0,
+      memo
     )
 
-    console.log('[Constellation] Authenticating with private key...')
-    dag4.account.loginPrivateKey(privateKey.replace(/^0x/, ''))
-
-    const derivedAddress = dag4.account.address
-    console.log(`[Constellation] Derived address: ${derivedAddress}`)
-
-    if (derivedAddress !== sourceAddress) {
-      console.warn(
-        `[Constellation] Address mismatch! Configured: ${sourceAddress}, Derived: ${derivedAddress}`
-      )
-    }
-
-    console.log(`[Constellation] Sending transaction to ${sinkAddress}...`)
-    console.log(`[Constellation] Payload size: ${Buffer.byteLength(message, 'utf8')} bytes`)
-
-    let transferResult: any
-    try {
-      transferResult = await (dag4.account as any).transferDag({
-        toAddress: sinkAddress,
-        amount: '0.0000001',
-        fee: '0',
-        message
-      })
-      console.log('[Constellation] Transfer result:', JSON.stringify(transferResult, null, 2))
-    } catch (transferError: any) {
-      console.error('[Constellation] Transfer failed!')
-      console.error('[Constellation] Error type:', typeof transferError)
-      console.error('[Constellation] Error object:', transferError)
-      console.error('[Constellation] Error message:', transferError?.message || 'No message')
-      console.error('[Constellation] Error response:', transferError?.response?.data || 'No response data')
-      console.error('[Constellation] Error status:', transferError?.response?.status || 'No status')
-      throw new Error(`DAG transfer failed: ${transferError?.message || transferError?.response?.data || String(transferError)}`)
-    }
-
+    const response: any = await dag4.network.postTransaction(
+      transaction as any
+    )
     const txHash =
-      typeof transferResult === 'string'
-        ? transferResult
-        : transferResult?.hash ?? ''
+      typeof response === 'string' ? response : response?.hash ?? hash
 
     if (!txHash) {
-      console.error('[Constellation] No transaction hash returned!')
-      console.error('[Constellation] Transfer result:', transferResult)
+      console.error('[Constellation] Missing transaction hash in response.', response)
       return { status: 'skipped', reason: 'missing_tx_hash' }
     }
 
-    console.log(`[Constellation] Transaction hash: ${txHash}`)
-    console.log('[Constellation] Waiting for checkpoint acceptance...')
+    await waitForAcceptance(txHash, networkConfig)
 
-    if (typeof dag4.account.waitForCheckPointAccepted === 'function') {
-      try {
-        await Promise.race([
-          dag4.account.waitForCheckPointAccepted(txHash),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Checkpoint timeout after 30s')), 30000)
-          )
-        ])
-        console.log('[Constellation] Checkpoint accepted!')
-      } catch (checkpointError) {
-        console.warn('[Constellation] Checkpoint wait failed:', checkpointError)
-        // Continue anyway - the transaction might still be valid
-      }
-    } else {
-      console.warn('[Constellation] waitForCheckPointAccepted not available, skipping wait')
-    }
-
-    if (storage) {
-      storage.setItem(
-        `${LOCAL_STORAGE_NAMESPACE}:${txHash}`,
-        JSON.stringify({
-          recordedAt: new Date().toISOString(),
-          from: derivedAddress,
-          to: sinkAddress,
-          network: networkInfo.id,
-          payloadPreview: message.slice(0, 256),
-          ...(evidenceHashValue
-            ? { evidenceHash: evidenceHashValue }
-            : {})
-        })
-      )
-      console.log(`[Constellation] Stored transaction metadata in local storage`)
-    }
-
-    console.log(`[Constellation] ✅ Successfully published evidence: ${txHash}`)
-    return { status: 'ok', txHash }
+    const explorerUrl = `${networkConfig.explorerUrl}/transactions/${txHash}`
+    console.log(`[Constellation] ✅ Evidence anchored: ${txHash}`)
+    return { status: 'ok', txHash, explorerUrl }
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : String(error ?? 'unknown')
-    console.error('[Constellation] ❌ Publishing failed:', error)
-    if (error instanceof Error && error.stack) {
-      console.error('[Constellation] Stack trace:', error.stack)
+    if (isNonceLikeError(error)) {
+      console.error('[Constellation] Nonce error encountered when anchoring evidence.', error)
+    } else {
+      console.error('[Constellation] ❌ Publishing failed:', error)
     }
+    const message = error instanceof Error ? error.message : String(error ?? 'unknown_error')
     return { status: 'skipped', reason: message }
   }
 }

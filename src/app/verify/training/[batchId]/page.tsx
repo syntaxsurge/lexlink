@@ -35,9 +35,12 @@ export default async function VerifyTrainingPage({
     (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
   const constellationNetwork =
     (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
-  const constellationLink = record.constellationTx
-    ? constellationExplorerUrl(constellationNetwork, record.constellationTx)
-    : null
+  const constellationLink =
+    record.constellationExplorerUrl && record.constellationExplorerUrl.length > 0
+      ? record.constellationExplorerUrl
+      : record.constellationTx
+        ? constellationExplorerUrl(constellationNetwork, record.constellationTx)
+        : null
 
   let payloadJson: string | null = null
   if (record.payload) {

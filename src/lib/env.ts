@@ -38,6 +38,10 @@ const serverEnvSchema = z.object({
     .string()
     .min(32)
     .default('dev-secret-lexlink-nextauth-0000000000000000'),
+  NEXTAUTH_DEBUG: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(value => value === 'true'),
   PAYMENT_MODE: z.enum(['ckbtc', 'btc']).default('ckbtc'),
   STORY_RPC_URL: z.string().url(),
   STORY_CHAIN_ID: z.coerce.number().default(1315),
@@ -145,6 +149,7 @@ function parseEnv() {
   const serverEnv = serverEnvSchema.parse({
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+    NEXTAUTH_DEBUG: process.env.NEXTAUTH_DEBUG,
     PAYMENT_MODE: process.env.PAYMENT_MODE,
     STORY_RPC_URL: process.env.STORY_RPC_URL,
     STORY_CHAIN_ID: process.env.STORY_CHAIN_ID,

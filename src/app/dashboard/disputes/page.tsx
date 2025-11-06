@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import { loadDashboardData, type DisputeRecord } from '@/app/dashboard/actions'
 import { DisputeForm } from '@/components/app/dispute-form'
 import { Badge } from '@/components/ui/badge'
@@ -16,10 +18,18 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import {
+  constellationExplorerUrl,
+  type ConstellationNetworkId
+} from '@/lib/constellation-links'
+import { env } from '@/lib/env'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
 }
+
+const CONSTELLATION_NETWORK =
+  (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
 export default async function DisputesPage() {
   const { ips, disputes } = await loadDashboardData()
@@ -69,27 +79,51 @@ export default async function DisputesPage() {
                   </TableCell>
                 </TableRow>
               )}
-              {disputes.map((dispute: DisputeRecord) => (
-                <TableRow key={dispute.disputeId}>
-                  <TableCell className='font-medium'>
-                    {dispute.disputeId.slice(0, 10)}…
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {dispute.ipId}
-                  </TableCell>
-                  <TableCell>{dispute.targetTag}</TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {dispute.evidenceCid}
-                  </TableCell>
-                  <TableCell className='font-mono text-xs'>
-                    {dispute.constellationTx || 'pending'}
-                  </TableCell>
-                  <TableCell>
-                    <Badge>{dispute.status}</Badge>
-                  </TableCell>
-                  <TableCell>{formatDate(dispute.createdAt)}</TableCell>
-                </TableRow>
-              ))}
+              {disputes.map((dispute: DisputeRecord) => {
+                const constellationLink =
+                  dispute.constellationExplorerUrl &&
+                  dispute.constellationExplorerUrl.length > 0
+                    ? dispute.constellationExplorerUrl
+                    : dispute.constellationTx
+                      ? constellationExplorerUrl(
+                          CONSTELLATION_NETWORK,
+                          dispute.constellationTx
+                        )
+                      : null
+
+                return (
+                  <TableRow key={dispute.disputeId}>
+                    <TableCell className='font-medium'>
+                      {dispute.disputeId.slice(0, 10)}…
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {dispute.ipId}
+                    </TableCell>
+                    <TableCell>{dispute.targetTag}</TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {dispute.evidenceCid}
+                    </TableCell>
+                    <TableCell className='font-mono text-xs'>
+                      {constellationLink ? (
+                        <Link
+                          href={constellationLink}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {dispute.constellationTx}
+                        </Link>
+                      ) : (
+                        dispute.constellationTx || 'pending'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge>{dispute.status}</Badge>
+                    </TableCell>
+                    <TableCell>{formatDate(dispute.createdAt)}</TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import {
   loadDashboardData,
   type IpRecord,
@@ -5,6 +7,14 @@ import {
   type TrainingBatchRecord
 } from '@/app/dashboard/actions'
 import { TrainingForm } from '@/components/app/training-form'
+import {
+  constellationExplorerUrl,
+  type ConstellationNetworkId
+} from '@/lib/constellation-links'
+import { env } from '@/lib/env'
+
+const CONSTELLATION_NETWORK =
+  (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
 function groupTraining(
   ips: IpRecord[],
@@ -93,7 +103,22 @@ export default async function TrainingPage() {
                       <dt className='text-muted-foreground'>
                         Constellation Tx
                       </dt>
-                      <dd className='break-all'>{batch.constellationTx}</dd>
+                      <dd className='break-all'>
+                        {batch.constellationExplorerUrl && batch.constellationExplorerUrl.length > 0 ? (
+                          <Link
+                            href={batch.constellationExplorerUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary underline-offset-4 hover:underline'
+                          >
+                            {batch.constellationTx}
+                          </Link>
+                        ) : batch.constellationTx ? (
+                          batch.constellationTx
+                        ) : (
+                          'pending'
+                        )}
+                      </dd>
                     </div>
                     <div>
                       <dt className='text-muted-foreground'>Evidence Hash</dt>

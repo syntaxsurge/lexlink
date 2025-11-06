@@ -76,6 +76,8 @@ export const getPublic = queryGeneric({
       btcTxId: license.btcTxId,
       attestationHash: license.attestationHash,
       constellationTx: license.constellationTx,
+      constellationExplorerUrl: license.constellationExplorerUrl ?? null,
+      constellationAnchoredAt: license.constellationAnchoredAt ?? null,
       tokenOnChainId: license.tokenOnChainId,
       licenseTermsId: license.licenseTermsId,
       createdAt: license.createdAt,
@@ -237,7 +239,9 @@ export const markCompleted = mutationGeneric({
     complianceScore: v.number(),
     ckbtcMintedSats: v.optional(v.number()),
     ckbtcBlockIndex: v.optional(v.number()),
-    evidencePayload: v.optional(v.string())
+    evidencePayload: v.optional(v.string()),
+    constellationExplorerUrl: v.optional(v.string()),
+    constellationAnchoredAt: v.optional(v.number())
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -253,6 +257,8 @@ export const markCompleted = mutationGeneric({
       btcTxId: args.btcTxId,
       attestationHash: args.attestationHash,
       constellationTx: args.constellationTx,
+      constellationExplorerUrl: args.constellationExplorerUrl ?? license.constellationExplorerUrl,
+      constellationAnchoredAt: args.constellationAnchoredAt ?? license.constellationAnchoredAt,
       tokenOnChainId: args.tokenOnChainId,
       contentHash: args.contentHash,
       c2paHash: args.c2paHash,
