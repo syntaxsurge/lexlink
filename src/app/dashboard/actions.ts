@@ -8,7 +8,7 @@ import { getAddress } from 'viem'
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
 import { createLicenseArchive } from '@/lib/c2pa'
 import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
-import { publishEvidence, type EvidenceResult } from '@/lib/constellation'
+import { publishEvidence } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
@@ -77,6 +77,8 @@ export type LicenseRecord = {
   constellationTx: string
   constellationExplorerUrl?: string | null
   constellationAnchoredAt?: number | null
+  constellationStatus?: string | null
+  constellationError?: string | null
   tokenOnChainId: string
   licenseTermsId: string
   status: string
@@ -1009,6 +1011,10 @@ export async function autoFinalizeCkbtcOrder(orderId: string) {
     return { status: 'finalized' as const }
   }
 
+  if (order.status === 'finalizing') {
+    return { status: 'pending' as const }
+  }
+
   if (normalizePaymentMode(order.paymentMode) !== 'ckbtc') {
     return { status: 'skipped' as const }
   }
@@ -1497,216 +1503,263 @@ async function finalizeOrder({
   if (paymentMode === 'btc') {
     await confirmPayment(order.orderId, paymentReference)
   }
-  const attestationJson = await fetchAttestation(order.orderId)
-  const attestation = JSON.parse(attestationJson)
-  const attestationHash = sha256Hex(attestationJson)
+  const lock = await convex.mutation('licenses:requestFinalization' as any, {
+    orderId: order.orderId
+  })
 
-  const storyClient = getStoryClient()
+  if (!lock?.proceed) {
+    const status = (lock as { status?: string })?.status
+    const note =
+      status === 'finalized'
+        ? 'License order already finalized.'
+        : 'License finalization already running.'
+    throw new Error(note)
+  }
 
-  // Retry logic for nonce errors (max 3 attempts with exponential backoff)
-  let mintResponse: Awaited<ReturnType<typeof storyClient.license.mintLicenseTokens>> | null = null
-  let lastError: Error | null = null
-  const maxRetries = 3
+  try {
+    const attestationJson = await fetchAttestation(order.orderId)
+    const attestation = JSON.parse(attestationJson)
+    const attestationHash = sha256Hex(attestationJson)
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      console.log(`[Story] Minting license token (attempt ${attempt}/${maxRetries})...`)
-      mintResponse = await storyClient.license.mintLicenseTokens({
-        licensorIpId: order.ipId as `0x${string}`,
-        licenseTermsId: BigInt(order.licenseTermsId),
-        licenseTemplate: env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`,
-        amount: 1,
-        receiver,
-        maxMintingFee: 0,
-        maxRevenueShare: 100
-      })
-      console.log(`[Story] ✅ License token minted successfully on attempt ${attempt}`)
-      break // Success - exit retry loop
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error))
-      const errorMessage = lastError.message.toLowerCase()
+    const storyClient = getStoryClient()
 
-      // Check if it's a nonce error
-      const isNonceError =
-        errorMessage.includes('nonce') &&
-        (errorMessage.includes('lower') || errorMessage.includes('already known'))
+    // Retry logic for nonce errors (max 3 attempts with exponential backoff)
+    let mintResponse: Awaited<ReturnType<typeof storyClient.license.mintLicenseTokens>> | null = null
+    let lastError: Error | null = null
+    const maxRetries = 3
 
-      if (isNonceError && attempt < maxRetries) {
-        const waitTime = Math.pow(2, attempt) * 1000 // Exponential backoff: 2s, 4s, 8s
-        console.warn(`[Story] ⚠️ Nonce error on attempt ${attempt}, retrying in ${waitTime}ms...`)
-        console.warn(`[Story] Error: ${errorMessage.slice(0, 200)}`)
-        await new Promise(resolve => setTimeout(resolve, waitTime))
-        continue // Retry
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[Story] Minting license token (attempt ${attempt}/${maxRetries})...`)
+        mintResponse = await storyClient.license.mintLicenseTokens({
+          licensorIpId: order.ipId as `0x${string}`,
+          licenseTermsId: BigInt(order.licenseTermsId),
+          licenseTemplate: env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`,
+          amount: 1,
+          receiver,
+          maxMintingFee: 0,
+          maxRevenueShare: 100
+        })
+        console.log(`[Story] ✅ License token minted successfully on attempt ${attempt}`)
+        break
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error))
+        const errorMessage = lastError.message.toLowerCase()
+        const isNonceError =
+          errorMessage.includes('nonce') &&
+          (errorMessage.includes('lower') || errorMessage.includes('already known'))
+
+        if (isNonceError && attempt < maxRetries) {
+          const waitTime = Math.pow(2, attempt) * 1000
+          console.warn(
+            `[Story] ⚠️ Nonce error on attempt ${attempt}, retrying in ${waitTime}ms...`
+          )
+          console.warn(`[Story] Error: ${errorMessage.slice(0, 200)}`)
+          await new Promise(resolve => setTimeout(resolve, waitTime))
+          continue
+        }
+
+        console.error(
+          `[Story] ❌ Failed to mint license token on attempt ${attempt}`
+        )
+        console.error(`[Story] Error: ${errorMessage}`)
+        throw new Error(`Failed to mint license tokens: ${errorMessage}`)
       }
-
-      // Not a nonce error or max retries reached - throw
-      console.error(`[Story] ❌ Failed to mint license token on attempt ${attempt}`)
-      console.error(`[Story] Error: ${errorMessage}`)
-      throw new Error(`Failed to mint license tokens: ${errorMessage}`)
     }
-  }
 
-  if (!mintResponse?.licenseTokenIds?.length) {
-    throw new Error('Failed to mint license token on Story Protocol - no token IDs returned')
-  }
+    if (!mintResponse?.licenseTokenIds?.length) {
+      throw new Error('Failed to mint license token on Story Protocol - no token IDs returned')
+    }
 
-  const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
+    const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
 
-  const mediaUrl = ipfsGatewayUrl(ip.mediaUrl)
-  const mediaResponse = await fetch(mediaUrl, { cache: 'no-store' })
-  if (!mediaResponse.ok) {
-    throw new Error(
-      `Failed to fetch media for IP: ${mediaResponse.status} ${mediaResponse.statusText}`
-    )
-  }
-  const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer())
-  const contentHash = sha256Hex(mediaBuffer)
+    const mediaUrl = ipfsGatewayUrl(ip.mediaUrl)
+    const mediaResponse = await fetch(mediaUrl, { cache: 'no-store' })
+    if (!mediaResponse.ok) {
+      throw new Error(
+        `Failed to fetch media for IP: ${mediaResponse.status} ${mediaResponse.statusText}`
+      )
+    }
+    const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer())
+    const contentHash = sha256Hex(mediaBuffer)
 
-  const evidencePayload = {
-    kind: 'LICENSE_COMPLETED',
-    orderId: order.orderId,
-    ipId: order.ipId,
-    licenseTokenId,
-    btcTxId: paymentReference,
-    attestationHash,
-    contentHash,
-    timestamp: Date.now()
-  }
-  const evidenceJson = JSON.stringify(evidencePayload, null, 2)
-  const evidenceHash = sha256Hex(evidenceJson)
-
-  let evidenceStored = false
-  try {
-    await convex.mutation('licenses:storeEvidencePayload' as any, {
-      orderId: order.orderId,
-      payload: evidenceJson
-    })
-    evidenceStored = true
-  } catch (error) {
-    console.warn('Failed to persist license evidence payload:', error)
-  }
-
-  const evidenceResult = await publishEvidence({
-    ...evidencePayload,
-    evidenceHash
-  })
-  const constellationTx =
-    evidenceResult.status === 'ok' ? evidenceResult.txHash : ''
-  const constellationExplorerUrl =
-    evidenceResult.status === 'ok' ? evidenceResult.explorerUrl : ''
-  const constellationAnchoredAt =
-    evidenceResult.status === 'ok' ? Date.now() : undefined
-
-  const archive = await createLicenseArchive({
-    assetBuffer: mediaBuffer,
-    assetFileName:
-      new URL(mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
-    storyLicenseId: licenseTokenId,
-    btcTxId: paymentReference,
-    constellationTx,
-    attestationHash,
-    contentHash,
-    licenseTokenId
-  })
-  const archiveBuffer = Buffer.from(archive.archiveBase64, 'base64')
-  const archiveSize = archiveBuffer.length
-  const archiveFileName =
-    archive.suggestedFileName ??
-    `lexlink-license-${slugify(order.orderId)}.zip`
-
-  let c2paArchiveUri: string | undefined
-  try {
-    c2paArchiveUri = await uploadBytes(
-      archiveFileName,
-      new Uint8Array(archiveBuffer)
-    )
-  } catch (error) {
-    console.warn('Failed to pin C2PA archive to IPFS:', error)
-  }
-  const c2paDownloadUrl = c2paArchiveUri
-    ? ipfsGatewayUrl(c2paArchiveUri)
-    : null
-
-  const vc = await generateLicenseCredential({
-    subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
-    storyLicenseId: licenseTokenId,
-    btcTxId: paymentReference,
-    constellationTx,
-    contentHash,
-    attestationHash
-  })
-  const vcJson = JSON.stringify(vc.document, null, 2)
-
-  const complianceScore = calculateComplianceScore({
-    hasPayment: true,
-    hasLicenseToken: true,
-    hasConstellationEvidence: evidenceResult.status === 'ok',
-    hasC2paArchive: Boolean(c2paArchiveUri ?? archive.archiveBase64),
-    trainingUnits: order.trainingUnits
-  })
-
-  await convex.mutation('licenses:markCompleted' as any, {
-    orderId: order.orderId,
-    btcTxId: paymentReference,
-    attestationHash,
-    constellationTx,
-    constellationExplorerUrl,
-    constellationAnchoredAt,
-    tokenOnChainId: licenseTokenId,
-    contentHash,
-    c2paHash: archive.archiveHash,
-    c2paArchiveUri: c2paArchiveUri,
-    c2paArchiveFileName: archiveFileName,
-    c2paArchiveSize: archiveSize,
-    vcDocument: vcJson,
-    vcHash: vc.hash,
-    complianceScore,
-    ckbtcMintedSats: minted?.sats,
-    ckbtcBlockIndex: minted?.blockIndex,
-    evidencePayload: evidenceStored ? evidenceJson : undefined
-  })
-
-  await recordEvent({
-    actor,
-    action: 'license.sale_completed',
-    payload: {
+    const evidencePayload = {
+      kind: 'LICENSE_COMPLETED',
       orderId: order.orderId,
       ipId: order.ipId,
+      licenseTokenId,
       btcTxId: paymentReference,
+      attestationHash,
+      contentHash,
+      timestamp: Date.now()
+    }
+    const evidenceJson = JSON.stringify(evidencePayload, null, 2)
+    const evidenceHash = sha256Hex(evidenceJson)
+
+    let evidenceStored = false
+    try {
+      await convex.mutation('licenses:storeEvidencePayload' as any, {
+        orderId: order.orderId,
+        payload: evidenceJson
+      })
+      evidenceStored = true
+    } catch (error) {
+      console.warn('Failed to persist license evidence payload:', error)
+    }
+
+    const evidenceResult = await publishEvidence({
+      ...evidencePayload,
+      evidenceHash
+    })
+
+    let constellationStatus: 'ok' | 'failed' | 'skipped' = 'skipped'
+    let constellationTx = ''
+    let constellationExplorerUrl = ''
+    let constellationAnchoredAt: number | undefined
+    let constellationError: string | undefined
+
+    if (evidenceResult.status === 'ok') {
+      constellationStatus = 'ok'
+      constellationTx = evidenceResult.txHash
+      constellationExplorerUrl = evidenceResult.explorerUrl
+      constellationAnchoredAt = Date.now()
+    } else if (evidenceResult.status === 'error') {
+      constellationStatus = 'failed'
+      constellationError = evidenceResult.message
+    } else {
+      constellationStatus = 'skipped'
+      constellationError = evidenceResult.reason
+    }
+
+    const archive = await createLicenseArchive({
+      assetBuffer: mediaBuffer,
+      assetFileName:
+        new URL(mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
+      storyLicenseId: licenseTokenId,
+      btcTxId: paymentReference,
+      constellationTx,
+      attestationHash,
+      contentHash,
+      licenseTokenId
+    })
+    const archiveBuffer = Buffer.from(archive.archiveBase64, 'base64')
+    const archiveSize = archiveBuffer.length
+    const archiveFileName =
+      archive.suggestedFileName ??
+      `lexlink-license-${slugify(order.orderId)}.zip`
+
+    let c2paArchiveUri: string | undefined
+    try {
+      c2paArchiveUri = await uploadBytes(
+        archiveFileName,
+        new Uint8Array(archiveBuffer)
+      )
+    } catch (error) {
+      console.warn('Failed to pin C2PA archive to IPFS:', error)
+    }
+    const c2paDownloadUrl = c2paArchiveUri
+      ? ipfsGatewayUrl(c2paArchiveUri)
+      : null
+
+    const vc = await generateLicenseCredential({
+      subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
+      storyLicenseId: licenseTokenId,
+      btcTxId: paymentReference,
+      constellationTx,
+      contentHash,
+      attestationHash
+    })
+    const vcJson = JSON.stringify(vc.document, null, 2)
+
+    const complianceScore = calculateComplianceScore({
+      hasPayment: true,
+      hasLicenseToken: true,
+      hasConstellationEvidence: constellationStatus === 'ok',
+      hasC2paArchive: Boolean(c2paArchiveUri ?? archive.archiveBase64),
+      trainingUnits: order.trainingUnits
+    })
+
+    await convex.mutation('licenses:markCompleted' as any, {
+      orderId: order.orderId,
+      btcTxId: paymentReference,
+      attestationHash,
       constellationTx,
       constellationExplorerUrl,
       constellationAnchoredAt,
-      licenseTokenId,
-      paymentMode,
-      constellationStatus: evidenceResult.status,
+      constellationStatus,
+      constellationError,
+      tokenOnChainId: licenseTokenId,
+      contentHash,
+      c2paHash: archive.archiveHash,
+      c2paArchiveUri: c2paArchiveUri,
+      c2paArchiveFileName: archiveFileName,
+      c2paArchiveSize: archiveSize,
+      vcDocument: vcJson,
+      vcHash: vc.hash,
+      complianceScore,
       ckbtcMintedSats: minted?.sats,
-      ckbtcBlockIndex: minted?.blockIndex
-    },
-    resourceId: order.orderId
-  })
+      ckbtcBlockIndex: minted?.blockIndex,
+      evidencePayload: evidenceStored ? evidenceJson : undefined
+    })
 
-  return {
-    licenseTokenId,
-    attestation,
-    attestationHash,
-    constellationTx,
-    constellationExplorerUrl,
-    constellationAnchoredAt,
-    complianceScore,
-    contentHash,
-    c2paArchive: {
-      base64: archive.archiveBase64,
-      hash: archive.archiveHash,
-      fileName: archiveFileName,
-      uri: c2paArchiveUri ?? null,
-      downloadUrl: c2paDownloadUrl,
-      size: archiveSize
-    },
-    vcDocument: vcJson,
-    vcHash: vc.hash,
-    paymentReference,
-    constellationStatus: evidenceResult.status,
-    minted
+    await recordEvent({
+      actor,
+      action: 'license.sale_completed',
+      payload: {
+        orderId: order.orderId,
+        ipId: order.ipId,
+        btcTxId: paymentReference,
+        constellationTx,
+        constellationExplorerUrl,
+        constellationAnchoredAt,
+        licenseTokenId,
+        paymentMode,
+        constellationStatus,
+        ...(constellationError ? { constellationError } : {}),
+        ckbtcMintedSats: minted?.sats,
+        ckbtcBlockIndex: minted?.blockIndex
+      },
+      resourceId: order.orderId
+    })
+
+    return {
+      licenseTokenId,
+      attestation,
+      attestationHash,
+      constellationTx,
+      constellationExplorerUrl,
+      constellationAnchoredAt,
+      complianceScore,
+      contentHash,
+      c2paArchive: {
+        base64: archive.archiveBase64,
+        hash: archive.archiveHash,
+        fileName: archiveFileName,
+        uri: c2paArchiveUri ?? null,
+        downloadUrl: c2paDownloadUrl,
+        size: archiveSize
+      },
+      vcDocument: vcJson,
+      vcHash: vc.hash,
+      paymentReference,
+      constellationStatus,
+      constellationError: constellationError ?? null,
+      minted
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error ?? 'unknown_error')
+    try {
+      await convex.mutation('licenses:markFinalizationFailed' as any, {
+        orderId: order.orderId,
+        error: message
+      })
+    } catch (persistError) {
+      console.error(
+        'Failed to persist license finalization failure state:',
+        persistError
+      )
+    }
+    throw error instanceof Error ? error : new Error(message)
   }
 }
 
@@ -1840,6 +1893,7 @@ export async function completeLicenseSale({
     constellationExplorerUrl: result.constellationExplorerUrl,
     constellationAnchoredAt: result.constellationAnchoredAt,
     constellationStatus: result.constellationStatus,
+    constellationError: result.constellationError,
     contentHash: result.contentHash,
     complianceScore: result.complianceScore,
     c2paArchive: result.c2paArchive,
@@ -2323,6 +2377,8 @@ type PublicLicenseRecord = {
   constellationTx?: string
   constellationExplorerUrl?: string | null
   constellationAnchoredAt?: number | null
+  constellationStatus?: string | null
+  constellationError?: string | null
   tokenOnChainId?: string
   licenseTermsId?: string
   createdAt: number
@@ -2372,6 +2428,8 @@ export async function loadOrderReceipt(orderId: string) {
     mintTo,
     constellationExplorerUrl: record.constellationExplorerUrl ?? null,
     constellationAnchoredAt: record.constellationAnchoredAt ?? null,
+    constellationStatus: record.constellationStatus ?? null,
+    constellationError: record.constellationError ?? null,
     vcDocument: record.vcDocument ?? null,
     evidencePayload: record.evidencePayload ?? null,
     c2paArchiveUrl: record.c2paArchiveUri

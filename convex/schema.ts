@@ -44,6 +44,8 @@ export default defineSchema({
     constellationTx: v.string(),
     constellationExplorerUrl: v.optional(v.string()),
     constellationAnchoredAt: v.optional(v.number()),
+    constellationStatus: v.optional(v.string()),
+    constellationError: v.optional(v.string()),
     tokenOnChainId: v.string(),
     licenseTermsId: v.string(),
     status: v.string(),

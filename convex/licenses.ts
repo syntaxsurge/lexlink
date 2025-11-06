@@ -78,6 +78,8 @@ export const getPublic = queryGeneric({
       constellationTx: license.constellationTx,
       constellationExplorerUrl: license.constellationExplorerUrl ?? null,
       constellationAnchoredAt: license.constellationAnchoredAt ?? null,
+      constellationStatus: license.constellationStatus ?? null,
+      constellationError: license.constellationError ?? null,
       tokenOnChainId: license.tokenOnChainId,
       licenseTermsId: license.licenseTermsId,
       createdAt: license.createdAt,
@@ -128,6 +130,8 @@ export const insert = mutationGeneric({
       vcHash: '',
       complianceScore: 0,
       trainingUnits: 0,
+      constellationStatus: 'pending',
+      constellationError: undefined,
       status: 'pending',
       confirmations: 0,
       ckbtcMintedSats: undefined,
@@ -222,6 +226,61 @@ export const assignOwner = mutationGeneric({
   }
 })
 
+export const requestFinalization = mutationGeneric({
+  args: {
+    orderId: v.string()
+  },
+  handler: async (ctx, args) => {
+    const license = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!license) {
+      throw new Error('License order not found')
+    }
+
+    if (license.status === 'finalized') {
+      return { proceed: false as const, status: 'finalized' as const }
+    }
+
+    if (license.status === 'finalizing') {
+      return { proceed: false as const, status: 'finalizing' as const }
+    }
+
+    await ctx.db.patch(license._id, {
+      status: 'finalizing',
+      updatedAt: Date.now()
+    })
+
+    return { proceed: true as const, previousStatus: license.status ?? null }
+  }
+})
+
+export const markFinalizationFailed = mutationGeneric({
+  args: {
+    orderId: v.string(),
+    error: v.string()
+  },
+  handler: async (ctx, args) => {
+    const license = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!license) {
+      throw new Error('License order not found')
+    }
+
+    await ctx.db.patch(license._id, {
+      status: 'failed',
+      constellationStatus: 'failed',
+      constellationError: args.error,
+      updatedAt: Date.now()
+    })
+  }
+})
+
 export const markCompleted = mutationGeneric({
   args: {
     orderId: v.string(),
@@ -241,7 +300,9 @@ export const markCompleted = mutationGeneric({
     ckbtcBlockIndex: v.optional(v.number()),
     evidencePayload: v.optional(v.string()),
     constellationExplorerUrl: v.optional(v.string()),
-    constellationAnchoredAt: v.optional(v.number())
+    constellationAnchoredAt: v.optional(v.number()),
+    constellationStatus: v.string(),
+    constellationError: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -271,6 +332,8 @@ export const markCompleted = mutationGeneric({
       ckbtcMintedSats: args.ckbtcMintedSats ?? license.ckbtcMintedSats,
       ckbtcBlockIndex: args.ckbtcBlockIndex ?? license.ckbtcBlockIndex,
       evidencePayload: args.evidencePayload ?? license.evidencePayload,
+      constellationStatus: args.constellationStatus,
+      constellationError: args.constellationError,
       status: 'finalized',
       finalizedAt: Date.now(),
       updatedAt: Date.now()

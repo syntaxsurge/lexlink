@@ -30,6 +30,8 @@ export type InvoiceSnapshot = {
   constellationTx?: string
   constellationExplorerUrl?: string | null
   constellationAnchoredAt?: number | null
+  constellationStatus?: string | null
+  constellationError?: string | null
   tokenOnChainId?: string
   licenseTermsId?: string
   createdAt: number

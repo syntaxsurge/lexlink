@@ -83,6 +83,11 @@ const serverEnvSchema = z.object({
       /^0x[0-9a-fA-F]{64}$/,
       'CONSTELLATION_PRIVATE_KEY must be a hex string'
     ),
+  CONSTELLATION_BE_URL: z.string().url().optional(),
+  CONSTELLATION_L0_URL: z.string().url().optional(),
+  CONSTELLATION_L1_URL: z.string().url().optional(),
+  CONSTELLATION_TX_AMOUNT_DAG: z.coerce.number().positive().optional(),
+  CONSTELLATION_MEMO_MAX: z.coerce.number().int().positive().optional(),
   // DAG addresses are Base58-like strings prefixed with "DAG"; lengths can vary by implementation.
   // Use a tolerant validator: starts with DAG and contains alphanumerics of reasonable length.
   CONSTELLATION_ADDRESS: z
@@ -175,6 +180,11 @@ function parseEnv() {
     CONSTELLATION_ADDRESS: process.env.CONSTELLATION_ADDRESS,
     CONSTELLATION_SINK_ADDRESS: process.env.CONSTELLATION_SINK_ADDRESS,
     CONSTELLATION_NETWORK: process.env.CONSTELLATION_NETWORK,
+    CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
+    CONSTELLATION_L0_URL: process.env.CONSTELLATION_L0_URL,
+    CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,
+    CONSTELLATION_TX_AMOUNT_DAG: process.env.CONSTELLATION_TX_AMOUNT_DAG,
+    CONSTELLATION_MEMO_MAX: process.env.CONSTELLATION_MEMO_MAX,
     PINATA_JWT: process.env.PINATA_JWT,
     PINATA_GATEWAY: process.env.PINATA_GATEWAY,
     PINATA_API_URL: process.env.PINATA_API_URL,
@@ -239,6 +249,38 @@ const sanitizedLedgerId = sanitizeLedgerId(resolvedCkbtcLedger)
 
 const ckbtcLedgerId = sanitizedLedgerId ?? ckbtcDefaults.ledger
 
+const CONSTELLATION_DEFAULTS = {
+  integrationnet: {
+    beUrl: 'https://be-integrationnet.constellationnetwork.io',
+    l0Url: 'https://l0-lb-integrationnet.constellationnetwork.io',
+    l1Url: 'https://l1-lb-integrationnet.constellationnetwork.io'
+  },
+  testnet: {
+    beUrl: 'https://be-testnet.constellationnetwork.io',
+    l0Url: 'https://l0-lb-testnet.constellationnetwork.io',
+    l1Url: 'https://l1-lb-testnet.constellationnetwork.io'
+  },
+  mainnet: {
+    beUrl: 'https://be-mainnet.constellationnetwork.io',
+    l0Url: 'https://l0-lb-mainnet.constellationnetwork.io',
+    l1Url: 'https://l1-lb-mainnet.constellationnetwork.io'
+  }
+} as const
+
+const constellationDefaults =
+  CONSTELLATION_DEFAULTS[serverEnv.CONSTELLATION_NETWORK]
+
+const resolvedConstellationBeUrl =
+  serverEnv.CONSTELLATION_BE_URL ?? constellationDefaults.beUrl
+const resolvedConstellationL0Url =
+  serverEnv.CONSTELLATION_L0_URL ?? constellationDefaults.l0Url
+const resolvedConstellationL1Url =
+  serverEnv.CONSTELLATION_L1_URL ?? constellationDefaults.l1Url
+const resolvedConstellationMemoMax =
+  serverEnv.CONSTELLATION_MEMO_MAX ?? 512
+const resolvedConstellationTxAmount =
+  serverEnv.CONSTELLATION_TX_AMOUNT_DAG ?? undefined
+
 export const env = {
   ...publicEnv,
   ...serverEnv,
@@ -246,10 +288,20 @@ export const env = {
     publicEnv.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID ?? ckbtcLedgerId,
   CKBTC_LEDGER_CANISTER_ID: ckbtcLedgerId,
   CKBTC_NETWORK: resolvedCkbtcNetwork,
-  CKBTC_HOST: resolvedCkbtcHost
+  CKBTC_HOST: resolvedCkbtcHost,
+  CONSTELLATION_BE_URL: resolvedConstellationBeUrl,
+  CONSTELLATION_L0_URL: resolvedConstellationL0Url,
+  CONSTELLATION_L1_URL: resolvedConstellationL1Url,
+  CONSTELLATION_MEMO_MAX: resolvedConstellationMemoMax,
+  CONSTELLATION_TX_AMOUNT_DAG: resolvedConstellationTxAmount
 } satisfies PublicEnv &
   ServerEnv & {
     CKBTC_LEDGER_CANISTER_ID?: string
     CKBTC_NETWORK: 'ckbtc-mainnet' | 'ckbtc-testnet'
     CKBTC_HOST: string
+    CONSTELLATION_BE_URL: string
+    CONSTELLATION_L0_URL: string
+    CONSTELLATION_L1_URL: string
+    CONSTELLATION_MEMO_MAX: number
+    CONSTELLATION_TX_AMOUNT_DAG?: number
   }

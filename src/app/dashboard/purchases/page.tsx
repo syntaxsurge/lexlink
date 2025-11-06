@@ -164,6 +164,10 @@ export default async function PurchasesPage() {
                 const statusBadge =
                   order.status === 'finalized'
                     ? { variant: 'default' as const, className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' }
+                    : order.status === 'failed'
+                      ? { variant: 'outline' as const, className: 'border-rose-400 text-rose-600' }
+                      : order.status === 'finalizing'
+                        ? { variant: 'outline' as const, className: 'border-primary/60 text-primary' }
                     : order.status === 'pending'
                       ? { variant: 'outline' as const, className: '' }
                       : { variant: 'outline' as const, className: '' }

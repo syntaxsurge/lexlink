@@ -4,6 +4,8 @@ import { autoFinalizeCkbtcOrder } from '@/app/dashboard/actions'
 
 export const runtime = 'nodejs'
 
+const inFlightFinalizers = new Set<string>()
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -16,7 +18,17 @@ export async function POST(
     )
   }
 
+  let locked = false
   try {
+    if (inFlightFinalizers.has(orderId)) {
+      return NextResponse.json({
+        status: 'pending',
+        note: 'finalization_in_progress'
+      })
+    }
+
+    inFlightFinalizers.add(orderId)
+    locked = true
     const result = await autoFinalizeCkbtcOrder(orderId)
     return NextResponse.json(result)
   } catch (error) {
@@ -38,5 +50,9 @@ export async function POST(
       },
       { status: 200 }
     )
+  } finally {
+    if (locked) {
+      inFlightFinalizers.delete(orderId)
+    }
   }
 }

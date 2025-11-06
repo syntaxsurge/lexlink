@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 
-import { CheckCircle2, Circle, Clock3 } from 'lucide-react'
+import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import {
@@ -31,7 +31,7 @@ type FinalizationTimelineProps = {
   constellationEnabled: boolean
 }
 
-type StepStatus = 'complete' | 'current' | 'upcoming'
+type StepStatus = 'complete' | 'current' | 'upcoming' | 'failed'
 
 function formatDate(ms?: number) {
   if (!ms) return '—'
@@ -60,6 +60,9 @@ function resolveStatusIcon(status: StepStatus) {
       <CheckCircle2 className='h-5 w-5 text-emerald-500' aria-hidden='true' />
     )
   }
+  if (status === 'failed') {
+    return <XCircle className='h-5 w-5 text-rose-500' aria-hidden='true' />
+  }
   if (status === 'current') {
     return <Clock3 className='h-5 w-5 text-primary' aria-hidden='true' />
   }
@@ -85,11 +88,27 @@ export function FinalizationTimeline({
   const licenseMinted =
     typeof invoice.tokenOnChainId === 'string' &&
     invoice.tokenOnChainId.trim().length > 0
-  const evidenceAnchored = constellationEnabled
-    ? Boolean(invoice.constellationTx && invoice.constellationTx.length > 0)
-    : true
+  const normalizedConstellationStatus = (() => {
+    const status = invoice.constellationStatus ?? null
+    if (!status && invoice.constellationTx && invoice.constellationTx.length > 0) {
+      return 'ok'
+    }
+    if (status === 'disabled') {
+      return 'skipped'
+    }
+    return status
+  })()
+  const constellationState =
+    constellationEnabled === false
+      ? 'complete'
+      : normalizedConstellationStatus === 'failed'
+        ? 'failed'
+        : normalizedConstellationStatus === 'ok' || normalizedConstellationStatus === 'skipped'
+          ? 'complete'
+          : 'pending'
   const auditLogged =
     typeof invoice.finalizedAt === 'number' && invoice.finalizedAt > 0
+  const constellationError = invoice.constellationError ?? null
 
   const paymentDetails = useMemo(() => {
     if (isCkbtc) {
@@ -221,17 +240,23 @@ export function FinalizationTimeline({
   ])
 
   const steps = useMemo(() => {
-    const base = [
+    type StepState = 'complete' | 'pending' | 'failed'
+    const base: Array<{
+      key: string
+      title: string
+      state: StepState
+      content: JSX.Element
+    }> = [
       {
         key: 'payment',
         title: 'Payment credited',
-        complete: paymentComplete,
+        state: paymentComplete ? 'complete' : 'pending',
         content: paymentDetails
       },
       {
         key: 'license',
         title: 'License token minted',
-        complete: licenseMinted,
+        state: licenseMinted ? 'complete' : 'pending',
         content: (
           <div className='space-y-1 text-xs text-muted-foreground'>
             {licenseMinted ? (
@@ -296,11 +321,23 @@ export function FinalizationTimeline({
       {
         key: 'constellation',
         title: 'Constellation evidence anchored',
-        complete: evidenceAnchored,
+        state:
+          constellationState === 'failed'
+            ? 'failed'
+            : constellationState === 'complete'
+              ? 'complete'
+              : 'pending',
         content: (
           <div className='space-y-1 text-xs text-muted-foreground'>
             {constellationEnabled ? (
-              constellationLinks ? (
+              constellationState === 'failed' ? (
+                <p className='text-rose-600'>
+                  Anchoring failed
+                  {constellationError
+                    ? `: ${constellationError}`
+                    : '. Check operator logs for details.'}
+                </p>
+              ) : constellationLinks ? (
                 <>
                   <p>
                     Evidence hash anchored on Constellation{' '}
@@ -344,6 +381,11 @@ export function FinalizationTimeline({
                     </Link>
                   </p>
                 </>
+              ) : normalizedConstellationStatus === 'skipped' ? (
+                <p>
+                  Anchoring skipped
+                  {constellationError ? `: ${constellationError}` : '.'}
+                </p>
               ) : (
                 <p>
                   Finalization will publish the proof bundle to Constellation{' '}
@@ -362,7 +404,7 @@ export function FinalizationTimeline({
       {
         key: 'audit',
         title: 'Audit log recorded',
-        complete: auditLogged,
+        state: auditLogged ? 'complete' : 'pending',
         content: (
           <div className='space-y-1 text-xs text-muted-foreground'>
             {auditLogged ? (
@@ -430,32 +472,43 @@ export function FinalizationTimeline({
       }
     ]
 
-    let hasCurrent = false
+    let pendingFound = false
     return base.map(step => {
-      if (step.complete) {
-        return { ...step, status: 'complete' as StepStatus }
+      let status: StepStatus
+      if (step.state === 'failed') {
+        status = 'failed'
+        pendingFound = true
+      } else if (step.state === 'complete') {
+        status = 'complete'
+      } else {
+        status = pendingFound ? 'upcoming' : 'current'
+        if (!pendingFound) {
+          pendingFound = true
+        }
       }
-      if (!hasCurrent) {
-        hasCurrent = true
-        return { ...step, status: 'current' as StepStatus }
-      }
-      return { ...step, status: 'upcoming' as StepStatus }
+      return { ...step, status }
     })
   }, [
     auditLogged,
     constellationEnabled,
+    constellationError,
     constellationLinks,
     constellationNetwork,
-    evidenceAnchored,
+    constellationState,
     invoice.attestationHash,
-    invoice.mintTo,
     invoice.complianceScore,
-    invoice.finalizedAt,
+    invoice.constellationAnchoredAt,
     invoice.c2paArchiveFileName,
     invoice.c2paArchiveSize,
     invoice.c2paArchiveUrl,
+    invoice.finalizedAt,
     invoice.licenseTermsId,
+    invoice.mintTo,
+    invoice.orderId,
+    invoice.tokenOnChainId,
+    invoice.vcHash,
     licenseMinted,
+    normalizedConstellationStatus,
     paymentComplete,
     paymentDetails,
     storyChainId,
@@ -485,20 +538,26 @@ export function FinalizationTimeline({
               <div className='flex flex-wrap items-center gap-2'>
                 <p className='font-medium text-foreground'>{step.title}</p>
                 <Badge
-                  variant={step.status === 'complete' ? 'default' : 'outline'}
+                  variant={
+                    step.status === 'complete' ? 'default' : 'outline'
+                  }
                   className={
                     step.status === 'complete'
                       ? 'bg-emerald-500 text-white'
                       : step.status === 'current'
                         ? 'border-primary/60 text-primary'
-                        : 'text-muted-foreground'
+                        : step.status === 'failed'
+                          ? 'border-rose-400 text-rose-600'
+                          : 'text-muted-foreground'
                   }
                 >
                   {step.status === 'complete'
                     ? 'Complete'
                     : step.status === 'current'
                       ? 'In progress'
-                      : 'Waiting'}
+                      : step.status === 'failed'
+                        ? 'Failed'
+                        : 'Waiting'}
                 </Badge>
               </div>
               {step.content}

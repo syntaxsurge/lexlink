@@ -1,103 +1,110 @@
 import { dag4 } from '@stardust-collective/dag4'
+import { createHash } from 'node:crypto'
 
 import { env } from '@/lib/env'
 
-type ConstellationNetwork = 'integrationnet' | 'testnet' | 'mainnet'
+export const runtime = 'nodejs'
 
-type NetworkConfig = {
+export type ConstellationNetwork = 'integrationnet' | 'testnet' | 'mainnet'
+
+type ConstellationConfig = {
   beUrl: string
   l0Url: string
   l1Url: string
   explorerUrl: string
-  networkVersion: '2.0'
-  testnet: boolean
 }
+
+const CONSTELLATION_EXPLORERS: Record<ConstellationNetwork, string> = {
+  integrationnet: 'https://explorer.integrationnet.constellationnetwork.io',
+  testnet: 'https://explorer.testnet.constellationnetwork.io',
+  mainnet: 'https://explorer.constellationnetwork.io'
+}
+
+const MIN_SEND_AMOUNT = 1e-8
+const POLL_INTERVAL_MS = 1500
+const FINALITY_TIMEOUT_MS = 120_000
 
 export type EvidenceResult =
   | { status: 'disabled'; reason: string }
   | { status: 'skipped'; reason: string }
   | { status: 'ok'; txHash: string; explorerUrl: string }
+  | { status: 'error'; message: string }
 
-const NETWORKS: Record<ConstellationNetwork, NetworkConfig> = {
-  integrationnet: {
-    beUrl: 'https://be-integrationnet.constellationnetwork.io',
-    l0Url: 'https://l0-lb-integrationnet.constellationnetwork.io',
-    l1Url: 'https://l1-lb-integrationnet.constellationnetwork.io',
-    explorerUrl: 'https://explorer.integrationnet.constellationnetwork.io',
-    networkVersion: '2.0',
-    testnet: true
-  },
-  testnet: {
-    beUrl: 'https://be-testnet.constellationnetwork.io',
-    l0Url: 'https://l0-lb-testnet.constellationnetwork.io',
-    l1Url: 'https://l1-lb-testnet.constellationnetwork.io',
-    explorerUrl: 'https://explorer.testnet.constellationnetwork.io',
-    networkVersion: '2.0',
-    testnet: true
-  },
-  mainnet: {
-    beUrl: 'https://be-mainnet.constellationnetwork.io',
-    l0Url: 'https://l0-lb-mainnet.constellationnetwork.io',
-    l1Url: 'https://l1-lb-mainnet.constellationnetwork.io',
-    explorerUrl: 'https://explorer.constellationnetwork.io',
-    networkVersion: '2.0',
-    testnet: false
+function resolveConfig(): ConstellationConfig {
+  const network = env.CONSTELLATION_NETWORK as ConstellationNetwork
+  const explorerUrl = CONSTELLATION_EXPLORERS[network]
+  return {
+    beUrl: env.CONSTELLATION_BE_URL,
+    l0Url: env.CONSTELLATION_L0_URL,
+    l1Url: env.CONSTELLATION_L1_URL,
+    explorerUrl
   }
 }
 
-export const runtime = 'nodejs'
-
-const MAX_MEMO_BYTES = 60_000
-const DEFAULT_TIMEOUT = 60_000
-const POLL_INTERVAL = 2_000
-
-function resolveNetworkConfig(): NetworkConfig {
-  const config = NETWORKS[env.CONSTELLATION_NETWORK]
-  if (!config) {
-    throw new Error(`Unsupported Constellation network "${env.CONSTELLATION_NETWORK}".`)
+function serializeEvidence(evidence: unknown): {
+  orderId?: string
+  payload: string
+} {
+  if (typeof evidence === 'string') {
+    return { payload: evidence.trim() }
   }
-  return config
+  if (!evidence) {
+    return { payload: '' }
+  }
+  if (typeof evidence === 'object') {
+    const orderId =
+      'orderId' in evidence && typeof (evidence as any).orderId === 'string'
+        ? (evidence as any).orderId
+        : undefined
+    return { orderId, payload: JSON.stringify(evidence) }
+  }
+  return { payload: String(evidence) }
 }
 
-function isNonceLikeError(error: unknown) {
-  if (!error) {
-    return false
+async function encodeMemo(
+  payload: string,
+  orderId: string | undefined,
+  maxBytes: number
+): Promise<string> {
+  if (!payload || !payload.trim()) {
+    return ''
   }
-  const message =
-    error instanceof Error ? error.message : typeof error === 'string' ? error : ''
-  if (!message) {
-    return false
+  const initial = payload.trim()
+  if (Buffer.byteLength(initial, 'utf8') <= maxBytes) {
+    return initial
   }
-  const normalized = message.toLowerCase()
-  return normalized.includes('nonce') && (normalized.includes('lower') || normalized.includes('known'))
+
+  const { brotliCompressSync, constants } = await import('node:zlib')
+  const compressed = brotliCompressSync(Buffer.from(initial, 'utf8'), {
+    params: { [constants.BROTLI_PARAM_QUALITY]: 4 }
+  })
+  const brotliPayload = `br:${compressed.toString('base64url')}`
+  if (Buffer.byteLength(brotliPayload, 'utf8') <= maxBytes) {
+    return brotliPayload
+  }
+
+  const digest = createHash('sha256').update(initial).digest('hex')
+  const prefix = orderId ? `lexlink:${orderId}` : 'lexlink'
+  return `${prefix}:${digest.slice(0, 16)}`
 }
 
-async function waitForAcceptance(txHash: string, config: NetworkConfig) {
-  const deadline = Date.now() + DEFAULT_TIMEOUT
+async function waitForFinality(txHash: string) {
+  const deadline = Date.now() + FINALITY_TIMEOUT_MS
   while (Date.now() < deadline) {
     try {
-      const response = await fetch(`${config.beUrl}/transactions/${txHash}`, {
-        cache: 'no-store'
-      })
-      if (response.ok) {
-        const payload = await response.json().catch(() => null)
-        if (
-          payload &&
-          (payload.hash ||
-            payload.transaction ||
-            payload.depth >= 0 ||
-            payload.accepted ||
-            payload.status === 'Accepted')
-        ) {
-          return
+      const pending = await dag4.network.getPendingTransaction(txHash)
+      if (!pending) {
+        const confirmed = await dag4.network.getTransaction(txHash)
+        if (confirmed) {
+          return confirmed
         }
       }
-    } catch (error) {
-      console.warn('[Constellation] Polling error while awaiting acceptance:', error)
+    } catch {
+      // Swallow polling errors; retry until timeout.
     }
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL))
+    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS))
   }
-  throw new Error('Timed out waiting for Constellation transaction acceptance')
+  return null
 }
 
 export async function publishEvidence(evidence: unknown): Promise<EvidenceResult> {
@@ -118,76 +125,89 @@ export async function publishEvidence(evidence: unknown): Promise<EvidenceResult
     return { status: 'skipped', reason: 'sink_equals_source' }
   }
 
-  const networkConfig = resolveNetworkConfig()
-  const memo =
-    typeof evidence === 'string'
-      ? evidence
-      : evidence
-        ? JSON.stringify(evidence)
-        : ''
+  const config = resolveConfig()
+  const { orderId, payload } = serializeEvidence(evidence)
+  const memoMax = env.CONSTELLATION_MEMO_MAX ?? 512
+  const memo = await encodeMemo(payload, orderId, memoMax)
 
   if (!memo) {
     return { status: 'skipped', reason: 'empty_payload' }
   }
 
-  if (Buffer.byteLength(memo, 'utf8') > MAX_MEMO_BYTES) {
-    return { status: 'skipped', reason: 'payload_too_large' }
+  const sendAmount = env.CONSTELLATION_TX_AMOUNT_DAG ?? 0.00000002
+  if (!(sendAmount > MIN_SEND_AMOUNT)) {
+    return {
+      status: 'error',
+      message: 'CONSTELLATION_TX_AMOUNT_DAG must be greater than 1e-8'
+    }
   }
 
-  console.log(`[Constellation] Connecting to ${env.CONSTELLATION_NETWORK}...`)
-  const networkInfo = {
+  dag4.network.config({
     id: env.CONSTELLATION_NETWORK,
-    beUrl: networkConfig.beUrl,
-    l0Url: networkConfig.l0Url,
-    l1Url: networkConfig.l1Url,
-    networkVersion: networkConfig.networkVersion
-  }
+    beUrl: config.beUrl,
+    l0Url: config.l0Url,
+    l1Url: config.l1Url,
+    networkVersion: '2.0'
+  })
+  dag4.account.connect(
+    {
+      networkVersion: '2.0',
+      beUrl: config.beUrl,
+      l0Url: config.l0Url,
+      l1Url: config.l1Url
+    },
+    env.CONSTELLATION_NETWORK !== 'mainnet'
+  )
 
-  dag4.network.config(networkInfo)
-  dag4.account.connect(networkInfo, networkConfig.testnet)
-
-  console.log('[Constellation] Authenticating with private key...')
   dag4.account.loginPrivateKey(privateKey.replace(/^0x/, ''))
 
-  const derivedAddress = dag4.account.address
-  if (derivedAddress !== sourceAddress) {
+  const derivedSource = dag4.account.address
+  if (derivedSource !== sourceAddress) {
     console.warn(
-      `[Constellation] Address mismatch. Derived ${derivedAddress}, expected ${sourceAddress}.`
+      `[Constellation] Address mismatch. Derived ${derivedSource}, expected ${sourceAddress}.`
     )
   }
 
   try {
-    console.log(`[Constellation] Sending memo to ${sinkAddress} (${Buffer.byteLength(memo, 'utf8')} bytes)...`)
-    const { transaction, hash } = await dag4.account.generateSignedTransactionWithHash(
-      sinkAddress,
-      0,
-      0,
-      memo
+    const memoBytes = Buffer.byteLength(memo, 'utf8')
+    console.log(
+      `[Constellation] Sending memo to ${sinkAddress} (${memoBytes} bytes)...`
     )
-
-    const response: any = await dag4.network.postTransaction(
-      transaction as any
+    const lastRef = await dag4.network.getAddressLastAcceptedTransactionRef(
+      derivedSource
     )
-    const txHash =
-      typeof response === 'string' ? response : response?.hash ?? hash
+    const { transaction, hash } =
+      await dag4.account.generateSignedTransactionWithHash(
+        sinkAddress,
+        sendAmount,
+        0,
+        lastRef
+      )
 
-    if (!txHash) {
-      console.error('[Constellation] Missing transaction hash in response.', response)
-      return { status: 'skipped', reason: 'missing_tx_hash' }
+    const payloadWithMemo = {
+      ...transaction,
+      data: memo
     }
 
-    await waitForAcceptance(txHash, networkConfig)
+    await dag4.network.postTransaction(payloadWithMemo as any, { data: memo })
 
-    const explorerUrl = `${networkConfig.explorerUrl}/transactions/${txHash}`
-    console.log(`[Constellation] ✅ Evidence anchored: ${txHash}`)
-    return { status: 'ok', txHash, explorerUrl }
+    const confirmed = await waitForFinality(hash)
+    if (!confirmed) {
+      return {
+        status: 'error',
+        message: `Timed out waiting for DAG transaction ${hash} to finalize`
+      }
+    }
+
+    const explorerUrl = `${config.explorerUrl}/transactions/${hash}`
+    console.log(`[Constellation] ✅ Evidence anchored: ${hash}`)
+    return { status: 'ok', txHash: hash, explorerUrl }
   } catch (error) {
-    if (isNonceLikeError(error)) {
-      console.error('[Constellation] Nonce error encountered when anchoring evidence.', error)
-    } else {
-      console.error('[Constellation] ❌ Publishing failed:', error)
-    }
     const message = error instanceof Error ? error.message : String(error ?? 'unknown_error')
-    return { status: 'skipped', reason: message }
+    console.error('[Constellation] ❌ Publishing failed:', error)
+    if (message.toLowerCase().includes('nonce')) {
+      console.error('[Constellation] Nonce error encountered when anchoring evidence.')
+    }
+    return { status: 'error', message }
   }
 }
