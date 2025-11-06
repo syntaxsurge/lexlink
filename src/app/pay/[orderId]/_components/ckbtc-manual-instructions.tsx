@@ -47,6 +47,12 @@ export function CkbtcManualInstructions({
           <p className='font-semibold text-muted-foreground'>ICRC-1 account string</p>
           <p className='break-all font-mono'>{invoice.btcAddress}</p>
         </div>
+        <div>
+          <p className='font-semibold text-muted-foreground'>License wallet</p>
+          <p className='break-all font-mono'>
+            {invoice.mintTo ?? 'Pending — save your wallet above'}
+          </p>
+        </div>
         {typeof invoice.ckbtcMintedSats === 'number' &&
           invoice.ckbtcMintedSats > 0 && (
             <div>

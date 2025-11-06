@@ -12,7 +12,7 @@ import {
 } from 'react-hook-form'
 import { z } from 'zod'
 
-import { registerIpAsset } from '@/app/app/actions'
+import { registerIpAsset } from '@/app/dashboard/actions'
 import { AdvancedCreators } from '@/components/app/advanced-creators'
 import {
   AdvancedRelationships,

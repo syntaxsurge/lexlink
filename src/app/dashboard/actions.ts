@@ -3,6 +3,7 @@
 import crypto from 'node:crypto'
 
 import { DisputeTargetTag } from '@story-protocol/core-sdk'
+import { getAddress } from 'viem'
 
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
 import { createLicenseArchive } from '@/lib/c2pa'
@@ -61,7 +62,9 @@ export type IpRecord = {
 export type LicenseRecord = {
   orderId: string
   ipId: string
-  buyer: string
+  buyer?: string
+  buyerPrincipal?: string
+  mintTo?: string
   btcAddress: string
   network?: string
   amountSats?: number
@@ -90,6 +93,7 @@ export type LicenseRecord = {
   complianceScore: number
   trainingUnits: number
   ownerPrincipal?: string
+  evidenceStorageId?: string
 }
 
 export type DisputeRecord = {
@@ -125,6 +129,13 @@ export type AuditEventRecord = {
   actorAddress?: string
   actorPrincipal?: string
   createdAt: number
+}
+
+export type ProfileRecord = {
+  principal: string
+  defaultMintTo?: string
+  createdAt: number
+  updatedAt: number
 }
 
 type CreatorInput = {
@@ -932,6 +943,10 @@ export async function autoFinalizeCkbtcOrder(orderId: string) {
     throw new Error('Order is missing ckBTC subaccount metadata.')
   }
 
+  if (!order.mintTo && !order.buyer) {
+    return { status: 'pending' as const }
+  }
+
   const escrowPrincipal =
     env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
 
@@ -1155,12 +1170,10 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
 
 export async function createLicenseOrder({
   ipId,
-  licenseTermsId,
-  buyer
+  licenseTermsId
 }: {
   ipId: string
   licenseTermsId: string
-  buyer: string
 }) {
   const actor = await requireRole(['operator', 'creator'])
   const orderId = crypto.randomUUID()
@@ -1225,7 +1238,6 @@ export async function createLicenseOrder({
   await convex.mutation('licenses:insert' as any, {
     orderId,
     ipId,
-    buyer,
     btcAddress,
     licenseTermsId,
     amountSats,
@@ -1241,7 +1253,6 @@ export async function createLicenseOrder({
     payload: {
       orderId,
       ipId,
-      buyer,
       btcAddress,
       amountSats,
       network,
@@ -1256,6 +1267,59 @@ export async function createLicenseOrder({
     paymentMode,
     ckbtcSubaccount,
     ckbtcEscrowPrincipal
+  }
+}
+
+export async function setOrderMintTarget({
+  orderId,
+  mintTo,
+  rememberPreference = true
+}: {
+  orderId: string
+  mintTo: string
+  rememberPreference?: boolean
+}) {
+  const actor = await requireSession()
+  if (!mintTo) {
+    throw new Error('Mint target address is required')
+  }
+
+  let normalizedMintTo: `0x${string}`
+  try {
+    normalizedMintTo = getAddress(mintTo)
+  } catch {
+    throw new Error('Mint target must be a valid EVM address')
+  }
+
+  const convex = getConvexClient()
+
+  await convex.mutation('licenses:attachBuyer' as any, {
+    orderId,
+    buyerPrincipal: actor.principal,
+    mintTo: normalizedMintTo
+  })
+
+  if (rememberPreference) {
+    await convex.mutation('profiles:upsert' as any, {
+      principal: actor.principal,
+      defaultMintTo: normalizedMintTo
+    })
+  }
+
+  await recordEvent({
+    actor,
+    action: 'license.buyer_attached',
+    payload: {
+      orderId,
+      mintTo: normalizedMintTo,
+      remembered: rememberPreference
+    },
+    resourceId: orderId
+  })
+
+  return {
+    orderId,
+    mintTo: normalizedMintTo
   }
 }
 
@@ -1362,7 +1426,7 @@ async function finalizeOrder({
   const mediaBuffer = Buffer.from(await mediaResponse.arrayBuffer())
   const contentHash = sha256Hex(mediaBuffer)
 
-  const evidencePayload = JSON.stringify({
+  const evidencePayload = {
     kind: 'LICENSE_COMPLETED',
     orderId: order.orderId,
     ipId: order.ipId,
@@ -1371,9 +1435,27 @@ async function finalizeOrder({
     attestationHash,
     contentHash,
     timestamp: Date.now()
+  }
+  const evidenceJson = JSON.stringify(evidencePayload, null, 2)
+  const evidenceHash = sha256Hex(evidenceJson)
+
+  let evidenceStorageId: string | null = null
+  try {
+    evidenceStorageId = (await convex.mutation(
+      'licenses:storeEvidencePayload' as any,
+      {
+        orderId: order.orderId,
+        payload: evidenceJson
+      }
+    )) as string
+  } catch (error) {
+    console.warn('Failed to persist license evidence payload:', error)
+  }
+
+  const evidenceResult = await publishEvidence({
+    ...evidencePayload,
+    evidenceHash
   })
-  const evidenceHash = sha256Hex(evidencePayload)
-  const evidenceResult = await publishEvidence(evidenceHash)
   const constellationTx =
     evidenceResult.status === 'ok' ? evidenceResult.txHash : ''
 
@@ -1440,7 +1522,8 @@ async function finalizeOrder({
     vcHash: vc.hash,
     complianceScore,
     ckbtcMintedSats: minted?.sats,
-    ckbtcBlockIndex: minted?.blockIndex
+    ckbtcBlockIndex: minted?.blockIndex,
+    evidenceStorageId: evidenceStorageId ?? undefined
   })
 
   await recordEvent({
@@ -1529,7 +1612,9 @@ export async function completeLicenseSale({
     await assertActorOwnsLicense({ license: order, ip, actor, convex })
   }
 
-  const targetReceiver = receiver ?? (order.buyer as `0x${string}` | undefined)
+  const targetReceiver =
+    receiver ??
+    ((order.mintTo ?? order.buyer) as `0x${string}` | undefined)
   if (!targetReceiver) {
     throw new Error('Receiver wallet is required to mint license token.')
   }
@@ -1659,7 +1744,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     response.disputeId?.toString() ?? `pending-${crypto.randomUUID()}`
   const txHash = response.txHash ?? ''
 
-  const evidencePayload = JSON.stringify({
+  const evidencePayload = {
     kind: 'DISPUTE_RAISED',
     disputeId,
     ipId: payload.ipId,
@@ -1669,11 +1754,15 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     bond: payload.bond ?? 0,
     txHash,
     timestamp: Date.now()
+  }
+
+  const evidenceJson = JSON.stringify(evidencePayload, null, 2)
+  const evidenceHash = sha256Hex(evidenceJson)
+
+  const disputeEvidence = await publishEvidence({
+    ...evidencePayload,
+    evidenceHash
   })
-
-  const evidenceHash = sha256Hex(evidencePayload)
-
-  const disputeEvidence = await publishEvidence(evidenceHash)
   const constellationTx =
     disputeEvidence.status === 'ok' ? disputeEvidence.txHash : ''
 
@@ -1793,6 +1882,76 @@ export async function loadDashboardData() {
   }
 }
 
+export async function loadBuyerProfile() {
+  const actor = await requireSession()
+  const convex = getConvexClient()
+
+  const profile = (await convex.query('profiles:getByPrincipal' as any, {
+    principal: actor.principal
+  })) as (ProfileRecord & { _id: string }) | null
+
+  return {
+    principal: actor.principal,
+    defaultMintTo: profile?.defaultMintTo ?? null
+  }
+}
+
+export async function loadBuyerCkbtcBalance() {
+  if (!env.CKBTC_LEDGER_CANISTER_ID) {
+    return { enabled: false as const, reason: 'ledger_unconfigured' as const }
+  }
+
+  const actor = await requireSession()
+
+  try {
+    const [metadata, balance] = await Promise.all([
+      getLedgerMetadata(),
+      getLedgerAccountBalance({
+        owner: actor.principal
+      })
+    ])
+
+    return {
+      enabled: true as const,
+      principal: actor.principal,
+      symbol: metadata.symbol,
+      decimals: metadata.decimals,
+      raw: balance.toString(),
+      formatted: formatTokenAmount(balance, metadata.decimals)
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to query ckBTC balance'
+    return {
+      enabled: false as const,
+      reason: message
+    }
+  }
+}
+
+export async function loadBuyerPurchases() {
+  const actor = await requireSession()
+  const convex = getConvexClient()
+
+  const [ordersRaw, ipsRaw] = await Promise.all([
+    convex.query('licenses:listByBuyerPrincipal' as any, {
+      buyerPrincipal: actor.principal
+    }),
+    convex.query('ipAssets:list' as any, {})
+  ])
+
+  const ipMap = new Map<string, IpRecord>()
+  for (const ip of ipsRaw as IpRecord[]) {
+    ipMap.set(ip.ipId, ip)
+  }
+
+  return (ordersRaw as LicenseRecord[]).map(order => ({
+    ...order,
+    ipTitle: ipMap.get(order.ipId)?.title ?? order.ipId,
+    mintTo: order.mintTo ?? order.buyer ?? null
+  }))
+}
+
 export async function recordTrainingBatch({
   ipId,
   units
@@ -1817,15 +1976,19 @@ export async function recordTrainingBatch({
   await assertActorOwnsIp({ ip, actor, convex })
 
   const batchId = crypto.randomUUID()
-  const payload = JSON.stringify({
+  const payload = {
     kind: 'TRAINING_BATCH',
     ipId,
     batchId,
     units,
     timestamp: Date.now()
+  }
+  const payloadJson = JSON.stringify(payload, null, 2)
+  const evidenceHash = sha256Hex(payloadJson)
+  const trainingEvidence = await publishEvidence({
+    ...payload,
+    evidenceHash
   })
-  const evidenceHash = sha256Hex(payload)
-  const trainingEvidence = await publishEvidence(evidenceHash)
   const constellationTx =
     trainingEvidence.status === 'ok' ? trainingEvidence.txHash : ''
 
@@ -1988,7 +2151,9 @@ type PublicLicenseRecord = {
   ipTitle: string
   amountSats?: number
   btcAddress: string
-  buyer: string
+  buyer?: string | null
+  buyerPrincipal?: string | null
+  mintTo?: string | null
   paymentMode?: string
   status: string
   ckbtcSubaccount?: string
@@ -2023,8 +2188,12 @@ export async function loadInvoicePublic(orderId: string) {
     return null
   }
 
+  const mintTo = invoice.mintTo ?? invoice.buyer ?? null
+
   return {
     ...invoice,
+    buyer: mintTo ?? undefined,
+    mintTo,
     c2paArchiveUrl: invoice.c2paArchiveUri
       ? ipfsGatewayUrl(invoice.c2paArchiveUri)
       : null
@@ -2129,11 +2298,18 @@ export async function completeLicenseSaleSystem({
     role: 'operator'
   }
 
+  const targetReceiver =
+    receiver ?? ((order.mintTo ?? order.buyer) as `0x${string}` | undefined)
+
+  if (!targetReceiver) {
+    throw new Error('Receiver wallet is required to mint license token.')
+  }
+
   return finalizeOrder({
     order,
     ip,
     paymentReference,
-    receiver,
+    receiver: targetReceiver,
     actor: systemActor,
     convex,
     paymentMode,

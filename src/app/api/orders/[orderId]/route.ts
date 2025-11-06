@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { loadInvoicePublic } from '@/app/app/actions'
+import { loadInvoicePublic } from '@/app/dashboard/actions'
 
 export const dynamic = 'force-dynamic'
 

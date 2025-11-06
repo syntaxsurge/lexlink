@@ -62,7 +62,7 @@ function resolveNetworkInfo(): NetworkInfo {
  * callers can treat anchoring as best-effort without throwing.
  */
 export async function publishEvidence(
-  evidenceHash: string
+  evidence: unknown
 ): Promise<EvidenceResult> {
   if (!env.CONSTELLATION_ENABLED) {
     return { status: 'disabled', reason: 'constellation_disabled' }
@@ -70,9 +70,10 @@ export async function publishEvidence(
 
   const sinkAddress = env.CONSTELLATION_SINK_ADDRESS
   const sourceAddress = env.CONSTELLATION_ADDRESS
+  const privateKey = env.CONSTELLATION_PRIVATE_KEY
 
-  if (!sinkAddress || !sourceAddress) {
-    return { status: 'skipped', reason: 'missing_addresses' }
+  if (!sinkAddress || !sourceAddress || !privateKey) {
+    return { status: 'skipped', reason: 'missing_configuration' }
   }
 
   if (sinkAddress === sourceAddress) {
@@ -93,16 +94,43 @@ export async function publishEvidence(
 
     const storage = (globalThis as any).localStorage as Storage | undefined
     const networkInfo = resolveNetworkInfo()
+    const message =
+      typeof evidence === 'string'
+        ? evidence
+        : JSON.stringify(evidence, null, 2)
 
-    dag4.config({
-      appId: 'lexlink',
-      network: networkInfo
-    })
+    const evidenceHashValue =
+      typeof evidence === 'string'
+        ? evidence
+        : typeof evidence === 'object' &&
+            evidence !== null &&
+            'evidenceHash' in evidence &&
+            typeof (evidence as Record<string, unknown>).evidenceHash === 'string'
+          ? ((evidence as Record<string, unknown>).evidenceHash as string)
+          : undefined
 
-    dag4.account.connect(networkInfo)
-    dag4.account.loginPrivateKey(
-      env.CONSTELLATION_PRIVATE_KEY.replace(/^0x/, '')
+    if (!message || message.length === 0) {
+      return { status: 'skipped', reason: 'empty_payload' }
+    }
+
+    if (Buffer.byteLength(message, 'utf8') > 60_000) {
+      throw new Error(
+        'Evidence payload exceeds Constellation memo size (~60KB).'
+      )
+    }
+
+    dag4.account.connect(
+      {
+        id: networkInfo.id,
+        networkVersion: networkInfo.networkVersion,
+        beUrl: networkInfo.beUrl,
+        l0Url: networkInfo.l0Url,
+        l1Url: networkInfo.l1Url
+      },
+      false
     )
+
+    dag4.account.loginPrivateKey(privateKey.replace(/^0x/, ''))
 
     const derivedAddress = dag4.account.address
     if (derivedAddress !== sourceAddress) {
@@ -111,42 +139,43 @@ export async function publishEvidence(
       )
     }
 
-    const lastRef =
-      await dag4.network.getAddressLastAcceptedTransactionRef(derivedAddress)
+    const transferResult = await (dag4.account as any).transferDag({
+      toAddress: sinkAddress,
+      amount: '0.0000001',
+      fee: '0',
+      message
+    })
 
-    const { transaction, hash } =
-      await dag4.account.generateSignedTransactionWithHash(
-        sinkAddress,
-        0,
-        0,
-        lastRef
-      )
+    const txHash =
+      typeof transferResult === 'string'
+        ? transferResult
+        : transferResult?.hash ?? ''
 
-    const submittedHash = await dag4.network.postTransaction(transaction)
-    const reference = submittedHash ?? hash ?? ''
-
-    if (submittedHash) {
-      await dag4.account.waitForCheckPointAccepted(submittedHash)
+    if (!txHash) {
+      return { status: 'skipped', reason: 'missing_tx_hash' }
     }
 
-    if (reference && storage) {
+    if (typeof dag4.account.waitForCheckPointAccepted === 'function') {
+      await dag4.account.waitForCheckPointAccepted(txHash)
+    }
+
+    if (storage) {
       storage.setItem(
-        `${LOCAL_STORAGE_NAMESPACE}:${reference}`,
+        `${LOCAL_STORAGE_NAMESPACE}:${txHash}`,
         JSON.stringify({
-          evidenceHash,
           recordedAt: new Date().toISOString(),
           from: derivedAddress,
           to: sinkAddress,
-          network: networkInfo.id
+          network: networkInfo.id,
+          payloadPreview: message.slice(0, 256),
+          ...(evidenceHashValue
+            ? { evidenceHash: evidenceHashValue }
+            : {})
         })
       )
     }
 
-    if (!reference) {
-      return { status: 'skipped', reason: 'missing_reference' }
-    }
-
-    return { status: 'ok', txHash: reference }
+    return { status: 'ok', txHash }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : String(error ?? 'unknown')

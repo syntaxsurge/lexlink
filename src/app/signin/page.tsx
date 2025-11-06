@@ -38,7 +38,7 @@ export default function SignInPage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/app')
+      router.replace('/dashboard')
     }
   }, [status, router])
 

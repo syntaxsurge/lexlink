@@ -258,9 +258,9 @@ export function FinalizationTimeline({
                   </span>{' '}
                   minted to{' '}
                   <span className='break-all font-mono text-foreground'>
-                    {invoice.buyer}
+                    {invoice.mintTo ?? 'pending wallet'}
                   </span>
-                  .
+                  {invoice.mintTo ? '.' : ' — save a wallet above.'}
                 </p>
                 <p>
                   Contract{' '}
@@ -454,7 +454,7 @@ export function FinalizationTimeline({
     constellationNetwork,
     evidenceAnchored,
     invoice.attestationHash,
-    invoice.buyer,
+    invoice.mintTo,
     invoice.complianceScore,
     invoice.finalizedAt,
     invoice.c2paArchiveFileName,

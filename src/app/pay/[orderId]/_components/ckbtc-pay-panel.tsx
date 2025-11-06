@@ -209,6 +209,7 @@ export function CkbtcPayPanel({
   const formattedPrice = formatTokenAmount(price, decimals)
   const isFinalized = invoice.status === 'finalized'
   const isPaymentRouteReady = Boolean(ckbtcSubaccountHex)
+  const hasMintTarget = Boolean(invoice.mintTo)
   const isSettling =
     transferState.status === 'success' ||
     transferState.status === 'pending' ||
@@ -220,7 +221,8 @@ export function CkbtcPayPanel({
     balance >= price &&
     price > 0n &&
     invoice.status === 'pending' &&
-    isPaymentRouteReady
+    isPaymentRouteReady &&
+    hasMintTarget
   const showConnect = !principal && invoice.status === 'pending'
   const payButtonLabel = isBusy
     ? 'Submitting…'
@@ -230,9 +232,11 @@ export function CkbtcPayPanel({
         ? 'Payment completed'
         : isSettling
           ? 'Awaiting finalization…'
-          : canPay
-            ? 'Pay now'
-            : 'Insufficient balance'
+          : !hasMintTarget
+            ? 'Save wallet first'
+            : canPay
+              ? 'Pay now'
+              : 'Insufficient balance'
 
   return (
     <Card className='border-border/60 bg-card/70'>
@@ -264,6 +268,12 @@ export function CkbtcPayPanel({
             </p>
           </div>
         </div>
+
+        {!hasMintTarget && (
+          <div className='rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600'>
+            Save the license wallet above before submitting a ckBTC payment.
+          </div>
+        )}
 
         <div className='flex flex-wrap gap-2'>
           {showConnect ? (

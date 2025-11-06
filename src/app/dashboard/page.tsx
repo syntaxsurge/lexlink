@@ -7,7 +7,7 @@ import {
   type AuditEventRecord,
   type DisputeRecord,
   type LicenseRecord
-} from '@/app/app/actions'
+} from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -159,7 +159,7 @@ export default async function OverviewPage() {
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm'>
-              <Link href='/app/licenses'>Manage orders</Link>
+              <Link href='/dashboard/licenses'>Manage orders</Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -192,7 +192,7 @@ export default async function OverviewPage() {
                       {order.ipId.slice(0, 10)}…
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.buyer.slice(0, 10)}…
+                      {(order.mintTo ?? order.buyer ?? 'pending').slice(0, 10)}…
                     </TableCell>
                     <TableCell>
                       <Badge variant='outline'>{order.status}</Badge>
@@ -213,7 +213,7 @@ export default async function OverviewPage() {
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm'>
-              <Link href='/app/disputes'>Review disputes</Link>
+              <Link href='/dashboard/disputes'>Review disputes</Link>
             </Button>
           </CardHeader>
           <CardContent className='space-y-4'>
@@ -266,7 +266,7 @@ export default async function OverviewPage() {
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm'>
-              <Link href='/app/licenses'>See all</Link>
+              <Link href='/dashboard/licenses'>See all</Link>
             </Button>
           </CardHeader>
           <CardContent className='space-y-4'>
@@ -338,7 +338,7 @@ export default async function OverviewPage() {
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm'>
-              <Link href='/app/compliance'>Open ledger</Link>
+              <Link href='/dashboard/compliance'>Open ledger</Link>
             </Button>
           </CardHeader>
           <CardContent className='space-y-3'>
@@ -363,7 +363,7 @@ export default async function OverviewPage() {
             </CardDescription>
           </div>
           <Button asChild variant='outline' size='sm'>
-            <Link href='/app/train'>Log batch</Link>
+            <Link href='/dashboard/train'>Log batch</Link>
           </Button>
         </CardHeader>
         <CardContent>

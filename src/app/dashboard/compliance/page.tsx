@@ -1,4 +1,4 @@
-import { loadAuditTrail } from '@/app/app/actions'
+import { loadAuditTrail } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,

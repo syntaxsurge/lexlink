@@ -57,13 +57,17 @@ export const getPublic = queryGeneric({
       .withIndex('by_ipId', q => q.eq('ipId', license.ipId))
       .unique()
 
+    const mintTo = license.mintTo ?? license.buyer ?? null
+
     return {
       orderId: license.orderId,
       ipId: license.ipId,
       ipTitle: ip?.title ?? license.ipId,
       amountSats: license.amountSats,
       btcAddress: license.btcAddress,
-      buyer: license.buyer,
+      buyer: mintTo,
+      buyerPrincipal: license.buyerPrincipal ?? null,
+      mintTo,
       paymentMode: license.paymentMode,
       status: license.status,
       ckbtcSubaccount: license.ckbtcSubaccount,
@@ -92,7 +96,6 @@ export const insert = mutationGeneric({
   args: {
     orderId: v.string(),
     ipId: v.string(),
-    buyer: v.string(),
     btcAddress: v.string(),
     licenseTermsId: v.string(),
     amountSats: v.number(),
@@ -105,6 +108,9 @@ export const insert = mutationGeneric({
     const now = Date.now()
     await ctx.db.insert('licenses', {
       ...args,
+      buyer: undefined,
+      buyerPrincipal: undefined,
+      mintTo: undefined,
       btcTxId: '',
       attestationHash: '',
       constellationTx: '',
@@ -124,6 +130,65 @@ export const insert = mutationGeneric({
       fundedAt: undefined,
       finalizedAt: undefined
     })
+  }
+})
+
+export const attachBuyer = mutationGeneric({
+  args: {
+    orderId: v.string(),
+    buyerPrincipal: v.string(),
+    mintTo: v.string()
+  },
+  handler: async (ctx, args) => {
+    const license = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!license) {
+      throw new Error('License order not found')
+    }
+
+    if (
+      license.buyerPrincipal &&
+      license.buyerPrincipal !== args.buyerPrincipal
+    ) {
+      throw new Error('Order already claimed by a different buyer')
+    }
+
+    await ctx.db.patch(license._id, {
+      buyerPrincipal: args.buyerPrincipal,
+      mintTo: args.mintTo,
+      buyer: args.mintTo,
+      updatedAt: Date.now()
+    })
+  }
+})
+
+export const storeEvidencePayload = mutationGeneric({
+  args: {
+    orderId: v.string(),
+    payload: v.string()
+  },
+  handler: async (ctx, args) => {
+    const license = await ctx.db
+      .query('licenses')
+      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
+      .unique()
+
+    if (!license) {
+      throw new Error('License order not found')
+    }
+
+    const blob = new Blob([args.payload], { type: 'application/json' })
+    const storageId = await ctx.storage.store(blob)
+
+    await ctx.db.patch(license._id, {
+      evidenceStorageId: storageId,
+      updatedAt: Date.now()
+    })
+
+    return storageId
   }
 })
 
@@ -171,7 +236,8 @@ export const markCompleted = mutationGeneric({
     vcHash: v.string(),
     complianceScore: v.number(),
     ckbtcMintedSats: v.optional(v.number()),
-    ckbtcBlockIndex: v.optional(v.number())
+    ckbtcBlockIndex: v.optional(v.number()),
+    evidenceStorageId: v.optional(v.id('_storage'))
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -198,6 +264,7 @@ export const markCompleted = mutationGeneric({
       complianceScore: args.complianceScore,
       ckbtcMintedSats: args.ckbtcMintedSats ?? license.ckbtcMintedSats,
       ckbtcBlockIndex: args.ckbtcBlockIndex ?? license.ckbtcBlockIndex,
+      evidenceStorageId: args.evidenceStorageId ?? license.evidenceStorageId,
       status: 'finalized',
       finalizedAt: Date.now(),
       updatedAt: Date.now()
@@ -273,5 +340,19 @@ export const listRecent = queryGeneric({
     const items = await ctx.db.query('licenses').collect()
     const sorted = items.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt))
     return sorted.slice(0, Math.max(0, args.limit))
+  }
+})
+
+export const listByBuyerPrincipal = queryGeneric({
+  args: {
+    buyerPrincipal: v.string()
+  },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query('licenses')
+      .withIndex('by_buyerPrincipal', q =>
+        q.eq('buyerPrincipal', args.buyerPrincipal)
+      )
+      .collect()
   }
 })

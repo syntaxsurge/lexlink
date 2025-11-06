@@ -11,7 +11,8 @@ import {
   LayoutDashboard,
   Scale,
   ScrollText,
-  Settings
+  Settings,
+  WalletCards
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
 
@@ -26,13 +27,14 @@ type AppShellProps = {
 }
 
 const routes = [
-  { href: '/app', label: 'Overview', icon: LayoutDashboard },
-  { href: '/app/ip', label: 'IP Registry', icon: BookOpen },
-  { href: '/app/licenses', label: 'Licenses', icon: ScrollText },
-  { href: '/app/disputes', label: 'Disputes', icon: Scale },
-  { href: '/app/train', label: 'Training', icon: Cpu },
-  { href: '/app/compliance', label: 'Compliance', icon: BarChart3 },
-  { href: '/app/settings', label: 'Settings', icon: Settings }
+  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { href: '/dashboard/purchases', label: 'My Licenses', icon: WalletCards },
+  { href: '/dashboard/ip', label: 'IP Registry', icon: BookOpen },
+  { href: '/dashboard/licenses', label: 'Licenses', icon: ScrollText },
+  { href: '/dashboard/disputes', label: 'Disputes', icon: Scale },
+  { href: '/dashboard/train', label: 'Training', icon: Cpu },
+  { href: '/dashboard/compliance', label: 'Compliance', icon: BarChart3 },
+  { href: '/dashboard/settings', label: 'Settings', icon: Settings }
 ]
 
 export function AppShell({ children }: AppShellProps) {
@@ -59,7 +61,7 @@ export function AppShell({ children }: AppShellProps) {
     const Icon = route.icon
     const isActive =
       pathname === route.href ||
-      (route.href !== '/app' && pathname.startsWith(route.href))
+      (route.href !== '/dashboard' && pathname.startsWith(route.href))
     return (
       <Link
         key={route.href}
@@ -157,7 +159,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
           <div className='hidden items-center gap-2 md:flex'>
             <Button variant='outline' size='sm' asChild>
-              <Link href='/app/settings'>Session settings</Link>
+              <Link href='/dashboard/settings'>Session settings</Link>
             </Button>
             <Button
               variant='ghost'

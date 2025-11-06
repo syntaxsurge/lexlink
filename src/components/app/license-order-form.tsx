@@ -8,21 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { createLicenseOrder, type IpRecord } from '@/app/app/actions'
+import { createLicenseOrder, type IpRecord } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { PaymentMode } from '@/lib/payment-mode'
 
 const schema = z.object({
-  ipKey: z.string().min(1, 'Choose an IP asset'),
-  buyer: z
-    .string()
-    .regex(
-      /^0x[a-fA-F0-9]{40}$/,
-      'Buyer wallet must be 0x-prefixed EVM address'
-    )
+  ipKey: z.string().min(1, 'Choose an IP asset')
 })
 
 type FormValues = z.infer<typeof schema>
@@ -67,8 +60,7 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
       try {
         const created = await createLicenseOrder({
           ipId: selected.ipId,
-          licenseTermsId: selected.licenseTermsId,
-          buyer: values.buyer
+          licenseTermsId: selected.licenseTermsId
         })
         setResult(created)
       } catch (err) {
@@ -127,15 +119,6 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
           </div>
         )}
 
-        <div className='space-y-2'>
-          <Label htmlFor='buyer'>Buyer Wallet Address</Label>
-          <Input id='buyer' {...form.register('buyer')} />
-          {form.formState.errors.buyer && (
-            <p className='text-sm text-destructive'>
-              {form.formState.errors.buyer.message}
-            </p>
-          )}
-        </div>
         <div className='flex items-center gap-3'>
           <Button type='submit' disabled={isPending || !ips.length}>
             {isPending ? 'Allocating address…' : buttonLabel}
@@ -192,21 +175,23 @@ export function LicenseOrderForm({ ips, paymentMode }: LicenseOrderFormProps) {
                           </a>{' '}
                           and mint ckTESTBTC to the buyer&apos;s Internet Identity.
                         </li>
-                        <li>Transfer ckBTC to the escrow owner + subaccount listed above, or use the Pay link below.</li>
+                        <li>Transfer ckBTC to the escrow owner + subaccount listed above, or visit the Pay link to send directly.</li>
                         <li>LexLink auto-finalizes as soon as the ledger balance updates.</li>
                       </ol>
-                      <p>
-                        Shareable instructions:{' '}
-                        <Link
-                          href={`/pay/${result.orderId}`}
-                          className='font-mono text-xs text-primary underline-offset-4 hover:underline'
-                        >
-                          /pay/{result.orderId}
-                        </Link>
-                      </p>
                     </div>
                   </>
                 )}
+                <div className='space-y-2 rounded-md border border-dashed border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground'>
+                  <p className='font-semibold text-foreground'>
+                    Share the checkout link below. Buyers authenticate with Internet Identity, set their Story wallet, and see real-time payment status.
+                  </p>
+                  <Link
+                    href={`/pay/${result.orderId}`}
+                    className='font-mono text-xs text-primary underline-offset-4 hover:underline'
+                  >
+                    /pay/{result.orderId}
+                  </Link>
+                </div>
               </>
             )
           })()}

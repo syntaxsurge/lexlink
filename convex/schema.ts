@@ -29,7 +29,9 @@ export default defineSchema({
   licenses: defineTable({
     orderId: v.string(),
     ipId: v.string(),
-    buyer: v.string(),
+    buyer: v.optional(v.string()),
+    buyerPrincipal: v.optional(v.string()),
+    mintTo: v.optional(v.string()),
     btcAddress: v.string(),
     network: v.optional(v.string()),
     amountSats: v.optional(v.number()),
@@ -57,12 +59,14 @@ export default defineSchema({
     vcHash: v.string(),
     complianceScore: v.number(),
     trainingUnits: v.number(),
-    ownerPrincipal: v.optional(v.string())
+    ownerPrincipal: v.optional(v.string()),
+    evidenceStorageId: v.optional(v.id('_storage'))
   })
     .index('by_orderId', ['orderId'])
     .index('by_ipId', ['ipId'])
     .index('by_status', ['status'])
-    .index('by_ownerPrincipal', ['ownerPrincipal']),
+    .index('by_ownerPrincipal', ['ownerPrincipal'])
+    .index('by_buyerPrincipal', ['buyerPrincipal']),
   disputes: defineTable({
     disputeId: v.string(),
     ipId: v.string(),
@@ -117,5 +121,11 @@ export default defineSchema({
     .index('by_actorAddress', ['actorAddress'])
     .index('by_actorPrincipal', ['actorPrincipal'])
     .index('by_action', ['action'])
-    .index('by_resourceId', ['resourceId'])
+    .index('by_resourceId', ['resourceId']),
+  profiles: defineTable({
+    principal: v.string(),
+    defaultMintTo: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number()
+  }).index('by_principal', ['principal'])
 })

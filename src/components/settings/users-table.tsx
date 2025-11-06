@@ -5,7 +5,7 @@ import { useTransition } from 'react'
 
 import { toast } from 'sonner'
 
-import { updateUserRole, type UserRecord } from '@/app/app/actions'
+import { updateUserRole, type UserRecord } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,

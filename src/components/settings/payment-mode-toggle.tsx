@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 
-import { updatePaymentModeSetting } from '@/app/app/actions'
+import { updatePaymentModeSetting } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { PaymentMode } from '@/lib/payment-mode'

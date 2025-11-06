@@ -11,9 +11,12 @@ export function BtcManualInstructions() {
         Send a Bitcoin transaction to the address below. LexLink finalizes the order once the configured
         confirmations are observed.
       </p>
-      <p className='rounded-md border border-dashed border-border/50 bg-background p-3 font-mono text-xs'>
-        {invoice.btcAddress}
-      </p>
+      <div className='space-y-2 rounded-md border border-dashed border-border/50 bg-background p-3 font-mono text-xs'>
+        <div>{invoice.btcAddress}</div>
+        <div className='font-sans text-[11px] text-muted-foreground'>
+          License wallet: {invoice.mintTo ?? 'Pending — save your wallet above before sending funds.'}
+        </div>
+      </div>
     </section>
   )
 }

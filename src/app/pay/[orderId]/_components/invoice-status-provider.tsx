@@ -17,7 +17,9 @@ export type InvoiceSnapshot = {
   ipTitle: string
   amountSats?: number
   btcAddress: string
-  buyer: string
+  buyer?: string
+  buyerPrincipal?: string | null
+  mintTo?: string | null
   paymentMode?: string
   status: string
   ckbtcSubaccount?: string

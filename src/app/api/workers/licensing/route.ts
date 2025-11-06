@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-import { completeLicenseSaleSystem } from '@/app/app/actions'
+import { completeLicenseSaleSystem } from '@/app/dashboard/actions'
 import { env } from '@/lib/env'
 import { getConvexClient } from '@/lib/convex'
 
@@ -112,10 +112,19 @@ export async function GET() {
       const paymentMode: 'ckbtc' | 'btc' = order.paymentMode === 'ckbtc' ? 'ckbtc' : 'btc'
 
       if (paymentMode === 'ckbtc') {
+        const receiverAddress = order.mintTo ?? order.buyer
+        if (!receiverAddress) {
+          logs.push({
+            orderId: order.orderId,
+            mode: 'ckbtc',
+            note: 'waiting for buyer to set mint destination'
+          })
+          continue
+        }
         try {
           await completeLicenseSaleSystem({
             orderId: order.orderId,
-            receiver: order.buyer as `0x${string}`
+            receiver: receiverAddress as `0x${string}`
           })
           logs.push({ orderId: order.orderId, mode: 'ckbtc', finalized: true })
         } catch (error) {
@@ -147,6 +156,14 @@ export async function GET() {
       }
 
       if (funding.txid && funding.confirmations >= MIN_CONFIRMATIONS) {
+        const receiverAddress = order.mintTo ?? order.buyer
+        if (!receiverAddress) {
+          logs.push({
+            orderId: order.orderId,
+            note: 'waiting for buyer mint destination'
+          })
+          continue
+        }
         await convex.mutation('licenses:updateFundingState' as any, {
           orderId: order.orderId,
           status: 'confirmed',
@@ -157,7 +174,7 @@ export async function GET() {
         await completeLicenseSaleSystem({
           orderId: order.orderId,
           btcTxId: funding.txid,
-          receiver: order.buyer as `0x${string}`
+          receiver: receiverAddress as `0x${string}`
         })
         logs.push({ orderId: order.orderId, finalized: true })
       }

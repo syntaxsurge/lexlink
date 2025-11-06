@@ -3,7 +3,7 @@ import {
   type IpRecord,
   type LicenseRecord,
   type TrainingBatchRecord
-} from '@/app/app/actions'
+} from '@/app/dashboard/actions'
 import { TrainingForm } from '@/components/app/training-form'
 
 function groupTraining(

@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 import { format } from 'date-fns'
 
-import { loadDashboardData, type IpRecord } from '@/app/app/actions'
+import { loadDashboardData, type IpRecord } from '@/app/dashboard/actions'
 import { RegisterIpForm } from '@/components/app/register-ip-form'
 import { Badge } from '@/components/ui/badge'
 import { env } from '@/lib/env'

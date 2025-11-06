@@ -67,7 +67,7 @@ export default function HomePage() {
           </p>
           <div className='flex flex-wrap items-center justify-center gap-3'>
             <Button size='lg' asChild className='bg-white text-slate-900 hover:bg-slate-200'>
-              <Link href='/app'>Launch the console</Link>
+              <Link href='/dashboard'>Launch the console</Link>
             </Button>
           </div>
         </div>

@@ -4,7 +4,7 @@ import {
   loadDashboardData,
   simulateLicenseFunding,
   type LicenseRecord
-} from '@/app/app/actions'
+} from '@/app/dashboard/actions'
 import { FinalizeLicenseForm } from '@/components/app/finalize-license-form'
 import { LicenseOrderForm } from '@/components/app/license-order-form'
 import { Badge } from '@/components/ui/badge'
@@ -152,7 +152,7 @@ export default async function LicensesPage() {
               <TableRow>
                 <TableHead>Order</TableHead>
                 <TableHead>IP</TableHead>
-                <TableHead>Buyer</TableHead>
+                <TableHead>License Wallet</TableHead>
                 <TableHead>Amount (BTC)</TableHead>
                 <TableHead>Mode</TableHead>
                 <TableHead>Payment Destination</TableHead>
@@ -183,6 +183,7 @@ export default async function LicensesPage() {
                     ? `${base}/tx/${order.btcTxId}`
                     : undefined
                 const modeLabel = isBtcPayment ? 'BTC' : 'ckBTC'
+                const mintTarget = order.mintTo ?? order.buyer ?? null
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -192,7 +193,7 @@ export default async function LicensesPage() {
                       {order.ipId.slice(0, 10)}…
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.buyer.slice(0, 10)}…
+                      {mintTarget ? `${mintTarget.slice(0, 10)}…` : 'Pending'}
                     </TableCell>
                     <TableCell>{formatBtc(order.amountSats)}</TableCell>
                     <TableCell>
@@ -230,18 +231,14 @@ export default async function LicensesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {!isBtcMode(order.paymentMode) ? (
-                        <Link
-                          href={`/pay/${order.orderId}`}
-                          className='text-xs text-primary underline-offset-4 hover:underline'
-                          target='_blank'
-                          rel='noreferrer'
-                        >
-                          /pay/{order.orderId}
-                        </Link>
-                      ) : (
-                        <span className='text-xs text-muted-foreground'>—</span>
-                      )}
+                      <Link
+                        href={`/pay/${order.orderId}`}
+                        className='text-xs text-primary underline-offset-4 hover:underline'
+                        target='_blank'
+                        rel='noreferrer'
+                      >
+                        /pay/{order.orderId}
+                      </Link>
                     </TableCell>
                    <TableCell>
                       {(() => {
@@ -355,7 +352,7 @@ export default async function LicensesPage() {
               <TableRow>
                 <TableHead>Order</TableHead>
                 <TableHead>IP</TableHead>
-                <TableHead>Buyer</TableHead>
+                <TableHead>License Wallet</TableHead>
                 <TableHead>Mode</TableHead>
                 <TableHead>License Token</TableHead>
                 <TableHead>Bitcoin Tx</TableHead>
@@ -379,6 +376,7 @@ export default async function LicensesPage() {
               {finalizedOrders.map(order => {
                 const base = explorerBase(order.network)
                 const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
+                const mintTarget = order.mintTo ?? order.buyer ?? null
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
@@ -388,7 +386,7 @@ export default async function LicensesPage() {
                       {order.ipId.slice(0, 10)}…
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {order.buyer.slice(0, 10)}…
+                      {mintTarget ? `${mintTarget.slice(0, 10)}…` : '—'}
                     </TableCell>
                     <TableCell>
                       <Badge variant='outline'>{modeLabel}</Badge>

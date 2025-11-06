@@ -9,6 +9,7 @@ import {
   type InvoiceSnapshot
 } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { FinalizationTimeline } from '@/app/pay/[orderId]/_components/finalization-timeline'
+import { MintTargetCard } from '@/app/pay/[orderId]/_components/mint-target-card'
 import type { ConstellationNetworkId } from '@/lib/constellation-links'
 import type { StoryNetwork } from '@/lib/story-links'
 
@@ -24,6 +25,7 @@ type InvoicePageClientProps = {
   storyChainId: number
   constellationNetwork: ConstellationNetworkId
   constellationEnabled: boolean
+  defaultMintTo?: string | null
 }
 
 export function InvoicePageClient({
@@ -37,7 +39,8 @@ export function InvoicePageClient({
   storyLicenseAddress,
   storyChainId,
   constellationNetwork,
-  constellationEnabled
+  constellationEnabled,
+  defaultMintTo
 }: InvoicePageClientProps) {
   return (
     <InvoiceStatusProvider
@@ -60,6 +63,11 @@ export function InvoicePageClient({
         </header>
 
         <InvoiceSummary fallbackNetwork={fallbackNetwork} />
+
+        <MintTargetCard
+          orderId={initialInvoice.orderId}
+          defaultMintTo={defaultMintTo}
+        />
 
         {isCkbtc ? (
           <>

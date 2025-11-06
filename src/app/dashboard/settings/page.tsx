@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth'
 
-import { loadUsers } from '@/app/app/actions'
+import { loadUsers } from '@/app/dashboard/actions'
 import { getDefaultPaymentMode, readPaymentMode } from '@/lib/payment-mode'
 import { PaymentModeToggle } from '@/components/settings/payment-mode-toggle'
 import { UsersTable } from '@/components/settings/users-table'

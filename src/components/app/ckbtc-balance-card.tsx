@@ -7,7 +7,7 @@ import {
   CardTitle
 } from '@/components/ui/card'
 
-import type { CkbtcSnapshot } from '@/app/app/actions'
+import type { CkbtcSnapshot } from '@/app/dashboard/actions'
 
 export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
   if (!snapshot.enabled) {

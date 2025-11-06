@@ -1,4 +1,4 @@
-import { loadDashboardData, type DisputeRecord } from '@/app/app/actions'
+import { loadDashboardData, type DisputeRecord } from '@/app/dashboard/actions'
 import { DisputeForm } from '@/components/app/dispute-form'
 import { Badge } from '@/components/ui/badge'
 import {

@@ -61,7 +61,7 @@ export function SiteHeader() {
           {isAuthenticated ? (
             <>
               <Button asChild variant='secondary'>
-                <Link href='/app'>Open Console</Link>
+                <Link href='/dashboard'>Open Console</Link>
               </Button>
               <Button variant='ghost' onClick={handleSignOut}>
                 {principalLabel ?? session?.principal ?? 'Sign out'}

@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
-import type { CkbtcSnapshot } from '@/app/app/actions'
+import type { CkbtcSnapshot } from '@/app/dashboard/actions'
 
 const CKBTC_FAUCET_URL = 'https://testnet-faucet.ckboost.com/'
 

@@ -51,7 +51,7 @@ export function IcpLoginButton() {
               principal,
               delegation: JSON.stringify(delegation),
               sessionPublicKey,
-              callbackUrl: '/app'
+              callbackUrl: '/dashboard'
             })
 
             if (!result?.ok) {
@@ -62,7 +62,7 @@ export function IcpLoginButton() {
             try {
               await update()
             } catch {}
-            router.replace('/app')
+            router.replace('/dashboard')
             router.refresh()
           } catch (error) {
             const message =

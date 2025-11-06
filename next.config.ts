@@ -46,13 +46,22 @@ const nextConfig: NextConfig = {
           process.env.DEMO_VIDEO_URL ||
           'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
         permanent: false
+      },
+      {
+        source: '/app',
+        destination: '/dashboard',
+        permanent: false
+      },
+      {
+        source: '/app/:path*',
+        destination: '/dashboard/:path*',
+        permanent: false
       }
     ]
   },
   serverExternalPackages: [
     '@stardust-collective/dag4',
-    'node-localstorage',
-    'brotli-wasm'
+    'node-localstorage'
   ],
   webpack(config) {
     config.resolve = config.resolve ?? {}

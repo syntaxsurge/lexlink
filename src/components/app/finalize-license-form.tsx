@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { completeLicenseSale, type LicenseRecord } from '@/app/app/actions'
+import { completeLicenseSale, type LicenseRecord } from '@/app/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -62,7 +62,7 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
 
   useEffect(() => {
     if (selectedOrder) {
-      form.setValue('receiver', selectedOrder.buyer)
+      form.setValue('receiver', selectedOrder.mintTo ?? selectedOrder.buyer ?? '')
     }
   }, [selectedOrder, form])
 

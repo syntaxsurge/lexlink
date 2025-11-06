@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { autoFinalizeCkbtcOrder } from '@/app/app/actions'
+import { autoFinalizeCkbtcOrder } from '@/app/dashboard/actions'
 
 export const runtime = 'nodejs'
 

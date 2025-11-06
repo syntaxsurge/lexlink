@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 
-import { loadInvoicePublic } from '@/app/app/actions'
+import { loadInvoicePublic, loadBuyerProfile } from '@/app/dashboard/actions'
 import { InvoicePageClient } from '@/app/pay/[orderId]/_components/invoice-page-client'
 import { env } from '@/lib/env'
 import type { ConstellationNetworkId } from '@/lib/constellation-links'
@@ -16,6 +16,14 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
 
   if (!invoice) {
     notFound()
+  }
+
+  let defaultMintTo: string | null = null
+  try {
+    const profile = await loadBuyerProfile()
+    defaultMintTo = profile.defaultMintTo
+  } catch {
+    defaultMintTo = null
   }
 
   const isCkbtc = invoice.paymentMode === 'ckbtc'
@@ -49,6 +57,7 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
       storyChainId={env.STORY_CHAIN_ID}
       constellationNetwork={env.CONSTELLATION_NETWORK as ConstellationNetworkId}
       constellationEnabled={env.CONSTELLATION_ENABLED}
+      defaultMintTo={defaultMintTo}
     />
   )
 }

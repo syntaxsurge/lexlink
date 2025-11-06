@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import { loadDashboardData } from '@/app/app/actions'
+import { loadDashboardData } from '@/app/dashboard/actions'
 import { TrainingForm } from '@/components/app/training-form'
 import { Badge } from '@/components/ui/badge'
 import {

@@ -11,7 +11,7 @@ import {
   raiseDispute,
   type IpRecord,
   type RaiseDisputePayload
-} from '@/app/app/actions'
+} from '@/app/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
