@@ -11,6 +11,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ledgerActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
+import {
+  SESSION_TTL_NS,
+  resolveDerivationOrigin,
+  resolveIdentityProvider
+} from '@/lib/internet-identity'
 
 type TransferResult =
   | { status: 'idle' }
@@ -26,8 +31,6 @@ type Props = {
   network: 'ckbtc-mainnet' | 'ckbtc-testnet'
 }
 
-const IDENTITY_PROVIDER = 'https://identity.ic0.app'
-
 export function CkbtcPayPanel({
   orderId,
   amountSats,
@@ -38,7 +41,9 @@ export function CkbtcPayPanel({
   const { status } = useSession()
   const [authClient, setAuthClient] = useState<AuthClient | null>(null)
   const [principal, setPrincipal] = useState<Principal | null>(null)
-  const [symbol, setSymbol] = useState('ckBTC')
+  const [symbol, setSymbol] = useState(
+    network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC'
+  )
   const [decimals, setDecimals] = useState(8)
   const [balance, setBalance] = useState<bigint>(0n)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -47,6 +52,7 @@ export function CkbtcPayPanel({
     status: 'idle'
   })
   const [isBusy, setIsBusy] = useState(false)
+  const [isHydrating, setIsHydrating] = useState(false)
 
   const price = useMemo(() => {
     try {
@@ -106,31 +112,26 @@ export function CkbtcPayPanel({
 
   const hydrateIdentity = useCallback(async () => {
     if (!authClient) return
+    setIsHydrating(true)
     try {
-      const identity = await authClient.getIdentity()
-      if (!identity.getPrincipal().isAnonymous()) {
-        setPrincipal(identity.getPrincipal())
-        await refreshBalances(identity)
-        return
-      }
       const authenticated = await authClient.isAuthenticated()
       if (!authenticated) {
         setPrincipal(null)
+        setBalance(0n)
         return
       }
-      const resolved = authClient.getIdentity()
-      if (!resolved.getPrincipal().isAnonymous()) {
-        setPrincipal(resolved.getPrincipal())
-        await refreshBalances(resolved)
-      }
+      await refreshBalances()
     } catch (error) {
       console.error('Unable to resolve Internet Identity session', error)
+    } finally {
+      setIsHydrating(false)
     }
   }, [authClient, refreshBalances])
 
   useEffect(() => {
+    if (!authClient) return
     void hydrateIdentity()
-  }, [hydrateIdentity])
+  }, [authClient, hydrateIdentity])
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -146,28 +147,35 @@ export function CkbtcPayPanel({
     if (!authClient) {
       throw new Error('AuthClient not initialised yet.')
     }
-    const identity = await authClient.getIdentity()
-    if (identity.getPrincipal().isAnonymous()) {
-      await authClient.login({
-        identityProvider: IDENTITY_PROVIDER,
-        onSuccess: async () => {
-          const authenticated = await authClient.getIdentity()
-          setPrincipal(authenticated.getPrincipal())
-          await refreshBalances(authenticated)
-        }
-      })
-      return authClient.getIdentity()
+    const existing = await authClient.getIdentity()
+    if (!existing.getPrincipal().isAnonymous()) {
+      await refreshBalances(existing)
+      return existing
     }
-    setPrincipal(identity.getPrincipal())
-    return identity
+
+    const identityProvider = resolveIdentityProvider()
+    const derivationOrigin = resolveDerivationOrigin()
+
+    await authClient.login({
+      identityProvider,
+      ...(derivationOrigin ? { derivationOrigin } : {}),
+      maxTimeToLive: SESSION_TTL_NS
+    })
+
+    const authenticated = await authClient.getIdentity()
+    if (authenticated.getPrincipal().isAnonymous()) {
+      throw new Error('Internet Identity authentication cancelled.')
+    }
+
+    await refreshBalances(authenticated)
+    return authenticated
   }, [authClient, refreshBalances])
 
   const handleConnect = useCallback(async () => {
     try {
       setError(null)
       setFeedback(null)
-      const identity = await ensureIdentity()
-      await refreshBalances(identity)
+      await ensureIdentity()
     } catch (err) {
       setError(
         err instanceof Error
@@ -175,7 +183,7 @@ export function CkbtcPayPanel({
           : 'Unable to authenticate with Internet Identity.'
       )
     }
-  }, [ensureIdentity, refreshBalances])
+  }, [ensureIdentity])
 
   const handlePay = useCallback(async () => {
     try {
@@ -250,8 +258,15 @@ export function CkbtcPayPanel({
 
   const formattedBalance = formatTokenAmount(balance, decimals)
   const formattedPrice = formatTokenAmount(price, decimals)
-  const canPay = balance >= price && price > 0n
-  const showConnect = status === 'authenticated' ? false : !principal
+  const canPay = principal !== null && balance >= price && price > 0n
+  const showConnect = !principal && !isHydrating
+  const payButtonLabel = isBusy
+    ? 'Submitting…'
+    : isHydrating
+      ? 'Loading…'
+      : canPay
+        ? 'Pay now'
+        : 'Insufficient balance'
 
   return (
     <Card className='border-border/60 bg-card/70'>
@@ -290,18 +305,19 @@ export function CkbtcPayPanel({
               Connect Internet Identity
             </Button>
           ) : (
-            <Button onClick={handlePay} disabled={!canPay || isBusy}>
-              {isBusy
-                ? 'Submitting…'
-                : canPay
-                  ? 'Pay now'
-                  : 'Insufficient balance'}
+            <Button
+              onClick={handlePay}
+              disabled={!canPay || isBusy || isHydrating}
+            >
+              {payButtonLabel}
             </Button>
           )}
           <Button
             variant='outline'
-            onClick={refreshBalances}
-            disabled={!authClient || isBusy}
+            onClick={() => {
+              void refreshBalances()
+            }}
+            disabled={!authClient || isBusy || isHydrating}
           >
             Refresh balance
           </Button>

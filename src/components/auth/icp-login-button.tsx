@@ -8,40 +8,14 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
-
-const SESSION_TTL_NS = 7n * 24n * 60n * 60n * 1_000_000_000n
+import {
+  SESSION_TTL_NS,
+  resolveDerivationOrigin,
+  resolveIdentityProvider
+} from '@/lib/internet-identity'
 
 function toBase64(bytes: Uint8Array) {
   return btoa(String.fromCharCode(...bytes))
-}
-
-function resolveIdentityProvider() {
-  return (
-    process.env.NEXT_PUBLIC_IDENTITY_PROVIDER_URL ??
-    'https://identity.internetcomputer.org'
-  )
-}
-
-function resolveDerivationOrigin() {
-  if (typeof window === 'undefined') {
-    return undefined
-  }
-
-  const hostname = window.location.hostname
-  const isIcHost =
-    hostname.includes('.icp0.io') ||
-    hostname.includes('.ic0.app') ||
-    hostname.includes('.raw.icp0.io')
-
-  if (isIcHost) {
-    return window.location.origin
-  }
-
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3000'
-  }
-
-  return window.location.origin
 }
 
 export function IcpLoginButton() {
