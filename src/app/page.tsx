@@ -199,7 +199,7 @@ export default function HomePage() {
                 <h1 className='max-w-5xl text-5xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl'>
                   Pay with{' '}
                   <span className='bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 bg-clip-text text-transparent'>
-                    ckBTC
+                    Bitcoin
                   </span>
                   .
                   <br />
