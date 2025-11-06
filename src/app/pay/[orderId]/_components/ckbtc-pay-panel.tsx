@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal'
 import type { Identity } from '@dfinity/agent'
+import { useSession } from 'next-auth/react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -34,6 +35,7 @@ export function CkbtcPayPanel({
   ckbtcSubaccountHex,
   network
 }: Props) {
+  const { status } = useSession()
   const [authClient, setAuthClient] = useState<AuthClient | null>(null)
   const [principal, setPrincipal] = useState<Principal | null>(null)
   const [symbol, setSymbol] = useState('ckBTC')
@@ -64,15 +66,29 @@ export function CkbtcPayPanel({
   )
 
   useEffect(() => {
-    AuthClient.create().then(setAuthClient)
+    let cancelled = false
+    AuthClient.create().then(client => {
+      if (!cancelled) {
+        setAuthClient(client)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const refreshBalances = useCallback(
     async (identity?: unknown) => {
       if (!authClient) return
       const activeIdentity = identity ?? (await authClient.getIdentity())
-      const ledger = await ledgerActor(activeIdentity as Identity)
       const id = (activeIdentity as { getPrincipal: () => Principal }).getPrincipal()
+      if (id.isAnonymous()) {
+        setPrincipal(null)
+        setBalance(0n)
+        return
+      }
+      setPrincipal(id)
+      const ledger = await ledgerActor(activeIdentity as Identity)
       const [sym, dec, bal] = await Promise.all([
         ledger.icrc1_symbol(),
         ledger.icrc1_decimals(),
@@ -87,6 +103,44 @@ export function CkbtcPayPanel({
     },
     [authClient]
   )
+
+  const hydrateIdentity = useCallback(async () => {
+    if (!authClient) return
+    try {
+      const identity = await authClient.getIdentity()
+      if (!identity.getPrincipal().isAnonymous()) {
+        setPrincipal(identity.getPrincipal())
+        await refreshBalances(identity)
+        return
+      }
+      const authenticated = await authClient.isAuthenticated()
+      if (!authenticated) {
+        setPrincipal(null)
+        return
+      }
+      const resolved = authClient.getIdentity()
+      if (!resolved.getPrincipal().isAnonymous()) {
+        setPrincipal(resolved.getPrincipal())
+        await refreshBalances(resolved)
+      }
+    } catch (error) {
+      console.error('Unable to resolve Internet Identity session', error)
+    }
+  }, [authClient, refreshBalances])
+
+  useEffect(() => {
+    void hydrateIdentity()
+  }, [hydrateIdentity])
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      void hydrateIdentity()
+    }
+    if (status === 'unauthenticated') {
+      setPrincipal(null)
+      setBalance(0n)
+    }
+  }, [status, hydrateIdentity])
 
   const ensureIdentity = useCallback(async () => {
     if (!authClient) {
@@ -197,7 +251,7 @@ export function CkbtcPayPanel({
   const formattedBalance = formatTokenAmount(balance, decimals)
   const formattedPrice = formatTokenAmount(price, decimals)
   const canPay = balance >= price && price > 0n
-  const showConnect = !principal
+  const showConnect = status === 'authenticated' ? false : !principal
 
   return (
     <Card className='border-border/60 bg-card/70'>

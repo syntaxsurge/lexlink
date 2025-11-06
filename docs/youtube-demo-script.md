@@ -36,7 +36,7 @@ This script follows the production build with Internet Identity, shadcn UI, invo
 - On-screen: Highlight the success panel (IP ID, token ID, license terms ID) and open the Story IP Explorer link.
 
 ## Segment 5 — Generate ckBTC invoice (1:55 – 2:25)
-- On-screen: `Licenses → Generate License Order` with payment mode set to ckBTC. Pick the new IP, buyer `0x2222…2222`.
+- On-screen: `Licenses → Generate License Order` with payment mode set to ckBTC. Pick the new IP, buyer `0x21b06cdfeb63b64396f3a7f5f0f4dc8034fb72ca`.
 - Voice-over: “The order builder derives a deterministic ckBTC subaccount and stores the ICRC-1 escrow account alongside the share link.”
 - On-screen: Submit → Pending Invoices table shows new row (status Pending, ckBTC account string, amount in BTC).
 - Voice-over: “Everything lands in Convex instantly so the automation can monitor balances.”
