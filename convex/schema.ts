@@ -65,7 +65,6 @@ export default defineSchema({
     btcAddress: v.string(),
     network: v.optional(v.string()),
     amountSats: v.optional(v.number()),
-    paymentMode: v.optional(v.string()),
     ckbtcSubaccount: v.optional(v.string()),
     ckbtcMintedSats: v.optional(v.number()),
     ckbtcBlockIndex: v.optional(v.number()),
@@ -92,7 +91,6 @@ export default defineSchema({
     vcDocument: v.string(),
     vcHash: v.string(),
     complianceScore: v.number(),
-    trainingUnits: v.number(),
     ownerPrincipal: v.optional(v.string()),
     evidencePayload: v.optional(v.string())
   })
@@ -135,20 +133,6 @@ export default defineSchema({
     .index('by_ipId', ['ipId'])
     .index('by_ownerPrincipal', ['ownerPrincipal'])
     .index('by_reporterPrincipal', ['reporterPrincipal']),
-  trainingBatches: defineTable({
-    batchId: v.string(),
-    ipId: v.string(),
-    units: v.number(),
-    evidenceHash: v.string(),
-    constellationTx: v.string(),
-    constellationExplorerUrl: v.optional(v.string()),
-    payload: v.optional(v.string()),
-    createdAt: v.number(),
-    ownerPrincipal: v.optional(v.string())
-  })
-    .index('by_batchId', ['batchId'])
-    .index('by_ipId', ['ipId'])
-    .index('by_ownerPrincipal', ['ownerPrincipal']),
   users: defineTable({
     address: v.optional(v.string()),
     principal: v.optional(v.string()),

@@ -21,18 +21,8 @@ import {
   getAccountBalance as getLedgerAccountBalance
 } from '@/lib/ic/ckbtc/service'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
-import {
-  requestDepositAddress,
-  confirmPayment,
-  fetchAttestation
-} from '@/lib/icp'
+import { fetchAttestation } from '@/lib/icp'
 import { uploadBytes, uploadJson, ipfsGatewayUrl } from '@/lib/ipfs'
-import {
-  readPaymentMode,
-  getDefaultPaymentMode,
-  setPaymentModeCookie,
-  type PaymentMode
-} from '@/lib/payment-mode'
 import {
   getStoryClient,
   getStoryWalletClient,
@@ -79,7 +69,6 @@ export type LicenseRecord = {
   btcAddress: string
   network?: string
   amountSats?: number
-  paymentMode?: string
   ckbtcSubaccount?: string
   ckbtcMintedSats?: number
   ckbtcBlockIndex?: number
@@ -106,7 +95,6 @@ export type LicenseRecord = {
   vcDocument: string
   vcHash: string
   complianceScore: number
-  trainingUnits: number
   ownerPrincipal?: string
   evidencePayload?: string
 }
@@ -129,17 +117,6 @@ export type DisputeRecord = {
   createdAt: number
   ownerPrincipal?: string
   reporterPrincipal: string
-}
-
-export type TrainingBatchRecord = {
-  batchId: string
-  ipId: string
-  units: number
-  evidenceHash: string
-  constellationTx: string
-  constellationExplorerUrl?: string | null
-  createdAt: number
-  ownerPrincipal?: string
 }
 
 export type AuditEventRecord = {
@@ -403,49 +380,6 @@ async function ensureDisputeOwner({
   }
 
   return undefined
-}
-
-async function ensureTrainingOwner({
-  batch,
-  convex,
-  ipOwners
-}: {
-  batch: TrainingBatchRecord
-  convex: ConvexClient
-  ipOwners: Map<string, string>
-}): Promise<string | undefined> {
-  if (batch.ownerPrincipal) {
-    return batch.ownerPrincipal
-  }
-
-  const ipOwner = ipOwners.get(batch.ipId)
-  if (ipOwner) {
-    await convex.mutation('trainingBatches:assignOwner' as any, {
-      batchId: batch.batchId,
-      ownerPrincipal: ipOwner
-    })
-    batch.ownerPrincipal = ipOwner
-    return ipOwner
-  }
-
-  const owner = await fetchOwnerPrincipalFromEvent({
-    convex,
-    resourceId: batch.batchId,
-    action: 'training.batch_recorded'
-  })
-
-  if (owner) {
-    await convex.mutation('trainingBatches:assignOwner' as any, {
-      batchId: batch.batchId,
-      ownerPrincipal: owner
-    })
-    batch.ownerPrincipal = owner
-    if (!ipOwners.has(batch.ipId)) {
-      ipOwners.set(batch.ipId, owner)
-    }
-  }
-
-  return owner
 }
 
 async function assertActorOwnsIp({
@@ -1067,30 +1001,23 @@ function slugify(value: string) {
   ).slice(0, 48)
 }
 
-function normalizePaymentMode(value?: string | null): PaymentMode {
-  return value === 'ckbtc' ? 'ckbtc' : 'btc'
-}
-
 function calculateComplianceScore({
   hasPayment,
   hasLicenseToken,
   hasConstellationEvidence,
-  hasC2paArchive,
-  trainingUnits
+  hasC2paArchive
 }: {
   hasPayment: boolean
   hasLicenseToken: boolean
   hasConstellationEvidence: boolean
   hasC2paArchive: boolean
-  trainingUnits: number
 }) {
   let score = 0
   if (hasPayment) score += 25
   if (hasLicenseToken) score += 25
   if (hasC2paArchive) score += 25
   if (hasConstellationEvidence) score += 25
-  const trainingBonus = Math.min(25, trainingUnits)
-  return Math.min(100, score + trainingBonus)
+  return Math.min(100, score)
 }
 
 export type CkbtcSnapshot =
@@ -1175,12 +1102,9 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
 
     const escrowPrincipal =
       env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-    const openOrders =
-      scopedLicenses.filter(
-        license =>
-          license.paymentMode === 'ckbtc' &&
-          ['pending', 'funded', 'confirmed'].includes(license.status)
-      ) ?? []
+    const openOrders = scopedLicenses.filter(license =>
+      ['pending', 'funded', 'confirmed'].includes(license.status)
+    )
 
     let escrowOpenTotal = 0n
     const orderBalances: Array<{
@@ -1274,10 +1198,6 @@ export async function autoFinalizeCkbtcOrder(orderId: string) {
 
   if (order.status === 'finalizing') {
     return { status: 'pending' as const }
-  }
-
-  if (normalizePaymentMode(order.paymentMode) !== 'ckbtc') {
-    return { status: 'skipped' as const }
   }
 
   if (!order.ckbtcSubaccount) {
@@ -1724,50 +1644,22 @@ export async function createLicenseOrder({
   await assertActorOwnsIp({ ip: ipRecord, actor, convex })
 
   const amountSats = ipRecord.priceSats
-  const paymentMode = await readPaymentMode()
-  const network =
-    paymentMode === 'ckbtc' ? `ckbtc-${env.BTC_NETWORK}` : env.BTC_NETWORK
-  const ckbtcSubaccount =
-    paymentMode === 'ckbtc'
-      ? formatSubaccountHex(deriveOrderSubaccount(orderId))
-      : undefined
+  const network = env.CKBTC_NETWORK
+  const ckbtcSubaccount = formatSubaccountHex(deriveOrderSubaccount(orderId))
 
-  let btcAddress: string
-  let ckbtcEscrowPrincipal: string | undefined
-
-  if (paymentMode === 'ckbtc') {
-    ckbtcEscrowPrincipal =
-      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-    if (!ckbtcEscrowPrincipal) {
-      throw new Error(
-        'Escrow principal not configured for ckBTC settlement. Set CKBTC_MERCHANT_PRINCIPAL or ICP_ESCROW_CANISTER_ID.'
-      )
-    }
-    const labelParts = [
-      `owner=${ckbtcEscrowPrincipal}`,
-      ckbtcSubaccount ? `subaccount=${ckbtcSubaccount}` : null
-    ].filter(Boolean)
-    btcAddress = `icrc://${labelParts.join(';')}`
-  } else {
-    try {
-      const invoice = await requestDepositAddress(orderId, paymentMode)
-      btcAddress = invoice.address
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown escrow canister error'
-      if (message.includes('Requested unknown threshold key')) {
-        throw new Error(
-          'Escrow canister rejected the ECDSA request. Ensure your canister uses the `dfx_test_key` (local) or the appropriate subnet key via `ECDSA_KEY_NAME`.'
-        )
-      }
-      if (message.includes('canister_not_found')) {
-        throw new Error(
-          'ICP escrow canister not found. Verify ICP_ESCROW_CANISTER_ID and ICP_HOST point to a deployed canister before generating invoices.'
-        )
-      }
-      throw new Error(`Failed to allocate deposit address: ${message}`)
-    }
+  const ckbtcEscrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+  if (!ckbtcEscrowPrincipal) {
+    throw new Error(
+      'Escrow principal not configured for ckBTC settlement. Set CKBTC_MERCHANT_PRINCIPAL or ICP_ESCROW_CANISTER_ID.'
+    )
   }
+
+  const labelParts = [
+    `owner=${ckbtcEscrowPrincipal}`,
+    ckbtcSubaccount ? `subaccount=${ckbtcSubaccount}` : null
+  ].filter(Boolean)
+  const btcAddress = `icrc://${labelParts.join(';')}`
 
   await convex.mutation('licenses:insert' as any, {
     orderId,
@@ -1776,7 +1668,6 @@ export async function createLicenseOrder({
     licenseTermsId,
     amountSats,
     network,
-    paymentMode,
     ckbtcSubaccount,
     ownerPrincipal: actor.principal
   })
@@ -1789,8 +1680,7 @@ export async function createLicenseOrder({
       ipId,
       btcAddress,
       amountSats,
-      network,
-      paymentMode
+      network
     },
     resourceId: orderId
   })
@@ -1798,7 +1688,6 @@ export async function createLicenseOrder({
   return {
     orderId,
     btcAddress,
-    paymentMode,
     ckbtcSubaccount,
     ckbtcEscrowPrincipal
   }
@@ -1909,7 +1798,6 @@ type FinalizeOrderArgs = {
   receiver: `0x${string}`
   actor: SessionActor
   convex: ReturnType<typeof getConvexClient>
-  paymentMode: PaymentMode
   minted?: {
     sats: number
     blockIndex?: number
@@ -1923,12 +1811,8 @@ async function finalizeOrder({
   receiver,
   actor,
   convex,
-  paymentMode,
   minted
 }: FinalizeOrderArgs) {
-  if (paymentMode === 'btc') {
-    await confirmPayment(order.orderId, paymentReference)
-  }
   const lock = await convex.mutation('licenses:requestFinalization' as any, {
     orderId: order.orderId
   })
@@ -2110,8 +1994,7 @@ async function finalizeOrder({
       hasPayment: true,
       hasLicenseToken: true,
       hasConstellationEvidence: constellationStatus === 'ok',
-      hasC2paArchive: Boolean(c2paArchiveUri ?? archive.archiveBase64),
-      trainingUnits: order.trainingUnits
+      hasC2paArchive: Boolean(c2paArchiveUri ?? archive.archiveBase64)
     })
 
     await convex.mutation('licenses:markCompleted' as any, {
@@ -2148,7 +2031,6 @@ async function finalizeOrder({
         constellationExplorerUrl,
         constellationAnchoredAt,
         licenseTokenId,
-        paymentMode,
         constellationStatus,
         ...(constellationError ? { constellationError } : {}),
         ckbtcMintedSats: minted?.sats,
@@ -2201,12 +2083,12 @@ async function finalizeOrder({
 
 export async function completeLicenseSale({
   orderId,
-  btcTxId,
+  settlementReference,
   receiver,
   actorOverride
 }: {
   orderId: string
-  btcTxId?: string
+  settlementReference?: string
   receiver?: `0x${string}`
   actorOverride?: SessionActor
 }) {
@@ -2251,8 +2133,7 @@ export async function completeLicenseSale({
     throw new Error('Receiver wallet is required to mint license token.')
   }
 
-  const paymentMode = normalizePaymentMode(order.paymentMode)
-  let paymentReference = btcTxId ?? ''
+  let paymentReference = settlementReference ?? ''
   let minted:
     | {
         sats: number
@@ -2260,53 +2141,44 @@ export async function completeLicenseSale({
       }
     | undefined
 
-  if (paymentMode === 'btc') {
-    if (!paymentReference) {
-      throw new Error(
-        'Provide a Bitcoin transaction hash for BTC mode finalization'
-      )
-    }
-  } else {
-    if (!env.CKBTC_LEDGER_CANISTER_ID) {
-      throw new Error(
-        'ckBTC ledger is not configured; cannot verify direct ledger transfer.'
-      )
-    }
-    const escrowPrincipal =
-      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-    if (!escrowPrincipal) {
-      throw new Error(
-        'Escrow principal not configured for ckBTC ledger settlement.'
-      )
-    }
-    if (!order.ckbtcSubaccount) {
-      throw new Error('Order is missing ckBTC subaccount metadata.')
-    }
-    const subaccount = hexToUint8Array(order.ckbtcSubaccount)
-    const ledgerBalance = await getLedgerAccountBalance({
-      owner: escrowPrincipal,
-      subaccount
-    })
-    const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
+  if (!env.CKBTC_LEDGER_CANISTER_ID) {
+    throw new Error(
+      'ckBTC ledger is not configured; cannot verify direct ledger transfer.'
+    )
+  }
+  const escrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+  if (!escrowPrincipal) {
+    throw new Error(
+      'Escrow principal not configured for ckBTC ledger settlement.'
+    )
+  }
+  if (!order.ckbtcSubaccount) {
+    throw new Error('Order is missing ckBTC subaccount metadata.')
+  }
+  const subaccount = hexToUint8Array(order.ckbtcSubaccount)
+  const ledgerBalance = await getLedgerAccountBalance({
+    owner: escrowPrincipal,
+    subaccount
+  })
+  const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
 
-    if (ledgerBalance < required || required === 0n) {
-      throw new Error(
-        'ckBTC transfer not detected yet. Wait for the ledger balance to update.'
-      )
-    }
+  if (ledgerBalance < required || required === 0n) {
+    throw new Error(
+      'ckBTC transfer not detected yet. Wait for the ledger balance to update.'
+    )
+  }
 
-    if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error('ckBTC balance exceeds supported range for finalization.')
-    }
+  if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('ckBTC balance exceeds supported range for finalization.')
+  }
 
-    const ledgerAmount = Number(ledgerBalance)
-    minted = {
-      sats: ledgerAmount
-    }
-    paymentReference =
-      paymentReference && paymentReference.length > 0
-        ? paymentReference
-        : `icrc-ledger-${orderId}-${Date.now()}`
+  const ledgerAmount = Number(ledgerBalance)
+  minted = {
+    sats: ledgerAmount
+  }
+  if (!paymentReference || paymentReference.length === 0) {
+    paymentReference = `icrc-ledger-${orderId}-${Date.now()}`
   }
 
   const result = await finalizeOrder({
@@ -2316,7 +2188,6 @@ export async function completeLicenseSale({
     receiver: targetReceiver,
     actor,
     convex,
-    paymentMode,
     minted
   })
 
@@ -2334,7 +2205,6 @@ export async function completeLicenseSale({
     c2paArchive: result.c2paArchive,
     vcDocument: result.vcDocument,
     vcHash: result.vcHash,
-    paymentMode,
     ckbtcMintedSats: minted?.sats,
     ckbtcBlockIndex: minted?.blockIndex
   }
@@ -2562,11 +2432,10 @@ export async function resolveDisputeAction(disputeId: string) {
 export async function loadDashboardData() {
   const actor = await requireSession()
   const convex = getConvexClient()
-  const [ipsRaw, licensesRaw, disputesRaw, trainingRaw] = await Promise.all([
+  const [ipsRaw, licensesRaw, disputesRaw] = await Promise.all([
     convex.query('ipAssets:list' as any, {}),
     convex.query('licenses:list' as any, {}),
-    convex.query('disputes:list' as any, {}),
-    convex.query('trainingBatches:list' as any, {})
+    convex.query('disputes:list' as any, {})
   ])
 
   const ipOwners = new Map<string, string>()
@@ -2615,27 +2484,11 @@ export async function loadDashboardData() {
     }
   }
 
-  const trainingBatches = [] as TrainingBatchRecord[]
-  for (const batch of trainingRaw as TrainingBatchRecord[]) {
-    const owner = await ensureTrainingOwner({
-      batch,
-      convex,
-      ipOwners
-    })
-    if (owner === actor.principal) {
-      trainingBatches.push({
-        ...batch,
-        ownerPrincipal: owner
-      })
-    }
-  }
-
   return {
     principal: actor.principal,
     ips,
     licenses,
-    disputes,
-    trainingBatches
+    disputes
   }
 }
 
@@ -2709,104 +2562,6 @@ export async function loadBuyerPurchases() {
     constellationExplorerUrl: order.constellationExplorerUrl ?? null,
     constellationAnchoredAt: order.constellationAnchoredAt ?? null
   }))
-}
-
-export async function recordTrainingBatch({
-  ipId,
-  units
-}: {
-  ipId: string
-  units: number
-}) {
-  const actor = await requireRole(['operator', 'creator'])
-  if (units <= 0) {
-    throw new Error('Training units must be positive')
-  }
-
-  const convex = getConvexClient()
-  const ip = (await convex.query('ipAssets:getById' as any, {
-    ipId
-  })) as IpRecord | null
-
-  if (!ip) {
-    throw new Error('IP asset not found')
-  }
-
-  await assertActorOwnsIp({ ip, actor, convex })
-
-  const batchId = crypto.randomUUID()
-  const payload = {
-    kind: 'TRAINING_BATCH',
-    ipId,
-    batchId,
-    units,
-    timestamp: Date.now()
-  }
-  const payloadJson = JSON.stringify(payload, null, 2)
-  const evidenceHash = sha256Hex(payloadJson)
-  const trainingEvidence = await publishEvidence({
-    ...payload,
-    evidenceHash
-  })
-  const constellationTx =
-    trainingEvidence.status === 'ok' ? trainingEvidence.txHash : ''
-  const constellationExplorerUrl =
-    trainingEvidence.status === 'ok' ? trainingEvidence.explorerUrl : ''
-
-  await convex.mutation('trainingBatches:insert' as any, {
-    batchId,
-    ipId,
-    units,
-    evidenceHash,
-    constellationTx,
-    constellationExplorerUrl,
-    payload: payloadJson,
-    ownerPrincipal: ip.ownerPrincipal ?? actor.principal
-  })
-
-  const licensesForIp = (await convex.query('licenses:listByIp' as any, {
-    ipId
-  })) as LicenseRecord[]
-
-  for (const license of licensesForIp) {
-    const nextTrainingUnits = license.trainingUnits + units
-    const nextScore = calculateComplianceScore({
-      hasPayment: Boolean(license.btcTxId),
-      hasLicenseToken: Boolean(license.tokenOnChainId),
-      hasConstellationEvidence: Boolean(license.constellationTx),
-      hasC2paArchive: Boolean(license.c2paArchiveUri),
-      trainingUnits: nextTrainingUnits
-    })
-
-    await convex.mutation('licenses:setTrainingMetrics' as any, {
-      orderId: license.orderId,
-      trainingUnits: nextTrainingUnits,
-      complianceScore: nextScore
-    })
-  }
-
-  await recordEvent({
-    actor,
-    action: 'training.batch_recorded',
-    payload: {
-      batchId,
-      ipId,
-      units,
-      constellationTx,
-      constellationExplorerUrl,
-      constellationStatus: trainingEvidence.status,
-      evidenceHash
-    },
-    resourceId: batchId
-  })
-
-  return {
-    batchId,
-    constellationTx,
-    constellationExplorerUrl,
-    constellationStatus: trainingEvidence.status,
-    evidenceHash
-  }
 }
 
 export type UserRecord = {
@@ -2892,24 +2647,6 @@ export async function loadAuditTrail(limit = 50): Promise<AuditEventRecord[]> {
     }))
 }
 
-export async function updatePaymentModeSetting(mode: PaymentMode) {
-  const actor = await requireRole(['operator'])
-  await setPaymentModeCookie(mode)
-
-  await recordEvent({
-    actor,
-    action: 'settings.payment_mode_updated',
-    payload: {
-      mode,
-      defaultMode: getDefaultPaymentMode()
-    }
-  })
-
-  return {
-    mode
-  }
-}
-
 type PublicLicenseRecord = {
   orderId: string
   ipId: string
@@ -2919,7 +2656,6 @@ type PublicLicenseRecord = {
   buyer?: string | null
   buyerPrincipal?: string | null
   mintTo?: string | null
-  paymentMode?: string
   status: string
   ckbtcSubaccount?: string
   ckbtcMintedSats?: number
@@ -2946,19 +2682,7 @@ type PublicLicenseRecord = {
   vcDocument?: string | null
   vcHash?: string
   evidencePayload?: string | null
-  trainingUnits?: number
   complianceScore?: number
-}
-
-type PublicTrainingBatchRecord = {
-  batchId: string
-  ipId: string
-  units: number
-  evidenceHash: string
-  constellationTx: string
-  constellationExplorerUrl?: string | null
-  payload?: string | null
-  createdAt: number
 }
 
 export async function loadOrderReceipt(orderId: string) {
@@ -2999,36 +2723,13 @@ export async function loadInvoicePublic(orderId: string) {
   return publicInvoice
 }
 
-export async function loadTrainingReceipt(batchId: string) {
-  if (!batchId) return null
-  const convex = getConvexClient()
-  const record = (await convex.query('trainingBatches:get' as any, {
-    batchId
-  })) as (PublicTrainingBatchRecord & { ownerPrincipal?: string }) | null
-
-  if (!record) {
-    return null
-  }
-
-  const ip = (await convex.query('ipAssets:getById' as any, {
-    ipId: record.ipId
-  })) as IpRecord | null
-
-  return {
-    ...record,
-    ipTitle: ip?.title ?? record.ipId,
-    payload: record.payload ?? null,
-    constellationExplorerUrl: record.constellationExplorerUrl ?? null
-  }
-}
-
 export async function completeLicenseSaleSystem({
   orderId,
-  btcTxId,
+  settlementReference,
   receiver
 }: {
   orderId: string
-  btcTxId?: string
+  settlementReference?: string
   receiver: `0x${string}`
 }) {
   const convex = getConvexClient()
@@ -3059,8 +2760,7 @@ export async function completeLicenseSaleSystem({
     ipOwners
   })
 
-  const paymentMode = normalizePaymentMode(order.paymentMode)
-  let paymentReference = btcTxId ?? ''
+  let paymentReference = settlementReference ?? ''
   let minted:
     | {
         sats: number
@@ -3068,51 +2768,42 @@ export async function completeLicenseSaleSystem({
       }
     | undefined
 
-  if (paymentMode === 'btc') {
-    if (!paymentReference) {
-      throw new Error(
-        'Provide a Bitcoin transaction hash for BTC mode finalization'
-      )
-    }
-  } else {
-    if (!env.CKBTC_LEDGER_CANISTER_ID) {
-      throw new Error(
-        'ckBTC ledger is not configured; cannot verify direct ledger transfer.'
-      )
-    }
-    const escrowPrincipal =
-      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
-    if (!escrowPrincipal) {
-      throw new Error(
-        'Escrow principal not configured for ckBTC ledger settlement.'
-      )
-    }
-    if (!order.ckbtcSubaccount) {
-      throw new Error('Order is missing ckBTC subaccount metadata.')
-    }
-    const subaccount = hexToUint8Array(order.ckbtcSubaccount)
-    const ledgerBalance = await getLedgerAccountBalance({
-      owner: escrowPrincipal,
-      subaccount
-    })
-    const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
+  if (!env.CKBTC_LEDGER_CANISTER_ID) {
+    throw new Error(
+      'ckBTC ledger is not configured; cannot verify direct ledger transfer.'
+    )
+  }
+  const escrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+  if (!escrowPrincipal) {
+    throw new Error(
+      'Escrow principal not configured for ckBTC ledger settlement.'
+    )
+  }
+  if (!order.ckbtcSubaccount) {
+    throw new Error('Order is missing ckBTC subaccount metadata.')
+  }
+  const subaccount = hexToUint8Array(order.ckbtcSubaccount)
+  const ledgerBalance = await getLedgerAccountBalance({
+    owner: escrowPrincipal,
+    subaccount
+  })
+  const required = BigInt(order.amountSats ?? ip.priceSats ?? 0)
 
-    if (ledgerBalance < required || required === 0n) {
-      throw new Error('ckBTC transfer not detected yet.')
-    }
+  if (ledgerBalance < required || required === 0n) {
+    throw new Error('ckBTC transfer not detected yet.')
+  }
 
-    if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new Error('ckBTC balance exceeds supported range for finalization.')
-    }
+  if (ledgerBalance > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error('ckBTC balance exceeds supported range for finalization.')
+  }
 
-    const ledgerAmount = Number(ledgerBalance)
-    minted = {
-      sats: ledgerAmount
-    }
-    paymentReference =
-      paymentReference && paymentReference.length > 0
-        ? paymentReference
-        : `icrc-ledger-${orderId}-${Date.now()}`
+  const ledgerAmount = Number(ledgerBalance)
+  minted = {
+    sats: ledgerAmount
+  }
+  if (!paymentReference || paymentReference.length === 0) {
+    paymentReference = `icrc-ledger-${orderId}-${Date.now()}`
   }
 
   const systemActor: SessionActor = {
@@ -3134,7 +2825,6 @@ export async function completeLicenseSaleSystem({
     receiver: targetReceiver,
     actor: systemActor,
     convex,
-    paymentMode,
     minted
   })
 }

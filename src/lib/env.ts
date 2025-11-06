@@ -42,7 +42,6 @@ const serverEnvSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform(value => value === 'true'),
-  PAYMENT_MODE: z.enum(['ckbtc', 'btc']).default('ckbtc'),
   STORY_RPC_URL: z.string().url(),
   STORY_CHAIN_ID: z.coerce.number().default(1315),
   STORY_SPG_NFT_ADDRESS: z
@@ -142,8 +141,6 @@ const serverEnvSchema = z.object({
   CKBTC_MERCHANT_PRINCIPAL: z.string().optional(),
   CONVEX_URL: z.string().url(),
   CONVEX_DEPLOYMENT: z.string(),
-  BTC_NETWORK: z.enum(['testnet', 'mainnet']).default('testnet'),
-  MEMPOOL_API_BASE: z.string().url().default('https://mempool.space'),
   VC_ISSUER_DID: z.string().min(4),
   VC_PRIVATE_KEY: z
     .string()
@@ -206,7 +203,6 @@ function parseEnv() {
     NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
     NEXTAUTH_DEBUG: process.env.NEXTAUTH_DEBUG,
-    PAYMENT_MODE: process.env.PAYMENT_MODE,
     STORY_RPC_URL: process.env.STORY_RPC_URL,
     STORY_CHAIN_ID: process.env.STORY_CHAIN_ID,
     STORY_SPG_NFT_ADDRESS: process.env.STORY_SPG_NFT_ADDRESS,
@@ -248,8 +244,6 @@ function parseEnv() {
       process.env.ICP_ESCROW_CANISTER_ID,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
-    BTC_NETWORK: process.env.BTC_NETWORK,
-    MEMPOOL_API_BASE: process.env.MEMPOOL_API_BASE,
     VC_ISSUER_DID: process.env.VC_ISSUER_DID,
     VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY,
     CONSTELLATION_METAGRAPH_ENABLED:

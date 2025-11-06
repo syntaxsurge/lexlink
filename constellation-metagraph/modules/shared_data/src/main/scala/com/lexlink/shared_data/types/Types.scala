@@ -36,9 +36,8 @@ case class LicenseUpdate(
   mintTo: String,                // Ethereum address receiving license token
 
   // ===== PAYMENT TRACKING =====
-  paymentMode: String,           // "ckbtc" or "btc"
   amountSats: Long,              // Payment amount in satoshis
-  paymentReference: String,      // BTC txid or ckBTC block reference
+  paymentReference: String,      // ckBTC settlement reference
   ckbtcSubaccount: Option[String], // ICRC-1 subaccount (if ckBTC payment)
   ckbtcBlockIndex: Option[Long],   // ckBTC ledger block index
 
@@ -57,7 +56,7 @@ case class LicenseUpdate(
   fundedAt: Option[Long],        // Unix milliseconds when payment confirmed
 
   // ===== METADATA =====
-  network: String,               // Bitcoin network ("mainnet" or "testnet")
+  network: String,               // Payment network label (e.g., "ckbtc-testnet")
   ipMetadataHash: String,        // Hash of Story Protocol IP metadata
   nftMetadataHash: String        // Hash of NFT metadata JSON
 ) extends DataUpdate

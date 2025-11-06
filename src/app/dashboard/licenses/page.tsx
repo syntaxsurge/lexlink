@@ -4,12 +4,7 @@ import Link from 'next/link'
 
 import { Download, ExternalLink, Share2 } from 'lucide-react'
 
-import {
-  loadDashboardData,
-  simulateLicenseFunding
-} from '@/app/dashboard/actions'
-import { FinalizeLicenseForm } from '@/components/app/finalize-license-form'
-import { LicenseOrderForm } from '@/components/app/license-order-form'
+import { loadDashboardData } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,7 +22,6 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TextDialog } from '@/components/ui/text-dialog'
 import {
   constellationExplorerUrl,
@@ -35,10 +29,6 @@ import {
 } from '@/lib/constellation-links'
 import { env } from '@/lib/env'
 import { ipfsGatewayUrl } from '@/lib/ipfs'
-import { readPaymentMode } from '@/lib/payment-mode'
-
-const MAINNET_MEMPOOL = 'https://mempool.space'
-const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
 const CONSTELLATION_NETWORK =
   (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
@@ -74,80 +64,22 @@ function statusStyles(status: string) {
   }
 }
 
-function explorerBase(network?: string) {
-  return network === 'mainnet' ? MAINNET_MEMPOOL : TESTNET_MEMPOOL
-}
-
 export default async function LicensesPage() {
   const { ips, licenses } = await loadDashboardData()
-  const paymentMode = await readPaymentMode()
   const ckbtcEscrowPrincipal =
     env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID ?? ''
-
-  const isCkbtcDefault = paymentMode === 'ckbtc'
-  const isBtcMode = (mode?: string | null) => mode !== 'ckbtc'
 
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)
   )
   const finalizedOrders = licenses.filter(order => order.status === 'finalized')
-  const manualFinalizeOrders = pendingOrders.filter(
-    order => isBtcMode(order.paymentMode) && order.status !== 'pending'
-  )
   const orderHistory = [...licenses].sort(
     (a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt)
   )
   const ipTitleLookup = new Map(ips.map(ip => [ip.ipId, ip.title]))
 
-  const orderCardDescription = isCkbtcDefault
-    ? 'Generates a ckBTC escrow account so buyers can transfer ckTESTBTC directly.'
-    : 'Derives a native Bitcoin address via threshold-ECDSA for on-chain settlement.'
-  const finalizeCardDescription = isCkbtcDefault
-    ? 'ckBTC orders finalize automatically once the escrow ledger balance updates.'
-    : 'Confirm the Bitcoin transaction, mint a Story license token, and anchor Constellation evidence.'
-
-  const simulateEnabled = process.env.NODE_ENV !== 'production'
-
-  const simulateAction = async (formData: FormData) => {
-    'use server'
-    const orderId = formData.get('orderId')
-    if (!orderId || typeof orderId !== 'string') {
-      throw new Error('Missing order identifier')
-    }
-    await simulateLicenseFunding({ orderId })
-  }
-
   return (
     <div className='space-y-6'>
-      <div className='grid gap-6 lg:grid-cols-2'>
-        <Card className='border-border/60 bg-card/60'>
-          <CardHeader>
-            <CardTitle>Generate License Order</CardTitle>
-            <CardDescription>{orderCardDescription}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LicenseOrderForm ips={ips} paymentMode={paymentMode} />
-          </CardContent>
-        </Card>
-        <Card className='border-border/60 bg-card/60'>
-          <CardHeader>
-            <CardTitle>Finalize Sale &amp; Mint License</CardTitle>
-            <CardDescription>{finalizeCardDescription}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {manualFinalizeOrders.length > 0 ? (
-              <FinalizeLicenseForm orders={manualFinalizeOrders} />
-            ) : (
-              <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground'>
-                All active orders will finalize automatically once ckBTC funds
-                mint into escrow. Manual finalization only appears for native
-                BTC invoices.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
       <Card className='border-border/60 bg-card/60'>
         <CardHeader>
           <CardTitle>Pending Payments</CardTitle>
@@ -160,24 +92,29 @@ export default async function LicensesPage() {
             {pendingOrders.length === 0 && (
               <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center'>
                 <p className='text-sm text-muted-foreground'>
-                  No invoices waiting on Bitcoin settlement.
+                  No invoices waiting on ckBTC settlement.
                 </p>
               </div>
             )}
             {pendingOrders.map(order => {
-              const base = explorerBase(order.network)
-              const isBtcPayment = isBtcMode(order.paymentMode)
-              const addressUrl = isBtcPayment
-                ? `${base}/address/${order.btcAddress}`
-                : undefined
-              const txUrl =
-                isBtcPayment && order.btcTxId
-                  ? `${base}/tx/${order.btcTxId}`
-                  : undefined
-              const modeLabel = isBtcPayment ? 'BTC' : 'ckBTC'
               const mintTarget = order.mintTo ?? order.buyer ?? null
               const ipTitle = ipTitleLookup.get(order.ipId) ?? order.ipId
               const { variant, className } = statusStyles(order.status)
+              const mintedSats =
+                typeof order.ckbtcMintedSats === 'number' &&
+                order.ckbtcMintedSats > 0
+                  ? order.ckbtcMintedSats
+                  : null
+              const subaccount =
+                typeof order.ckbtcSubaccount === 'string' &&
+                order.ckbtcSubaccount.length > 0
+                  ? order.ckbtcSubaccount
+                  : null
+              const ledgerBlock =
+                typeof order.ckbtcBlockIndex === 'number' &&
+                order.ckbtcBlockIndex > 0
+                  ? order.ckbtcBlockIndex
+                  : null
 
               return (
                 <div
@@ -192,11 +129,11 @@ export default async function LicensesPage() {
                           {order.status}
                         </Badge>
                         <Badge variant='outline' className='text-xs'>
-                          {modeLabel}
+                          ckBTC
                         </Badge>
-                        {typeof order.confirmations === 'number' && (
+                        {mintedSats && (
                           <Badge variant='outline' className='text-xs'>
-                            {order.confirmations} conf
+                            {mintedSats.toLocaleString()} sats
                           </Badge>
                         )}
                       </div>
@@ -220,7 +157,7 @@ export default async function LicensesPage() {
                             Amount:
                           </dt>
                           <dd className='flex-1 font-mono text-xs'>
-                            {formatBtc(order.amountSats)} BTC
+                            {formatBtc(order.amountSats)} ckBTC
                           </dd>
                         </div>
 
@@ -241,41 +178,39 @@ export default async function LicensesPage() {
 
                         <div className='flex items-start gap-2'>
                           <dt className='min-w-[120px] text-muted-foreground'>
-                            Payment Address:
+                            Escrow Account:
                           </dt>
                           <dd className='flex-1'>
                             <div className='space-y-1'>
                               <TextDialog
-                                title='Payment Address'
+                                title='Escrow Account Target'
                                 content={order.btcAddress}
                                 truncateLength={24}
                               />
-                              {isBtcPayment && addressUrl && (
-                                <Link
-                                  href={addressUrl}
-                                  target='_blank'
-                                  rel='noreferrer'
-                                  className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
-                                >
-                                  View on explorer
-                                  <ExternalLink className='h-3 w-3' />
-                                </Link>
-                              )}
-                              {!isBtcPayment && (
+                              {ckbtcEscrowPrincipal && (
                                 <p className='text-xs text-muted-foreground'>
-                                  Escrow: {ckbtcEscrowPrincipal || '—'}
+                                  Escrow principal: {ckbtcEscrowPrincipal}
                                 </p>
                               )}
-                              {txUrl && (
-                                <Link
-                                  href={txUrl}
-                                  target='_blank'
-                                  rel='noreferrer'
-                                  className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
-                                >
-                                  View transaction
-                                  <ExternalLink className='h-3 w-3' />
-                                </Link>
+                              {subaccount && (
+                                <TextDialog
+                                  title='ckBTC Subaccount'
+                                  content={subaccount}
+                                  truncateLength={24}
+                                />
+                              )}
+                              {ledgerBlock && (
+                                <p className='text-xs text-muted-foreground'>
+                                  Ledger block {ledgerBlock}
+                                </p>
+                              )}
+                              {order.btcTxId && (
+                                <p className='text-xs text-muted-foreground'>
+                                  Settlement reference{' '}
+                                  <span className='break-all font-mono text-xs'>
+                                    {order.btcTxId}
+                                  </span>
+                                </p>
                               )}
                             </div>
                           </dd>
@@ -294,19 +229,6 @@ export default async function LicensesPage() {
                           Share Invoice
                         </Link>
                       </Button>
-
-                      {simulateEnabled && isBtcMode(order.paymentMode) && (
-                        <form action={simulateAction} className='inline-flex'>
-                          <input
-                            type='hidden'
-                            name='orderId'
-                            value={order.orderId}
-                          />
-                          <Button type='submit' variant='ghost' size='sm'>
-                            Simulate funding
-                          </Button>
-                        </form>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -331,9 +253,8 @@ export default async function LicensesPage() {
                   <TableHead className='min-w-[120px]'>Order</TableHead>
                   <TableHead className='min-w-[150px]'>IP Asset</TableHead>
                   <TableHead className='min-w-[100px]'>Amount</TableHead>
-                  <TableHead>Mode</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className='min-w-[200px]'>Address</TableHead>
+                  <TableHead className='min-w-[200px]'>Escrow Account</TableHead>
                   <TableHead className='min-w-[150px]'>Updated</TableHead>
                 </TableRow>
               </TableHeader>
@@ -341,7 +262,7 @@ export default async function LicensesPage() {
                 {orderHistory.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={6}
                       className='text-center text-sm text-muted-foreground'
                     >
                       No invoices recorded yet.
@@ -349,7 +270,6 @@ export default async function LicensesPage() {
                   </TableRow>
                 )}
                 {orderHistory.map(order => {
-                  const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
                   const statusBadge = statusStyles(order.status)
                   const ipTitle =
                     ipTitleLookup.get(order.ipId) ?? 'Unknown IP'
@@ -368,10 +288,7 @@ export default async function LicensesPage() {
                         </p>
                       </TableCell>
                       <TableCell className='font-mono text-xs'>
-                        {formatBtc(order.amountSats)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant='outline' className='text-xs'>{modeLabel}</Badge>
+                        {formatBtc(order.amountSats)} ckBTC
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -417,9 +334,8 @@ export default async function LicensesPage() {
                   <TableHead className='min-w-[120px]'>Order</TableHead>
                   <TableHead className='min-w-[120px]'>IP</TableHead>
                   <TableHead className='min-w-[150px]'>Wallet</TableHead>
-                  <TableHead>Mode</TableHead>
                   <TableHead className='min-w-[100px]'>Token</TableHead>
-                  <TableHead className='min-w-[150px]'>BTC Tx</TableHead>
+                  <TableHead className='min-w-[180px]'>Settlement Reference</TableHead>
                   <TableHead className='min-w-[150px]'>Constellation</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead className='min-w-[150px]'>Updated</TableHead>
@@ -429,7 +345,7 @@ export default async function LicensesPage() {
                 {finalizedOrders.length === 0 && (
                   <TableRow>
                     <TableCell
-                      colSpan={9}
+                      colSpan={8}
                       className='text-center text-sm text-muted-foreground'
                     >
                       No finalized licenses yet.
@@ -437,8 +353,6 @@ export default async function LicensesPage() {
                   </TableRow>
                 )}
                 {finalizedOrders.map(order => {
-                  const base = explorerBase(order.network)
-                  const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
                   const mintTarget = order.mintTo ?? order.buyer ?? null
                   const constellationLink =
                     order.constellationExplorerUrl &&
@@ -478,9 +392,6 @@ export default async function LicensesPage() {
                           <span className='text-muted-foreground'>—</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant='outline' className='text-xs'>{modeLabel}</Badge>
-                      </TableCell>
                       <TableCell className='font-mono text-xs'>
                         {order.tokenOnChainId ? (
                           <span className='break-all'>{order.tokenOnChainId}</span>
@@ -490,15 +401,11 @@ export default async function LicensesPage() {
                       </TableCell>
                       <TableCell>
                         {order.btcTxId ? (
-                          <Link
-                            href={`${base}/tx/${order.btcTxId}`}
-                            target='_blank'
-                            rel='noreferrer'
-                            className='inline-flex items-center gap-1 font-mono text-xs text-primary underline-offset-4 hover:underline'
-                          >
-                            {order.btcTxId.slice(0, 12)}…
-                            <ExternalLink className='h-3 w-3' />
-                          </Link>
+                          <TextDialog
+                            title='Settlement Reference'
+                            content={order.btcTxId}
+                            truncateLength={12}
+                          />
                         ) : (
                           <span className='text-muted-foreground'>—</span>
                         )}

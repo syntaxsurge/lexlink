@@ -78,11 +78,9 @@ export function FinalizationTimeline({
 }: FinalizationTimelineProps) {
   const { invoice } = useInvoiceStatus()
 
-  const isCkbtc = invoice.paymentMode !== 'btc'
   const ckbtcSymbol = ckbtcNetwork === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC'
-  const paymentComplete = isCkbtc
-    ? typeof invoice.ckbtcMintedSats === 'number' && invoice.ckbtcMintedSats > 0
-    : Boolean(invoice.btcTxId && invoice.btcTxId.length > 0)
+  const paymentComplete =
+    typeof invoice.ckbtcMintedSats === 'number' && invoice.ckbtcMintedSats > 0
   const licenseMinted =
     typeof invoice.tokenOnChainId === 'string' &&
     invoice.tokenOnChainId.trim().length > 0
@@ -114,80 +112,53 @@ export function FinalizationTimeline({
   const constellationError = invoice.constellationError ?? null
 
   const paymentDetails = useMemo(() => {
-    if (isCkbtc) {
-      const minted =
-        typeof invoice.ckbtcMintedSats === 'number'
-          ? formatTokenAmount(BigInt(invoice.ckbtcMintedSats), 8)
-          : null
-      return (
-        <div className='space-y-1 text-xs text-muted-foreground'>
-          {minted ? (
-            <p>
-              Escrow credited with{' '}
-              <span className='font-semibold text-foreground'>
-                {minted} {ckbtcSymbol}
-              </span>{' '}
-              ({invoice.ckbtcMintedSats?.toLocaleString() ?? 0} sats).
-            </p>
-          ) : (
-            <p>
-              Waiting for the ckBTC ledger to detect the authenticated transfer.
-            </p>
-          )}
-          {typeof invoice.ckbtcBlockIndex === 'number' &&
-            invoice.ckbtcBlockIndex > 0 && (
-              <p>
-                Ledger block index{' '}
-                <span className='font-mono text-foreground'>
-                  {invoice.ckbtcBlockIndex}
-                </span>
-                .
-              </p>
-            )}
-          {invoice.fundedAt && <p>Detected {formatDate(invoice.fundedAt)}.</p>}
-        </div>
-      )
-    }
-
+    const minted =
+      typeof invoice.ckbtcMintedSats === 'number'
+        ? formatTokenAmount(BigInt(invoice.ckbtcMintedSats), 8)
+        : null
     return (
       <div className='space-y-1 text-xs text-muted-foreground'>
-        {invoice.btcTxId ? (
-          <>
-            <p>
-              Bitcoin transfer observed for address{' '}
-              <span className='break-all font-mono text-foreground'>
-                {invoice.btcAddress}
-              </span>
-              .
-            </p>
-            <p>
-              Transaction hash{' '}
-              <span className='break-all font-mono text-foreground'>
-                {invoice.btcTxId}
-              </span>
-              .
-            </p>
-          </>
+        {minted ? (
+          <p>
+            Escrow credited with{' '}
+            <span className='font-semibold text-foreground'>
+              {minted} {ckbtcSymbol}
+            </span>{' '}
+            ({invoice.ckbtcMintedSats?.toLocaleString() ?? 0} sats).
+          </p>
         ) : (
           <p>
-            Waiting for Bitcoin confirmations on{' '}
+            Waiting for the ckBTC ledger to detect the authenticated transfer.
+          </p>
+        )}
+        {invoice.btcAddress && (
+          <p>
+            Escrow account{' '}
             <span className='break-all font-mono text-foreground'>
               {invoice.btcAddress}
             </span>
             .
           </p>
         )}
+        {typeof invoice.ckbtcBlockIndex === 'number' &&
+          invoice.ckbtcBlockIndex > 0 && (
+            <p>
+              Ledger block index{' '}
+              <span className='font-mono text-foreground'>
+                {invoice.ckbtcBlockIndex}
+              </span>
+              .
+            </p>
+          )}
         {invoice.fundedAt && <p>Detected {formatDate(invoice.fundedAt)}.</p>}
       </div>
     )
   }, [
     ckbtcSymbol,
     invoice.btcAddress,
-    invoice.btcTxId,
     invoice.ckbtcBlockIndex,
     invoice.ckbtcMintedSats,
-    invoice.fundedAt,
-    isCkbtc
+    invoice.fundedAt
   ])
 
   const storyLinks = useMemo(() => {

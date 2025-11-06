@@ -23,7 +23,6 @@ object Validations {
       validateEthereumAddress(license.licenseContract, "licenseContract"),
       validateEthereumAddress(license.mintTo, "mintTo"),
       validateChainId(license.chainId),
-      validatePaymentMode(license.paymentMode),
       validateAmountSats(license.amountSats),
       validateHash(license.attestationHash, "attestationHash"),
       validateHash(license.c2paHash, "c2paHash"),
@@ -125,12 +124,6 @@ object Validations {
       ().validNec
     else
       s"chainId must be positive, got: $chainId".invalidNec
-
-  private def validatePaymentMode(mode: String): DataApplicationValidationErrorOr[Unit] =
-    if (mode == "ckbtc" || mode == "btc")
-      ().validNec
-    else
-      s"paymentMode must be 'ckbtc' or 'btc', got: $mode".invalidNec
 
   private def validateAmountSats(amount: Long): DataApplicationValidationErrorOr[Unit] =
     if (amount > 0)

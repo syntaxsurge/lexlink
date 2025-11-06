@@ -20,7 +20,6 @@ export type InvoiceSnapshot = {
   buyer?: string
   buyerPrincipal?: string | null
   mintTo?: string | null
-  paymentMode?: string
   status: string
   ckbtcSubaccount?: string
   ckbtcMintedSats?: number

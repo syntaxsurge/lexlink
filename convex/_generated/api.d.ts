@@ -14,7 +14,6 @@ import type * as events from "../events.js";
 import type * as ipAssets from "../ipAssets.js";
 import type * as licenses from "../licenses.js";
 import type * as profiles from "../profiles.js";
-import type * as trainingBatches from "../trainingBatches.js";
 import type * as users from "../users.js";
 
 import type {
@@ -38,7 +37,6 @@ declare const fullApi: ApiFromModules<{
   ipAssets: typeof ipAssets;
   licenses: typeof licenses;
   profiles: typeof profiles;
-  trainingBatches: typeof trainingBatches;
   users: typeof users;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

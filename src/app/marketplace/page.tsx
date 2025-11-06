@@ -17,11 +17,11 @@ export default async function MarketplacePage() {
           LexLink Marketplace
         </div>
         <h1 className='mt-4 text-4xl font-semibold tracking-tight text-foreground md:text-5xl'>
-          License Story Protocol IP with Bitcoin or ckBTC
+          License Story Protocol IP with ckBTC settlement
         </h1>
         <p className='mt-3 text-base text-muted-foreground md:text-lg'>
           Every listing is minted on Story Protocol, includes creator royalties,
-          and settles automatically once ckBTC or BTC lands in escrow.
+          and settles automatically once ckBTC lands in escrow.
         </p>
         <div className='mt-6 flex flex-wrap items-center justify-center gap-3 text-sm'>
           <p className='text-muted-foreground'>

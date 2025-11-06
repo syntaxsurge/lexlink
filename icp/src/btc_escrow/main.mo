@@ -14,16 +14,12 @@ import Trie "mo:base/Trie";
 
 import Prim "mo:prim";
 
-import Bitcoin "../lib/Bitcoin";
 import Sha256 "../vendor/Sha256";
 
 persistent actor btc_escrow {
   let versionText : Text = "0.1.0-dev";
 
-  type PaymentMode = { #btc; #ckbtc };
-
   type PaymentRecord = {
-    mode : PaymentMode;
     txid : Text;
     confirmed : Bool;
     mintedAmount : ?Nat;
@@ -100,64 +96,14 @@ persistent actor btc_escrow {
     update_balance : (CkbtcAccountArgs) -> async UpdateBalanceResult;
   };
 
-  func parseMode(raw : Text) : PaymentMode {
-    let lower = Text.toLowercase(raw);
-    if (lower == "btc") {
-      #btc
-    } else {
-      #ckbtc
-    }
-  };
-
-  func modeText(mode : PaymentMode) : Text {
-    switch (mode) {
-      case (#btc) { "btc" };
-      case (#ckbtc) { "ckbtc" };
-    }
-  };
-
-  let defaultMode : PaymentMode = switch (Prim.envVar<system>("PAYMENT_MODE")) {
-    case (?value) { parseMode(value) };
-    case null { #ckbtc };
-  };
-
   let ckbtcMinterId : ?Text = Prim.envVar<system>("CKBTC_MINTER_CANISTER_ID");
-
-  let keyName : Text = switch (Prim.envVar<system>("ECDSA_KEY_NAME")) {
-    case (?value) { value };
-    case null { "dfx_test_key" };
-  };
-
-  let btcNetwork : Bitcoin.Network = switch (Prim.envVar<system>("BTC_NETWORK")) {
-    case (?value) {
-      let normalized = Text.toLowercase(value);
-      if (normalized == "mainnet") {
-        #mainnet
-      } else {
-        #testnet
-      }
-    };
-    case null { #testnet };
-  };
 
   var addressBook : Trie.Trie<Text, Text> = Trie.empty();
   var payments : Trie.Trie<Text, PaymentRecord> = Trie.empty();
-  var orderModes : Trie.Trie<Text, PaymentMode> = Trie.empty();
   var ckbtcSubaccounts : Trie.Trie<Text, Blob> = Trie.empty();
 
   func key(orderId : Text) : Trie.Key<Text> {
     { hash = Text.hash(orderId); key = orderId }
-  };
-
-  func rememberMode(orderId : Text, mode : PaymentMode) {
-    orderModes := Trie.put(orderModes, key(orderId), Text.equal, mode).0;
-  };
-
-  func resolveMode(orderId : Text) : PaymentMode {
-    switch (Trie.find(orderModes, key(orderId), Text.equal)) {
-      case (?mode) { mode };
-      case null { defaultMode };
-    }
   };
 
   func ckbtcMinter() : CkbtcMinter {
@@ -256,87 +202,22 @@ persistent actor btc_escrow {
     { minted = total; blockIndex = block; txids }
   };
 
-  public shared func request_deposit_address(orderId : Text, requestedMode : ?Text) : async Text {
-    let mode = switch (requestedMode) {
-      case (?value) { parseMode(value) };
-      case null { resolveMode(orderId) };
-    };
-    rememberMode(orderId, mode);
-
+  public shared func request_deposit_address(orderId : Text, _requestedMode : ?Text) : async Text {
     switch (Trie.find(addressBook, key(orderId), Text.equal)) {
       case (?address) { address };
       case null {
-        switch (mode) {
-          case (#btc) {
-            let derivationPath : [[Nat8]] = [
-              Blob.toArray(Text.encodeUtf8("lexlink")),
-              Blob.toArray(Text.encodeUtf8(orderId)),
-            ];
-            let address = await Bitcoin.get_p2wpkh_address(btcNetwork, keyName, derivationPath);
-            addressBook := Trie.put(addressBook, key(orderId), Text.equal, address).0;
-            address
-          };
-          case (#ckbtc) {
-            let subaccount = ensureCkbtcSubaccount(orderId);
-            let address = await ckbtcMinter().get_btc_address({
-              owner = null;
-              subaccount = ?subaccount;
-            });
-            addressBook := Trie.put(addressBook, key(orderId), Text.equal, address).0;
-            address
-          };
-        }
+        let subaccount = ensureCkbtcSubaccount(orderId);
+        let address = await ckbtcMinter().get_btc_address({
+          owner = null;
+          subaccount = ?subaccount;
+        });
+        addressBook := Trie.put(addressBook, key(orderId), Text.equal, address).0;
+        address
       };
     }
   };
 
-  public shared func confirm_payment(orderId : Text, txid : Text) : async () {
-    let mode = resolveMode(orderId);
-    if (mode == #ckbtc) {
-      throw Error.reject("Order uses ckBTC mode; invoke settle_ckbtc instead");
-    };
-
-    let address = switch (Trie.find(addressBook, key(orderId), Text.equal)) {
-      case (?addr) { addr };
-      case null { throw Error.reject("Unknown order identifier") };
-    };
-
-    let utxosResponse = await Bitcoin.get_utxos(
-      btcNetwork,
-      {
-        address = address;
-        filter = null;
-      },
-    );
-
-    let matched = Array.foldLeft<Bitcoin.Utxo, Bool>(
-      utxosResponse.utxos,
-      false,
-      func(acc, utxo) {
-        acc or Text.equal(bytesToHex(utxo.outpoint.txid), Text.toLowercase(txid))
-      },
-    );
-
-    payments := Trie.put(
-      payments,
-      key(orderId),
-      Text.equal,
-      {
-        mode = #btc;
-        txid = txid;
-        confirmed = matched;
-        mintedAmount = null;
-        blockIndex = null;
-      },
-    ).0
-  };
-
   public shared func settle_ckbtc(orderId : Text) : async { minted : Nat; blockIndex : Nat; txids : Text } {
-    let mode = resolveMode(orderId);
-    if (mode != #ckbtc) {
-      throw Error.reject("Order uses native BTC mode; call confirm_payment");
-    };
-
     ignore ensureCkbtcSubaccount(orderId);
     let subaccount = switch (Trie.find(ckbtcSubaccounts, key(orderId), Text.equal)) {
       case (?blob) { blob };
@@ -359,7 +240,6 @@ persistent actor btc_escrow {
           key(orderId),
           Text.equal,
           {
-            mode = #ckbtc;
             txid = summary.txids;
             confirmed = true;
             mintedAmount = ?summary.minted;
@@ -386,7 +266,6 @@ persistent actor btc_escrow {
 
     let payment = Trie.find(payments, key(orderId), Text.equal);
     let now = Int.toText(Time.now());
-    let mode = modeText(resolveMode(orderId));
 
     let txid = switch (payment) {
       case (?record) { record.txid };
@@ -426,7 +305,6 @@ persistent actor btc_escrow {
 
     "{" #
       "\"orderId\":\"" # orderId # "\"," #
-      "\"paymentMode\":\"" # mode # "\"," #
       "\"btcAddress\":\"" # address # "\"," #
       "\"btcTxId\":\"" # txid # "\"," #
       "\"confirmed\":" # confirmed # "," #

@@ -1,90 +1,11 @@
 import { NextResponse } from 'next/server'
 
-import { completeLicenseSaleSystem } from '@/app/dashboard/actions'
+import { autoFinalizeCkbtcOrder } from '@/app/dashboard/actions'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-const MIN_CONFIRMATIONS = env.BTC_NETWORK === 'mainnet' ? 3 : 1
-
-type Network = 'testnet' | 'mainnet'
-
-type FundingStatus = {
-  totalReceived: number
-  txid?: string
-  confirmations: number
-  confirmed: boolean
-}
-
-function buildMempoolBase(network: Network) {
-  const base = env.MEMPOOL_API_BASE.replace(/\/$/, '')
-  return network === 'testnet' ? `${base}/testnet/api` : `${base}/api`
-}
-
-async function fetchTipHeight(base: string) {
-  const res = await fetch(`${base}/blocks/tip/height`, { cache: 'no-store' })
-  if (!res.ok) {
-    throw new Error(`Failed to fetch tip height: ${res.status}`)
-  }
-  const text = await res.text()
-  return Number(text.trim())
-}
-
-async function fetchFundingStatus(
-  address: string,
-  network: Network
-): Promise<FundingStatus> {
-  const base = buildMempoolBase(network)
-  const summaryRes = await fetch(`${base}/address/${address}`, {
-    cache: 'no-store'
-  })
-  if (!summaryRes.ok) {
-    throw new Error(`mempool address summary failed (${summaryRes.status})`)
-  }
-  const summary = await summaryRes.json()
-  const totalReceived: number =
-    Number(summary.chain_stats?.funded_txo_sum ?? 0) +
-    Number(summary.mempool_stats?.funded_txo_sum ?? 0)
-
-  const txsRes = await fetch(`${base}/address/${address}/txs`, {
-    cache: 'no-store'
-  })
-  if (!txsRes.ok) {
-    throw new Error(`mempool address txs failed (${txsRes.status})`)
-  }
-  const txs = (await txsRes.json()) as Array<any>
-
-  const tipHeight = await fetchTipHeight(base)
-
-  for (const tx of txs) {
-    const outputs: Array<any> = tx.vout ?? []
-    const matchesAddress = outputs.some(
-      output => output.scriptpubkey_address === address
-    )
-    if (!matchesAddress) continue
-
-    const confirmed: boolean = Boolean(tx.status?.confirmed)
-    const blockHeight: number | undefined = tx.status?.block_height
-    const confirmations =
-      confirmed && blockHeight ? tipHeight - blockHeight + 1 : 0
-
-    return {
-      totalReceived,
-      txid: tx.txid as string,
-      confirmations: confirmations > 0 ? confirmations : 0,
-      confirmed
-    }
-  }
-
-  return {
-    totalReceived,
-    txid: undefined,
-    confirmations: 0,
-    confirmed: false
-  }
-}
 
 export async function GET() {
   if (process.env.NEXT_PUBLIC_IC_NETWORK === 'local') {
@@ -105,86 +26,30 @@ export async function GET() {
 
   for (const order of candidates) {
     try {
-      const amount = Number(order.amountSats ?? 0)
-      if (!order.btcAddress || !amount) {
-        continue
-      }
-
-      const paymentMode: 'ckbtc' | 'btc' =
-        order.paymentMode === 'ckbtc' ? 'ckbtc' : 'btc'
-
-      if (paymentMode === 'ckbtc') {
-        const receiverAddress = order.mintTo ?? order.buyer
-        if (!receiverAddress) {
-          logs.push({
-            orderId: order.orderId,
-            mode: 'ckbtc',
-            note: 'waiting for buyer to set mint destination'
-          })
-          continue
-        }
-        try {
-          await completeLicenseSaleSystem({
-            orderId: order.orderId,
-            receiver: receiverAddress as `0x${string}`
-          })
-          logs.push({ orderId: order.orderId, mode: 'ckbtc', finalized: true })
-        } catch (error) {
-          logs.push({
-            orderId: order.orderId,
-            mode: 'ckbtc',
-            note: (error as Error).message
-          })
-        }
-        continue
-      }
-
-      const network: Network =
-        order.network === 'mainnet' ? 'mainnet' : 'testnet'
-      const funding = await fetchFundingStatus(order.btcAddress, network)
-
-      if (funding.totalReceived < amount) {
+      if (!order.ckbtcSubaccount) {
         logs.push({
           orderId: order.orderId,
           status: order.status,
-          note: 'awaiting funds'
+          note: 'missing_ckbtc_metadata'
+        })
+        continue
+      }
+      const receiverAddress = order.mintTo ?? order.buyer
+      if (!receiverAddress) {
+        logs.push({
+          orderId: order.orderId,
+          status: order.status,
+          note: 'waiting_for_recipient'
         })
         continue
       }
 
-      if (order.status === 'pending') {
-        await convex.mutation('licenses:updateFundingState' as any, {
-          orderId: order.orderId,
-          status: 'funded',
-          btcTxId: funding.txid,
-          confirmations: funding.confirmations
-        })
-        logs.push({ orderId: order.orderId, updated: 'funded' })
-      }
-
-      if (funding.txid && funding.confirmations >= MIN_CONFIRMATIONS) {
-        const receiverAddress = order.mintTo ?? order.buyer
-        if (!receiverAddress) {
-          logs.push({
-            orderId: order.orderId,
-            note: 'waiting for buyer mint destination'
-          })
-          continue
-        }
-        await convex.mutation('licenses:updateFundingState' as any, {
-          orderId: order.orderId,
-          status: 'confirmed',
-          btcTxId: funding.txid,
-          confirmations: funding.confirmations
-        })
-
-        await completeLicenseSaleSystem({
-          orderId: order.orderId,
-          btcTxId: funding.txid,
-          receiver: receiverAddress as `0x${string}`
-        })
-        logs.push({ orderId: order.orderId, finalized: true })
-      }
+      const result = await autoFinalizeCkbtcOrder(order.orderId)
+      logs.push({
+        orderId: order.orderId,
+        status: order.status,
+        outcome: result.status
+      })
     } catch (error) {
       logs.push({ orderId: order.orderId, error: (error as Error).message })
     }

@@ -100,7 +100,6 @@ export default async function PurchasesPage() {
               </div>
             )}
             {purchases.map(order => {
-              const modeLabel = order.paymentMode === 'ckbtc' ? 'ckBTC' : 'BTC'
               const storyLink =
                 storyLicenseToken && order.tokenOnChainId
                   ? licenseTokenExplorerUrl(
@@ -168,7 +167,7 @@ export default async function PurchasesPage() {
                         >
                           {order.status}
                         </Badge>
-                        <Badge variant='outline' className='text-xs'>{modeLabel}</Badge>
+                        <Badge variant='outline' className='text-xs'>ckBTC</Badge>
                       </div>
 
                       <dl className='grid gap-2 text-sm'>

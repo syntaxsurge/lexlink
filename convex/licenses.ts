@@ -68,7 +68,6 @@ export const getPublic = queryGeneric({
       buyer: mintTo,
       buyerPrincipal: license.buyerPrincipal ?? null,
       mintTo,
-      paymentMode: license.paymentMode,
       status: license.status,
       ckbtcSubaccount: license.ckbtcSubaccount,
       ckbtcMintedSats: license.ckbtcMintedSats,
@@ -95,7 +94,6 @@ export const getPublic = queryGeneric({
       vcDocument: license.vcDocument,
       vcHash: license.vcHash,
       evidencePayload: license.evidencePayload ?? null,
-      trainingUnits: license.trainingUnits,
       complianceScore: license.complianceScore
     }
   }
@@ -109,7 +107,6 @@ export const insert = mutationGeneric({
     licenseTermsId: v.string(),
     amountSats: v.number(),
     network: v.string(),
-    paymentMode: v.string(),
     ckbtcSubaccount: v.optional(v.string()),
     ownerPrincipal: v.string()
   },
@@ -129,7 +126,6 @@ export const insert = mutationGeneric({
       vcDocument: '',
       vcHash: '',
       complianceScore: 0,
-      trainingUnits: 0,
       constellationStatus: 'pending',
       constellationError: undefined,
       status: 'pending',
@@ -339,29 +335,6 @@ export const markCompleted = mutationGeneric({
       status: 'finalized',
       finalizedAt: Date.now(),
       updatedAt: Date.now()
-    })
-  }
-})
-
-export const setTrainingMetrics = mutationGeneric({
-  args: {
-    orderId: v.string(),
-    trainingUnits: v.number(),
-    complianceScore: v.number()
-  },
-  handler: async (ctx, args) => {
-    const license = await ctx.db
-      .query('licenses')
-      .withIndex('by_orderId', q => q.eq('orderId', args.orderId))
-      .unique()
-
-    if (!license) {
-      throw new Error('License order not found')
-    }
-
-    await ctx.db.patch(license._id, {
-      trainingUnits: args.trainingUnits,
-      complianceScore: args.complianceScore
     })
   }
 })

@@ -15,11 +15,7 @@ function formatDate(value?: number) {
   return new Date(value).toLocaleString()
 }
 
-export function InvoiceSummary({
-  fallbackNetwork
-}: {
-  fallbackNetwork: string
-}) {
+export function InvoiceSummary({ networkLabel }: { networkLabel: string }) {
   const { invoice, isRefreshing } = useInvoiceStatus()
 
   const statusLabel = useMemo(() => {
@@ -41,7 +37,7 @@ export function InvoiceSummary({
       <div className='space-y-1'>
         <h2 className='text-sm font-semibold text-muted-foreground'>Amount</h2>
         <p className='font-semibold text-foreground'>
-          {formatBtc(invoice.amountSats)} BTC
+          {formatBtc(invoice.amountSats)} ckBTC
         </p>
         <p className='text-xs text-muted-foreground'>
           Listed price • network fee paid by sender.
@@ -64,17 +60,11 @@ export function InvoiceSummary({
       <div className='space-y-1'>
         <h2 className='text-sm font-semibold text-muted-foreground'>Network</h2>
         <p className='font-medium text-foreground'>
-          {invoice.network ?? fallbackNetwork}
+          {invoice.network ?? networkLabel}
         </p>
-        {invoice.paymentMode === 'ckbtc' ? (
-          <p className='text-xs text-muted-foreground'>
-            Settlement via ckBTC ledger transfer.
-          </p>
-        ) : (
-          <p className='text-xs text-muted-foreground'>
-            Bitcoin settlement finalizes after on-chain confirmations.
-          </p>
-        )}
+        <p className='text-xs text-muted-foreground'>
+          Settlement via ckBTC ledger transfer.
+        </p>
       </div>
       <div className='space-y-1'>
         <h2 className='text-sm font-semibold text-muted-foreground'>

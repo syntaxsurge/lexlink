@@ -4,14 +4,14 @@ LexLink is a production-ready, cross-protocol legaltech stack:
 
 - **Story Protocol (Aeneid Testnet)** registers IP assets, attaches
   PIL-compliant licenses, and mints license tokens when settlements clear.
-- **ICP Bitcoin Escrow Canister** derives dedicated P2WPKH deposit addresses per
-  license order, verifies incoming transactions via the Bitcoin integration, and
-  emits signed attestations.
+- **ICP ckBTC Escrow Canister** provisions ICRC escrow targets for license
+  orders, verifies balances against the ckBTC ledger, and emits signed
+  attestations.
 - **Constellation IntegrationNet** receives an on-ledger heartbeat for every
   completed license sale so auditors can correlate Story transactions with
-  Bitcoin settlements and AI training batches.
+  ckBTC settlements and AI training batches.
 - **C2PA passport + VC issuance** produce a downloadable archive containing a
-  manifest that references the Story license token, Bitcoin payment, and
+  manifest that references the Story license token, ckBTC payment reference, and
   Constellation proof along with a signed Ed25519 verifiable credential.
 - **AI Training Meter** records metered micro-payments, anchors each batch to
   IntegrationNet, and automatically increases the license compliance score.
@@ -79,7 +79,7 @@ STORY_ARBITRATION_POLICY_ADDRESS="0x..."             # UMA arbitration policy co
 STORY_DISPUTE_BOND_TOKEN_ADDRESS="0x0000000000000000000000000000000000000000"
 STORY_DISPUTE_DEFAULT_LIVENESS="259200"
 
-# ICP Bitcoin escrow canister
+# ICP ckBTC escrow canister
 ICP_HOST="https://icp0.io"                           # or local replica
 ICP_ESCROW_CANISTER_ID="<canister-id>"
 ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
@@ -90,7 +90,6 @@ CONSTELLATION_NETWORK="integrationnet"
 CONSTELLATION_PRIVATE_KEY="0x..."
 CONSTELLATION_ADDRESS="DAG..."
 CONSTELLATION_SINK_ADDRESS="DAG..."                 # must differ from CONSTELLATION_ADDRESS
-BTC_NETWORK="testnet"                                 # or "mainnet"
 
 # Verifiable credential issuer
 VC_ISSUER_DID="did:lexlink:issuer"
@@ -119,8 +118,6 @@ Use this checklist to source every value in `.env.local`.
   - Switch Story explorer links between `aeneid` (testnet, default) and `mainnet`
 - `ICP_HOST` / `ICP_ESCROW_CANISTER_ID`
   - Server-side configuration for the ICP escrow canister (production / staging)
-- `MEMPOOL_API_BASE`
-  - Base URL for Bitcoin mempool API queries (defaults to `https://mempool.space`); the app appends `/testnet` when `BTC_NETWORK=testnet`
 - `NEXT_PUBLIC_ICP_HOST` / `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID`
   - Optional overrides that allow pointing the frontend at a local replica without redefining server envs (useful when `dfx start` is running on `http://127.0.0.1:4943`)
 
@@ -130,10 +127,6 @@ Use this checklist to source every value in `.env.local`.
 # Restart replica on a clean slate
 dfx stop
 dfx start --clean --background
-
-# Configure key + Bitcoin adapter before deploying
-export BITCOIN_PROVIDER="https://btc-testnet-api.icp0.io"
-export ECDSA_KEY_NAME="dfx_test_key"
 
 # Deploy the escrow canister
 dfx deploy btc_escrow
@@ -151,7 +144,6 @@ export ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
 export NEXT_PUBLIC_IC_NETWORK="local"
 ```
 
-If `request_deposit_address` rejects with “Requested unknown threshold key”, confirm that `ECDSA_KEY_NAME` matches a key supported by the environment (`dfx_test_key` on a local replica, `test_key_1` / `key_1` on IC subnets).
 - `NEXT_PUBLIC_CONVEX_URL` and `CONVEX_URL`
   - `npx convex dashboard` → copy the deployment URL (format `https://<slug>.convex.cloud`)
 - `CONVEX_DEPLOYMENT`
@@ -194,7 +186,7 @@ If `request_deposit_address` rejects with “Requested unknown threshold key”,
 - `STORY_DISPUTE_DEFAULT_LIVENESS`
   - Seconds before UMA finalizes a dispute (default 259200 ≈ 3 days).
 
-4) ICP Bitcoin escrow canister
+4) ICP ckBTC escrow canister
 - Install IC SDK (dfx):
   - macOS (Apple Silicon): `softwareupdate --install-rosetta`
   - Install: `sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"`
@@ -227,7 +219,6 @@ If `request_deposit_address` rejects with “Requested unknown threshold key”,
   - `CONSTELLATION_NETWORK=integrationnet|testnet|mainnet`
 - Fund the signer wallet on IntegrationNet:
   - Faucet: `GET https://faucet.constellationnetwork.io/integrationnet/faucet/<YOUR_DAG_ADDRESS>`
-- `BTC_NETWORK` should remain `testnet` for free testing
 
 Sanity checks
 - Story: `pnpm spg:create` returns a valid `spgNftContract`
@@ -296,19 +287,19 @@ Visit http://localhost:3000/signin, authenticate with Internet Identity, and you
 
 ## 5. ICP canister (optional but recommended)
 
-The Motoko canister that powers Bitcoin escrow lives in `icp/`.
+The Motoko canister that powers ckBTC escrow lives in `icp/`.
 
 ```bash
 cd icp
 # Deploy locally
 dfx start --background
-BITCOIN_PROVIDER="https://btc-testnet-api.icp0.io" dfx deploy btc_escrow
+dfx deploy btc_escrow
 ```
 
 The canister exposes three methods:
 
 - `request_deposit_address(orderId: Text) -> Text`
-- `confirm_payment(orderId: Text, txid: Text)`
+- `settle_ckbtc(orderId: Text)`
 - `attestation(orderId: Text) -> Text`
 
 Configure `ICP_ESCROW_CANISTER_ID` with the output of deployment.
@@ -330,7 +321,7 @@ pnpm start
 ├── src/components/layout/    # AppShell + layout primitives
 ├── src/lib/                  # Integrations (Story, ICP, Constellation, Convex, auth)
 ├── convex/                   # Convex schema and functions
-└── icp/                      # Motoko canister for Bitcoin escrow
+└── icp/                      # Motoko canister for ckBTC escrow
 ```
 
 ## 8. Testing & linting
@@ -347,19 +338,16 @@ pnpm lint
 1. **Register IP** – The console fetches metadata, hashes its contents, and
    calls `StoryClient.ipAsset.mintAndRegisterIpAssetWithPilTerms`. Convex stores
    the mirrored record.
-2. **Create payment request** – `createLicenseOrder` asks the ICP canister for a
-   dedicated P2WPKH deposit address when the mode is `btc`, or derives an ICRC-1
-   escrow account (owner + subaccount) when the mode is `ckbtc`, then records
-   the order in Convex.
-3. **Buyer pays (BTC or ckBTC)** – For BTC orders, operators provide the txid so
-   `completeLicenseSale` can have the canister confirm UTXOs. For ckBTC orders,
-   buyers transfer ckTESTBTC to the escrow account; the server verifies the
-   ledger balance before finalizing.
+2. **Create payment request** – `createLicenseOrder` derives an ICRC-1 escrow
+   account (owner + subaccount) for ckBTC payments and records the order in
+   Convex.
+3. **Buyer pays (ckBTC)** – Buyers transfer ckTESTBTC to the escrow account; the
+   server verifies the ledger balance before finalizing.
 4. **C2PA & VC issuance** – The same action produces a downloadable C2PA bundle
    and a signed Ed25519 verifiable credential. Both are stored in Convex and
    exposed through the dashboard.
 5. **Compliance dashboard** – Every completed order shows the Story IP ID,
-   Bitcoin txid, Constellation tx hash, attestation hash, compliance score, and
+   settlement reference, Constellation tx hash, attestation hash, compliance score, and
    training units with one-click downloads for the C2PA archive and VC payload.
 6. **Raise disputes** – Reporters upload evidence files or cite URLs, the
    server pins everything to IPFS as a single bundle CID, calls Story’s Dispute
@@ -374,6 +362,6 @@ pnpm lint
 - Build and deploy the Next.js application using `pnpm build` or your preferred
   platform (Vercel, Fly.io, etc.).
 
-LexLink now provides a unified surface for Story Protocol licensing, ICP Bitcoin
+LexLink now provides a unified surface for Story Protocol licensing, ICP ckBTC
 escrow, and Constellation compliance evidence—no placeholders, ready for real
 integrations.

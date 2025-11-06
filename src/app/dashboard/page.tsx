@@ -433,7 +433,9 @@ export default async function OverviewPage() {
 
                   <dl className='mt-3 grid gap-1 text-xs'>
                     <div>
-                      <dt className='text-muted-foreground'>Bitcoin Tx</dt>
+                      <dt className='text-muted-foreground'>
+                        Settlement Reference
+                      </dt>
                       <dd className='font-mono'>{order.btcTxId}</dd>
                     </div>
                     <div>

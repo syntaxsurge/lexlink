@@ -6,7 +6,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 1) Problem framing (0:00 – 0:30)
 - On‑screen: Landing page (`/`), “Real problems we address” section.
-- Voice‑over: “Teams struggle to prove rights and provenance, buyers can’t tell if assets are clean, and compliance needs an auditable chain of custody. LexLink unifies Story Protocol licensing, ICP Bitcoin settlement, and Constellation evidence so creators can monetize safely and buyers trust what they’re licensing.”
+- Voice‑over: “Teams struggle to prove rights and provenance, buyers can’t tell if assets are clean, and compliance needs an auditable chain of custody. LexLink unifies Story Protocol licensing, ICP ckBTC settlement, and Constellation evidence so creators can monetize safely and buyers trust what they’re licensing.”
 
 ## 2) Secure sign‑in (0:30 – 0:50)
 - On‑screen: `/signin` → Sign in with Internet Identity.
@@ -14,7 +14,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 3) Dashboard overview (0:50 – 1:20)
 - On‑screen: `/dashboard` KPIs, Pending Payments, Recent Audit Activity.
-- Voice‑over: “The overview mirrors Story, ckBTC/BTC invoices, and audit events. Every privileged action writes a structured event payload with your principal.”
+- Voice‑over: “The overview mirrors Story, ckBTC invoices, and audit events. Every privileged action writes a structured event payload with your principal.”
 
 ## 4) Create IP via AI Studio (1:20 – 2:10)
 - On‑screen: `/dashboard/ai`.
@@ -23,13 +23,13 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 5) List the asset for sale (2:10 – 2:50)
 - On‑screen: `/dashboard/licenses` → Generate License Order.
-- Voice‑over: “Pick the IP, amount, and payment mode. ckBTC orders derive a deterministic ICRC‑1 subaccount; BTC orders derive a new P2WPKH address. The order is saved with a shareable pay link.”
-- On‑screen: After submit, the order appears in Pending Payments with status, amount, and destination (ckBTC escrow or BTC address).
+- Voice‑over: “Pick the IP and amount. Every order derives a deterministic ICRC‑1 subaccount for ckBTC settlement and saves a shareable pay link.”
+- On‑screen: After submit, the order appears in Pending Payments with status, amount, and the ckBTC escrow target.
 
 ## 6) Buyer checkout and wallet capture (2:50 – 3:40)
 - On‑screen: open the share link `/pay/[orderId]` as the buyer session.
-- Voice‑over: “Buyers authenticate with Internet Identity, set their default license wallet inline, and pay with ckBTC or follow BTC instructions.”
-- On‑screen: For ckBTC, click Pay, send ckTESTBTC. The page auto‑refreshes when escrow balance increases.
+- Voice‑over: “Buyers authenticate with Internet Identity, set their default license wallet inline, and pay with ckBTC from the browser.”
+- On‑screen: Click Pay, send ckTESTBTC. The page auto‑refreshes when the escrow balance increases.
 - Voice‑over: “Once funded, the server mints the Story license token and anchors a C2PA archive, a verifiable credential, and a Constellation hash. The buyer’s default wallet is remembered for future purchases.”
 
 ## 7) Buyer’s My Licenses (3:40 – 4:05)

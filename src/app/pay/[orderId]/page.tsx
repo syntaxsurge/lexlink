@@ -26,7 +26,6 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
     defaultMintTo = null
   }
 
-  const isCkbtc = invoice.paymentMode === 'ckbtc'
   const escrowPrincipal =
     env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
   const ledgerConfigured = Boolean(
@@ -39,7 +38,6 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
     typeof invoice.ckbtcSubaccount === 'string' &&
     invoice.ckbtcSubaccount.length === 64
   const showCkbtcPay =
-    isCkbtc &&
     ledgerConfigured &&
     hostConfigured &&
     Boolean(escrowPrincipal) &&
@@ -48,11 +46,9 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
   return (
     <InvoicePageClient
       initialInvoice={invoice}
-      isCkbtc={isCkbtc}
       showCkbtcPay={showCkbtcPay}
       escrowPrincipal={escrowPrincipal}
       ckbtcNetwork={env.CKBTC_NETWORK}
-      fallbackNetwork={invoice.network ?? env.BTC_NETWORK}
       storyNetwork={env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork}
       storyLicenseAddress={env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`}
       storyLicenseTokenAddress={

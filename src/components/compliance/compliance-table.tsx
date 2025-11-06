@@ -47,7 +47,7 @@ type AuditEvent = {
 
 function EventActionsMenu({ event }: { event: AuditEvent }) {
   const [payloadOpen, setPayloadOpen] = useState(false)
-  const [resourceOpen, setResourceOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   return (
     <>
@@ -61,18 +61,77 @@ function EventActionsMenu({ event }: { event: AuditEvent }) {
         <DropdownMenuContent align='end' className='w-48'>
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => setDetailsOpen(true)}>
+            <Eye className='mr-2 h-4 w-4' />
+            View Details
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setPayloadOpen(true)}>
             <Eye className='mr-2 h-4 w-4' />
             View Payload
           </DropdownMenuItem>
-          {event.resourceId && (
-            <DropdownMenuItem onSelect={() => setResourceOpen(true)}>
-              <Eye className='mr-2 h-4 w-4' />
-              View Resource
-            </DropdownMenuItem>
-          )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className='max-w-2xl'>
+          <DialogHeader>
+            <DialogTitle>Event Details</DialogTitle>
+            <DialogDescription>
+              Complete information for this audit event
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4'>
+            <div>
+              <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                Event Action
+              </span>
+              <div className='mt-2'>
+                <Badge variant='outline' className='text-xs'>
+                  {event.action}
+                </Badge>
+              </div>
+            </div>
+            {event.resourceId && (
+              <div>
+                <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                  Resource ID
+                </span>
+                <div className='mt-2 break-all rounded-lg border border-border/60 bg-muted/30 p-3 font-mono text-xs'>
+                  {event.resourceId}
+                </div>
+              </div>
+            )}
+            {event.actorAddress && (
+              <div>
+                <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                  Actor Address
+                </span>
+                <div className='mt-2 break-all rounded-lg border border-border/60 bg-muted/30 p-3 font-mono text-xs'>
+                  {event.actorAddress}
+                </div>
+              </div>
+            )}
+            {event.actorPrincipal && (
+              <div>
+                <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                  Actor Principal
+                </span>
+                <div className='mt-2 break-all rounded-lg border border-border/60 bg-muted/30 p-3 font-mono text-xs'>
+                  {event.actorPrincipal}
+                </div>
+              </div>
+            )}
+            <div>
+              <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                Timestamp
+              </span>
+              <div className='mt-2 text-sm'>
+                {formatDate(event.createdAt)}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={payloadOpen} onOpenChange={setPayloadOpen}>
         <DialogContent className='max-w-3xl'>
@@ -89,49 +148,6 @@ function EventActionsMenu({ event }: { event: AuditEvent }) {
           </ScrollArea>
         </DialogContent>
       </Dialog>
-
-      {event.resourceId && (
-        <Dialog open={resourceOpen} onOpenChange={setResourceOpen}>
-          <DialogContent className='max-w-2xl'>
-            <DialogHeader>
-              <DialogTitle>Resource Details</DialogTitle>
-              <DialogDescription>
-                Resource ID associated with this event
-              </DialogDescription>
-            </DialogHeader>
-            <div className='space-y-3'>
-              <div>
-                <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                  Resource ID
-                </span>
-                <div className='mt-2 break-all rounded-lg border border-border/60 bg-muted/30 p-3 font-mono text-xs'>
-                  {event.resourceId}
-                </div>
-              </div>
-              {event.actorAddress && (
-                <div>
-                  <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                    Actor Address
-                  </span>
-                  <div className='mt-2 break-all rounded-lg border border-border/60 bg-muted/30 p-3 font-mono text-xs'>
-                    {event.actorAddress}
-                  </div>
-                </div>
-              )}
-              {event.actorPrincipal && (
-                <div>
-                  <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
-                    Actor Principal
-                  </span>
-                  <div className='mt-2 break-all rounded-lg border border-border/60 bg-muted/30 p-3 font-mono text-xs'>
-                    {event.actorPrincipal}
-                  </div>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
     </>
   )
 }
@@ -166,19 +182,12 @@ export function ComplianceTable({ events }: ComplianceTableProps) {
           {events.map(event => (
             <TableRow key={`${event.eventId}-${event.createdAt}`}>
               <TableCell>
-                <div className='flex flex-col gap-1'>
-                  <Badge variant='outline' className='w-fit text-xs'>
-                    {event.action}
-                  </Badge>
-                  {event.resourceId && (
-                    <span className='truncate font-mono text-xs text-muted-foreground'>
-                      {event.resourceId.slice(0, 16)}…
-                    </span>
-                  )}
-                </div>
+                <Badge variant='outline' className='w-fit text-xs'>
+                  {event.action}
+                </Badge>
               </TableCell>
               <TableCell>
-                <div className='max-w-[200px] truncate text-xs text-muted-foreground'>
+                <div className='max-w-[250px] break-words text-xs text-muted-foreground'>
                   {event.actorAddress ?? event.actorPrincipal ?? '—'}
                 </div>
               </TableCell>

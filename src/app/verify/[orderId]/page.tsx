@@ -73,7 +73,6 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
     notFound()
   }
 
-  const isCkbtc = receipt.paymentMode === 'ckbtc'
   const formattedAmount =
     typeof receipt.amountSats === 'number'
       ? (receipt.amountSats / 100_000_000).toFixed(6)
@@ -105,16 +104,6 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
             receipt.constellationTx
           )
         : null
-
-  const btcExplorer = explorerBase(receipt.network)
-  const btcTxLink =
-    !isCkbtc && receipt.btcTxId && btcExplorer
-      ? `${btcExplorer}/tx/${receipt.btcTxId}`
-      : null
-  const btcAddressLink =
-    !isCkbtc && receipt.btcAddress && btcExplorer
-      ? `${btcExplorer}/address/${receipt.btcAddress}`
-      : null
 
   const vcDownloadHref = receipt.vcDocument
     ? `data:application/json;base64,${Buffer.from(
@@ -197,15 +186,13 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
           </div>
           <div>
             <p className='text-xs uppercase text-muted-foreground'>
-              Payment mode
+              Settlement
             </p>
-            <p className='font-medium'>
-              {isCkbtc ? 'ckBTC (ICP ledger)' : 'Native Bitcoin'}
-            </p>
+            <p className='font-medium'>ckBTC (ICP ledger)</p>
             <p className='text-xs text-muted-foreground'>
               Amount:{' '}
               <span className='font-mono'>
-                {formattedAmount} BTC (
+                {formattedAmount} ckBTC (
                 {receipt.amountSats?.toLocaleString() ?? '—'} sats)
               </span>
             </p>
@@ -248,69 +235,35 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
         <CardHeader>
           <CardTitle>Settlement Proof</CardTitle>
           <CardDescription>
-            Ledger references for the Bitcoin or ckBTC payment component.
+            Ledger references for the ckBTC payment component.
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3'>
-          {isCkbtc ? (
-            <>
-              <div className='rounded-md border border-border/60 bg-muted/20 p-3 text-sm'>
-                <p className='text-xs uppercase text-muted-foreground'>
-                  ckBTC escrow account
-                </p>
-                <p className='break-all font-mono text-xs'>
-                  {receipt.btcAddress}
-                </p>
-                {typeof receipt.ckbtcMintedSats === 'number' && (
-                  <p className='mt-2 text-xs text-muted-foreground'>
-                    Minted: {receipt.ckbtcMintedSats.toLocaleString()} sats ·
-                    Ledger block{' '}
-                    {receipt.ckbtcBlockIndex
-                      ? receipt.ckbtcBlockIndex.toLocaleString()
-                      : 'pending'}
-                  </p>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className='space-y-3 text-sm'>
-              <div>
-                <p className='text-xs uppercase text-muted-foreground'>
-                  Bitcoin deposit address
-                </p>
-                <p className='break-all font-mono text-xs'>
-                  {receipt.btcAddress}
-                </p>
-                {btcAddressLink && (
-                  <Link
-                    href={btcAddressLink}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='text-xs text-primary underline-offset-4 hover:underline'
-                  >
-                    View on mempool.space
-                  </Link>
-                )}
-              </div>
-              <div>
-                <p className='text-xs uppercase text-muted-foreground'>
-                  Transaction reference
-                </p>
-                {receipt.btcTxId ? (
-                  <Link
-                    href={btcTxLink ?? '#'}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='font-mono text-xs text-primary underline-offset-4 hover:underline'
-                  >
-                    {receipt.btcTxId}
-                  </Link>
-                ) : (
-                  <p className='font-mono text-xs'>Pending</p>
-                )}
-              </div>
-            </div>
-          )}
+          <div className='rounded-md border border-border/60 bg-muted/20 p-3 text-sm'>
+            <p className='text-xs uppercase text-muted-foreground'>
+              ckBTC escrow account
+            </p>
+            <p className='break-all font-mono text-xs'>
+              {receipt.btcAddress ?? 'Unavailable'}
+            </p>
+            {typeof receipt.ckbtcMintedSats === 'number' && (
+              <p className='mt-2 text-xs text-muted-foreground'>
+                Minted: {receipt.ckbtcMintedSats.toLocaleString()} sats · Ledger
+                block{' '}
+                {receipt.ckbtcBlockIndex
+                  ? receipt.ckbtcBlockIndex.toLocaleString()
+                  : 'pending'}
+              </p>
+            )}
+            {receipt.btcTxId && (
+              <p className='mt-2 text-xs text-muted-foreground'>
+                Settlement reference{' '}
+                <span className='break-all font-mono text-xs'>
+                  {receipt.btcTxId}
+                </span>
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 

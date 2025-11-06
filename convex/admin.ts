@@ -8,7 +8,6 @@ const TABLES: TableNames[] = [
   'ips',
   'licenses',
   'disputes',
-  'trainingBatches',
   'users',
   'events'
 ]
@@ -17,7 +16,6 @@ const DELETE_ORDER: TableNames[] = [
   'events',
   'licenses',
   'disputes',
-  'trainingBatches',
   'ips',
   'users'
 ]
@@ -91,7 +89,6 @@ type LicenseSeed = {
   btcAddress: string
   amountSats: number
   network: string
-  paymentMode: string
   btcTxId: string
   attestationHash: string
   constellationTx: string
@@ -109,7 +106,6 @@ type LicenseSeed = {
   vcDocument: string
   vcHash: string
   complianceScore: number
-  trainingUnits: number
   ckbtcSubaccount?: string
   ckbtcMintedSats?: number
   ckbtcBlockIndex?: number
@@ -214,11 +210,11 @@ const licenseSeeds: LicenseSeed[] = [
     orderId: 'order_midnight_marriage',
     ipId: ipSeeds[0].ipId,
     buyer: '0x2222222222222222222222222222222222222222',
-    btcAddress: 'tb1qm1dnight5jv9dq2c0p6e8k3h4z5u8s6t0l9k7s',
+    btcAddress:
+      'icrc://owner=seed-escrow-principal;subaccount=order_midnight_marriage',
     amountSats: 250000,
-    network: 'testnet',
-    paymentMode: 'btc',
-    btcTxId: '8fb16e56636e016a1e7d94e05875012e8a33f8a07e3b5a62c401eb8b1c2d3341',
+    network: 'ckbtc-testnet',
+    btcTxId: 'icrc-ledger-order_midnight_marriage',
     attestationHash:
       '0x6b98e5a1ce30cd7a567c3adf92b1e6a5cabff3a3d817f4e8811b1e241c6e3f52',
     constellationTx:
@@ -226,7 +222,7 @@ const licenseSeeds: LicenseSeed[] = [
     tokenOnChainId: '0x0001',
     licenseTermsId: ipSeeds[0].licenseTermsId,
     status: 'finalized',
-    confirmations: 6,
+    confirmations: 0,
     createdAt: baseTime + 1000 * 60 * 5,
     updatedAt: baseTime + 1000 * 60 * 50,
     fundedAt: baseTime + 1000 * 60 * 20,
@@ -241,17 +237,16 @@ const licenseSeeds: LicenseSeed[] = [
     vcHash:
       '0x7b2c5d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b',
     complianceScore: 100,
-    trainingUnits: 150,
     ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   },
   {
     orderId: 'order_solar_echo_ckbtc',
     ipId: ipSeeds[1].ipId,
     buyer: '0x3333333333333333333333333333333333333333',
-    btcAddress: 'tb1qs0larechoescrow4vxnq5gwnu8764nc6d9a8s4',
+    btcAddress:
+      'icrc://owner=seed-escrow-principal;subaccount=order_solar_echo_ckbtc',
     amountSats: 180000,
     network: 'ckbtc-testnet',
-    paymentMode: 'ckbtc',
     ckbtcSubaccount:
       '0x2b8f0e4c6a8d0f1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5',
     btcTxId: 'ckbtc:mint:0xabcdef1234567890',
@@ -276,7 +271,6 @@ const licenseSeeds: LicenseSeed[] = [
     vcHash:
       '0xf1e3a5c7d9b2c4e6a8f0b2d4c6e8a0c2f4e6a8b0c2d4e6f8a0b2c4d6e8f0a2b4',
     complianceScore: 62,
-    trainingUnits: 40,
     ckbtcMintedSats: 180000,
     ckbtcBlockIndex: 482,
     ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
@@ -285,10 +279,10 @@ const licenseSeeds: LicenseSeed[] = [
     orderId: 'order_neon_dusk_pending',
     ipId: ipSeeds[2].ipId,
     buyer: '0x4444444444444444444444444444444444444444',
-    btcAddress: 'tb1qneondusk9p0xgr7c6w8f2n0ls5yaqplw4f8kq9e',
+    btcAddress:
+      'icrc://owner=seed-escrow-principal;subaccount=order_neon_dusk_pending',
     amountSats: 90000,
-    network: 'testnet',
-    paymentMode: 'btc',
+    network: 'ckbtc-testnet',
     btcTxId: '',
     attestationHash: '',
     constellationTx: '',
@@ -303,32 +297,6 @@ const licenseSeeds: LicenseSeed[] = [
     vcDocument: '',
     vcHash: '',
     complianceScore: 0,
-    trainingUnits: 0,
-    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
-  }
-] as const
-
-const trainingBatchSeeds = [
-  {
-    batchId: 'batch_midnight_marriage_001',
-    ipId: ipSeeds[0].ipId,
-    units: 150,
-    evidenceHash:
-      '0x2f1a7b5c9d3e4f6a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4',
-    constellationTx:
-      '0x4f92ab13cd68ef024579bce13579df02468ace13579bdf02468ace13579bdf02',
-    createdAt: baseTime + 1000 * 60 * 90,
-    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
-  },
-  {
-    batchId: 'batch_solar_echo_001',
-    ipId: ipSeeds[1].ipId,
-    units: 40,
-    evidenceHash:
-      '0x7d3e1f5a9b2c4d6e8f0a1b3c5d7e9f1a2c4e6d8f0a1b3c5d7e9f1a2c4e6d8f0',
-    constellationTx:
-      '0x1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
-    createdAt: baseTime + 1000 * 60 * 260,
     ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
   }
 ] as const
@@ -413,19 +381,6 @@ const eventSeeds = [
     actorAddress: '0x1111111111111111111111111111111111111111',
     actorPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai',
     createdAt: baseTime + 1000 * 60 * 55
-  },
-  {
-    eventId: 'evt-20250215-0004',
-    action: 'training.batch_recorded',
-    resourceId: trainingBatchSeeds[0].batchId,
-    payload: JSON.stringify({
-      batchId: trainingBatchSeeds[0].batchId,
-      ipId: trainingBatchSeeds[0].ipId,
-      units: trainingBatchSeeds[0].units
-    }),
-    actorAddress: '0x5555555555555555555555555555555555555555',
-    actorPrincipal: 'bclva-oyaaa-aaaap-abceq-cai',
-    createdAt: baseTime + 1000 * 60 * 95
   }
 ] as const
 
@@ -443,10 +398,6 @@ async function seedData(ctx: MutationCtx) {
 
   for (const license of licenseSeeds) {
     await ctx.db.insert('licenses', { ...license })
-  }
-
-  for (const batch of trainingBatchSeeds) {
-    await ctx.db.insert('trainingBatches', { ...batch })
   }
 
   for (const dispute of disputeSeeds) {

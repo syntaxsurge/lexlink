@@ -7,14 +7,7 @@ import { IDL } from '@dfinity/candid'
 import { Ed25519KeyIdentity } from '@dfinity/identity'
 
 import { env } from '@/lib/env'
-import type { PaymentMode } from '@/lib/payment-mode'
-
 type EscrowActor = {
-  request_deposit_address: (
-    licenseId: string,
-    mode: [] | [string]
-  ) => Promise<string>
-  confirm_payment: (licenseId: string, txid: string) => Promise<void>
   settle_ckbtc: (
     licenseId: string
   ) => Promise<{ minted: bigint; blockIndex: bigint; txids: string }>
@@ -71,12 +64,6 @@ const idlFactory = (idl: { IDL: typeof IDL }) => {
   })
 
   return candid.Service({
-    request_deposit_address: candid.Func(
-      [candid.Text, candid.Opt(candid.Text)],
-      [candid.Text],
-      []
-    ),
-    confirm_payment: candid.Func([candid.Text, candid.Text], [], []),
     settle_ckbtc: candid.Func([candid.Text], [settlementRecord], []),
     attestation: candid.Func([candid.Text], [candid.Text], ['query'])
   })
@@ -107,28 +94,10 @@ async function getActor(): Promise<EscrowActor> {
   return cachedActor
 }
 
-type DepositInvoice = {
-  address: string
-}
-
 export type CkbtcSettlement = {
   minted: bigint
   blockIndex: bigint
   txids: string
-}
-
-export async function requestDepositAddress(
-  orderId: string,
-  mode: PaymentMode
-): Promise<DepositInvoice> {
-  const actor = await getActor()
-  const address = await actor.request_deposit_address(orderId, [mode])
-  return { address }
-}
-
-export async function confirmPayment(orderId: string, txId: string) {
-  const actor = await getActor()
-  await actor.confirm_payment(orderId, txId)
 }
 
 export async function settleCkbtc(orderId: string): Promise<CkbtcSettlement> {
