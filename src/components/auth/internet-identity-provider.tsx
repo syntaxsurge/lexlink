@@ -76,15 +76,24 @@ export function InternetIdentityProvider({
     if (!authClient) {
       return
     }
-    if (status === 'authenticated') {
-      void hydratePrincipal(authClient).then(setPrincipal).catch(() => {
-        setPrincipal(null)
-      })
+    let cancelled = false
+    const synchronizePrincipal = async () => {
+      try {
+        const hydrated = await hydratePrincipal(authClient)
+        if (!cancelled) {
+          setPrincipal(hydrated)
+        }
+      } catch {
+        if (!cancelled) {
+          setPrincipal(null)
+        }
+      }
     }
-    if (status === 'unauthenticated') {
-      setPrincipal(null)
+    void synchronizePrincipal()
+    return () => {
+      cancelled = true
     }
-  }, [status, authClient])
+  }, [authClient, status])
 
   const refresh = useCallback(async () => {
     if (!authClient) return
