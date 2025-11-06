@@ -48,8 +48,8 @@ export default async function PurchasesPage() {
   ])
 
   const storyNetwork = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
-  const storyLicenseTemplate =
-    (env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}` | undefined) ?? null
+  const storyLicenseToken =
+    (env.STORY_LICENSE_TOKEN_ADDRESS as `0x${string}` | undefined) ?? null
   const constellationNetwork =
     (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
@@ -135,9 +135,9 @@ export default async function PurchasesPage() {
               {purchases.map(order => {
                 const modeLabel = order.paymentMode === 'ckbtc' ? 'ckBTC' : 'BTC'
                 const storyLink =
-                  storyLicenseTemplate && order.tokenOnChainId
+                  storyLicenseToken && order.tokenOnChainId
                     ? licenseTokenExplorerUrl(
-                        storyLicenseTemplate,
+                        storyLicenseToken,
                         order.tokenOnChainId,
                         storyNetwork
                       )

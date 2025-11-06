@@ -25,6 +25,7 @@ type FinalizationTimelineProps = {
   ckbtcNetwork: 'ckbtc-mainnet' | 'ckbtc-testnet'
   storyNetwork: StoryNetwork
   storyLicenseAddress: `0x${string}`
+  storyLicenseTokenAddress: `0x${string}`
   storyChainId: number
   constellationNetwork: ConstellationNetworkId
   constellationEnabled: boolean
@@ -69,6 +70,7 @@ export function FinalizationTimeline({
   ckbtcNetwork,
   storyNetwork,
   storyLicenseAddress,
+  storyLicenseTokenAddress,
   storyChainId,
   constellationNetwork,
   constellationEnabled
@@ -180,14 +182,20 @@ export function FinalizationTimeline({
     }
     const tokenId = invoice.tokenOnChainId?.trim() ?? ''
     const tokenUrl = licenseTokenExplorerUrl(
-      storyLicenseAddress,
+      storyLicenseTokenAddress,
       tokenId,
       storyNetwork
     )
     const contractUrl = `${storyScanBase(storyNetwork)}/address/${storyLicenseAddress}`
 
     return { tokenUrl, contractUrl, tokenId }
-  }, [invoice.tokenOnChainId, licenseMinted, storyLicenseAddress, storyNetwork])
+  }, [
+    invoice.tokenOnChainId,
+    licenseMinted,
+    storyLicenseAddress,
+    storyLicenseTokenAddress,
+    storyNetwork
+  ])
 
   const constellationLinks = useMemo(() => {
     if (!constellationEnabled || !invoice.constellationTx) {

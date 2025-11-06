@@ -54,6 +54,7 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
       fallbackNetwork={invoice.network ?? env.BTC_NETWORK}
       storyNetwork={env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork}
       storyLicenseAddress={env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`}
+      storyLicenseTokenAddress={env.STORY_LICENSE_TOKEN_ADDRESS as `0x${string}`}
       storyChainId={env.STORY_CHAIN_ID}
       constellationNetwork={env.CONSTELLATION_NETWORK as ConstellationNetworkId}
       constellationEnabled={env.CONSTELLATION_ENABLED}

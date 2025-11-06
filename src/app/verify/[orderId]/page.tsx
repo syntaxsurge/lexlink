@@ -80,13 +80,13 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
 
   const storyNetwork =
     (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
-  const storyTemplate = env.STORY_LICENSE_TEMPLATE_ADDRESS as
+  const storyLicenseToken = env.STORY_LICENSE_TOKEN_ADDRESS as
     | `0x${string}`
     | undefined
   const storyLink =
-    storyTemplate && receipt.tokenOnChainId
+    storyLicenseToken && receipt.tokenOnChainId
       ? licenseTokenExplorerUrl(
-          storyTemplate,
+          storyLicenseToken,
           receipt.tokenOnChainId,
           storyNetwork
         )

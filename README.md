@@ -160,6 +160,9 @@ If `request_deposit_address` rejects with “Requested unknown threshold key”,
     - `pnpm spg:create`
     - Output JSON includes `spgNftContract` — paste that value here
   - Workflows ref: https://github.com/storyprotocol/protocol-periphery-v1/blob/main/docs/WORKFLOWS.md
+- `STORY_LICENSE_TOKEN_ADDRESS`
+  - Aeneid PILicenseToken: `0xFe3838BFb30B34170F00030B52eA4893d8aAC6bC`
+  - Verify: https://aeneid.storyscan.io/token/0xFe3838BFb30B34170F00030B52eA4893d8aAC6bC
 - `STORY_LICENSE_TEMPLATE_ADDRESS`
   - Aeneid PILicenseTemplate: `0x2E896b0b2Fdb7457499B56AAaA4AE55BCB4Cd316`
   - Verify: https://aeneid.storyscan.io/address/0x2E896b0b2Fdb7457499B56AAaA4AE55BCB4Cd316
@@ -212,6 +215,7 @@ Sanity checks
 ### Story configuration
 
 - `STORY_SPG_NFT_ADDRESS` must be an SPG contract you control on Aeneid.
+- `STORY_LICENSE_TOKEN_ADDRESS` points at the PILicenseToken ERC-721 contract for the active Story network.
 - `STORY_LICENSE_TEMPLATE_ADDRESS` should point to the PIL template (public
   deployments are published in Story documentation).
 - The private key will sign all workflows; keep it secure.

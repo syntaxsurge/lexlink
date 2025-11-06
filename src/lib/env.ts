@@ -51,6 +51,12 @@ const serverEnvSchema = z.object({
       /^0x[0-9a-fA-F]{40}$/,
       'STORY_SPG_NFT_ADDRESS must be a hex address'
     ),
+  STORY_LICENSE_TOKEN_ADDRESS: z
+    .string()
+    .regex(
+      /^0x[0-9a-fA-F]{40}$/,
+      'STORY_LICENSE_TOKEN_ADDRESS must be a hex address'
+    ),
   STORY_LICENSE_TEMPLATE_ADDRESS: z
     .string()
     .regex(
@@ -154,6 +160,7 @@ function parseEnv() {
     STORY_RPC_URL: process.env.STORY_RPC_URL,
     STORY_CHAIN_ID: process.env.STORY_CHAIN_ID,
     STORY_SPG_NFT_ADDRESS: process.env.STORY_SPG_NFT_ADDRESS,
+    STORY_LICENSE_TOKEN_ADDRESS: process.env.STORY_LICENSE_TOKEN_ADDRESS,
     STORY_LICENSE_TEMPLATE_ADDRESS: process.env.STORY_LICENSE_TEMPLATE_ADDRESS,
     STORY_PRIVATE_KEY: process.env.STORY_PRIVATE_KEY,
     STORY_PIL_URI: process.env.STORY_PIL_URI,

@@ -21,6 +21,7 @@ type InvoicePageClientProps = {
   fallbackNetwork: string
   storyNetwork: StoryNetwork
   storyLicenseAddress: `0x${string}`
+  storyLicenseTokenAddress: `0x${string}`
   storyChainId: number
   constellationNetwork: ConstellationNetworkId
   constellationEnabled: boolean
@@ -36,6 +37,7 @@ export function InvoicePageClient({
   fallbackNetwork,
   storyNetwork,
   storyLicenseAddress,
+  storyLicenseTokenAddress,
   storyChainId,
   constellationNetwork,
   constellationEnabled,
@@ -87,6 +89,7 @@ export function InvoicePageClient({
               ckbtcNetwork={ckbtcNetwork}
               storyNetwork={storyNetwork}
               storyLicenseAddress={storyLicenseAddress}
+              storyLicenseTokenAddress={storyLicenseTokenAddress}
               storyChainId={storyChainId}
               constellationNetwork={constellationNetwork}
               constellationEnabled={constellationEnabled}
@@ -106,6 +109,7 @@ export function InvoicePageClient({
             ckbtcNetwork={ckbtcNetwork}
             storyNetwork={storyNetwork}
             storyLicenseAddress={storyLicenseAddress}
+            storyLicenseTokenAddress={storyLicenseTokenAddress}
             storyChainId={storyChainId}
             constellationNetwork={constellationNetwork}
             constellationEnabled={constellationEnabled}

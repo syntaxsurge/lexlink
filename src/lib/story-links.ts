@@ -32,5 +32,9 @@ export function licenseTokenExplorerUrl(
   network: StoryNetwork = 'aeneid'
 ) {
   const normalizedTokenId = tokenId.trim()
-  return `${storyScanBase(network)}/token/${contractAddress}?a=${normalizedTokenId}`
+  if (normalizedTokenId.length === 0) {
+    return `${storyScanBase(network)}/token/${contractAddress}`
+  }
+
+  return `${storyScanBase(network)}/token/${contractAddress}/instance/${normalizedTokenId}`
 }
