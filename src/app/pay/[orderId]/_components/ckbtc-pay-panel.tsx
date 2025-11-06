@@ -8,6 +8,7 @@ import { Principal } from '@dfinity/principal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useInternetIdentity } from '@/components/auth/internet-identity-provider'
+import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { ledgerActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
@@ -17,21 +18,19 @@ type TransferResult =
   | { status: 'pending' }
   | { status: 'error'; message: string }
 
-type Props = {
-  orderId: string
-  amountSats: string
-  escrowPrincipal: string
-  ckbtcSubaccountHex: string
-  network: 'ckbtc-mainnet' | 'ckbtc-testnet'
-}
-
 export function CkbtcPayPanel({
-  orderId,
-  amountSats,
   escrowPrincipal,
-  ckbtcSubaccountHex,
   network
-}: Props) {
+}: {
+  escrowPrincipal: string
+  network: 'ckbtc-mainnet' | 'ckbtc-testnet'
+}) {
+  const {
+    invoice,
+    pollFinalization,
+    refresh: refreshInvoice,
+    isFinalizing
+  } = useInvoiceStatus()
   const {
     ready,
     principal,
@@ -50,54 +49,54 @@ export function CkbtcPayPanel({
   })
   const [isBusy, setIsBusy] = useState(false)
 
+  const ckbtcSubaccountHex = invoice.ckbtcSubaccount ?? null
   const price = useMemo(() => {
     try {
-      return BigInt(amountSats)
+      return BigInt(invoice.amountSats ?? 0)
     } catch {
       return 0n
     }
-  }, [amountSats])
+  }, [invoice.amountSats])
 
   const escrowOwner = useMemo(
     () => Principal.fromText(escrowPrincipal),
     [escrowPrincipal]
   )
-  const escrowSubaccount = useMemo(
-    () => hexToUint8Array(ckbtcSubaccountHex),
-    [ckbtcSubaccountHex]
-  )
+  const escrowSubaccount = useMemo(() => {
+    if (!ckbtcSubaccountHex) {
+      return null
+    }
+    return hexToUint8Array(ckbtcSubaccountHex)
+  }, [ckbtcSubaccountHex])
 
-  const refreshBalances = useCallback(
-    async () => {
-      const identity = getIdentity()
-      if (!identity) {
-        setBalance(0n)
-        setSymbol(network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC')
-        return
-      }
-      const id = identity.getPrincipal()
-      if (id.isAnonymous()) {
-        setBalance(0n)
-        setSymbol(network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC')
-        return
-      }
-      const ledger = await ledgerActor(identity as Identity)
-      const [sym, dec, bal] = await Promise.all([
-        ledger.icrc1_symbol(),
-        ledger.icrc1_decimals(),
-        ledger.icrc1_balance_of({
-          owner: id,
-          subaccount: []
-        })
-      ])
-      setSymbol(
-        network === 'ckbtc-testnet' && sym === 'ckBTC' ? 'ckTESTBTC' : sym
-      )
-      setDecimals(Number(dec))
-      setBalance(BigInt(bal))
-    },
-    [getIdentity, network]
-  )
+  const refreshBalances = useCallback(async () => {
+    const identity = getIdentity()
+    if (!identity) {
+      setBalance(0n)
+      setSymbol(network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC')
+      return
+    }
+    const id = identity.getPrincipal()
+    if (id.isAnonymous()) {
+      setBalance(0n)
+      setSymbol(network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC')
+      return
+    }
+    const ledger = await ledgerActor(identity as Identity)
+    const [sym, dec, bal] = await Promise.all([
+      ledger.icrc1_symbol(),
+      ledger.icrc1_decimals(),
+      ledger.icrc1_balance_of({
+        owner: id,
+        subaccount: []
+      })
+    ])
+    setSymbol(
+      network === 'ckbtc-testnet' && sym === 'ckBTC' ? 'ckTESTBTC' : sym
+    )
+    setDecimals(Number(dec))
+    setBalance(BigInt(bal))
+  }, [getIdentity, network])
 
   useEffect(() => {
     if (!ready) return
@@ -142,11 +141,15 @@ export function CkbtcPayPanel({
         throw new Error('Internet Identity authentication cancelled.')
       }
 
+      if (!escrowSubaccount) {
+        throw new Error('Order is missing escrow subaccount metadata.')
+      }
+
       const ledger = await ledgerActor(identity as Identity)
       const result = await ledger.icrc1_transfer({
         to: {
           owner: escrowOwner,
-          subaccount: [Array.from(escrowSubaccount)]
+          subaccount: escrowSubaccount ? [Array.from(escrowSubaccount)] : []
         },
         amount: price,
         fee: [],
@@ -159,14 +162,11 @@ export function CkbtcPayPanel({
         const blockIndex = result.Ok.toString()
         setTransferState({ status: 'success', blockIndex })
         await refreshBalances()
-        await fetch(`/api/orders/${orderId}/refresh`, {
-          method: 'POST',
-          headers: {
-            'content-type': 'application/json'
-          },
-          body: JSON.stringify({ ledgerBlock: blockIndex })
-        }).catch(() => {
-          // No-op: background worker will pick up the settlement
+        await pollFinalization().catch(() => {
+          // Fall back to background worker polling if immediate finalization fails.
+        })
+        await refreshInvoice().catch(() => {
+          // Non-blocking refresh.
         })
         setFeedback(
           `Payment submitted (ledger block ${blockIndex}). The order will finalize automatically.`
@@ -198,23 +198,41 @@ export function CkbtcPayPanel({
     connect,
     getIdentity,
     escrowOwner,
-    escrowSubaccount,
-    orderId,
     price,
-    refreshBalances
+    escrowSubaccount,
+    refreshBalances,
+    pollFinalization,
+    refreshInvoice
   ])
 
   const formattedBalance = formatTokenAmount(balance, decimals)
   const formattedPrice = formatTokenAmount(price, decimals)
-  const canPay = principal !== null && balance >= price && price > 0n
-  const showConnect = !principal
+  const isFinalized = invoice.status === 'finalized'
+  const isPaymentRouteReady = Boolean(ckbtcSubaccountHex)
+  const isSettling =
+    transferState.status === 'success' ||
+    transferState.status === 'pending' ||
+    isFinalizing ||
+    invoice.status === 'funded' ||
+    invoice.status === 'confirmed'
+  const canPay =
+    principal !== null &&
+    balance >= price &&
+    price > 0n &&
+    invoice.status === 'pending' &&
+    isPaymentRouteReady
+  const showConnect = !principal && invoice.status === 'pending'
   const payButtonLabel = isBusy
     ? 'Submitting…'
     : !ready || isAuthenticating
       ? 'Loading…'
-      : canPay
-        ? 'Pay now'
-        : 'Insufficient balance'
+      : isFinalized
+        ? 'Payment completed'
+        : isSettling
+          ? 'Awaiting finalization…'
+          : canPay
+            ? 'Pay now'
+            : 'Insufficient balance'
 
   return (
     <Card className='border-border/60 bg-card/70'>
@@ -273,10 +291,22 @@ export function CkbtcPayPanel({
             Refresh balance
           </Button>
         </div>
+        {!isPaymentRouteReady && (
+          <div className='rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600'>
+            This invoice is missing ckBTC escrow metadata. Contact the LexLink operator to regenerate the order before paying.
+          </div>
+        )}
 
-        {transferState.status === 'success' && (
+        {transferState.status === 'success' && !isFinalized && (
           <div className='rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-600'>
             Transfer accepted at ledger block {transferState.blockIndex}. The order will finalize shortly.
+          </div>
+        )}
+        {isFinalized && (
+          <div className='rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-600'>
+            Payment finalized{invoice.ckbtcBlockIndex
+              ? ` at ledger block ${invoice.ckbtcBlockIndex}`
+              : ''}. License tokenization is complete.
           </div>
         )}
         {transferState.status === 'error' && (
