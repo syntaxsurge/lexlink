@@ -361,9 +361,10 @@ pnpm lint
 5. **Compliance dashboard** – Every completed order shows the Story IP ID,
    Bitcoin txid, Constellation tx hash, attestation hash, compliance score, and
    training units with one-click downloads for the C2PA archive and VC payload.
-6. **Raise disputes** – Operators can submit UMA-backed disputes against any
-   registered IP, log the evidence hash to Constellation, and track the status
-   inside the console for downstream compliance teams.
+6. **Raise disputes** – Reporters upload evidence files or cite URLs, the
+   server pins everything to IPFS as a single bundle CID, calls Story’s Dispute
+   Module (UMA arbitration), anchors the payload to Constellation, and owners
+   monitor the status from the dashboard disputes inbox.
 
 ## 10. Deploying to production
 

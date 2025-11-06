@@ -82,7 +82,7 @@ export default async function DisputesPage() {
                 <TableHead>Dispute</TableHead>
                 <TableHead>IP</TableHead>
                 <TableHead>Tag</TableHead>
-                <TableHead>Evidence CID</TableHead>
+                <TableHead>Evidence</TableHead>
                 <TableHead>Constellation Tx</TableHead>
                 <TableHead>Reporter</TableHead>
                 <TableHead>Status</TableHead>
@@ -130,7 +130,27 @@ export default async function DisputesPage() {
                     </TableCell>
                     <TableCell>{dispute.targetTag}</TableCell>
                     <TableCell className='font-mono text-xs'>
-                      {dispute.evidenceCid}
+                      {dispute.evidenceUri ? (
+                        <Link
+                          href={
+                            dispute.evidenceUri.startsWith('ipfs://')
+                              ? `https://ipfs.io/ipfs/${dispute.evidenceUri.replace('ipfs://', '')}`
+                              : dispute.evidenceUri
+                          }
+                          target='_blank'
+                          rel='noreferrer'
+                          className='text-primary underline-offset-4 hover:underline'
+                        >
+                          {dispute.evidenceUri}
+                        </Link>
+                      ) : (
+                        dispute.evidenceCid
+                      )}
+                      {dispute.evidenceNote && (
+                        <div className='mt-1 text-[11px] text-muted-foreground'>
+                          {dispute.evidenceNote}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className='font-mono text-xs'>
                       {constellationLink ? (

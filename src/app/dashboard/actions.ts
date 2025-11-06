@@ -41,6 +41,7 @@ import {
   getDefaultLicenseTerms,
   getDefaultLicensingConfig
 } from '@/lib/story'
+import type { DisputeEvidenceAttachment } from '@/lib/disputes'
 import { generateLicenseCredential } from '@/lib/vc'
 
 export type IpRecord = {
@@ -115,6 +116,9 @@ export type DisputeRecord = {
   ipId: string
   targetTag: DisputeTargetTag | string
   evidenceCid: string
+  evidenceUri?: string
+  evidenceNote?: string | null
+  evidenceAttachments?: DisputeEvidenceAttachment[]
   txHash: string
   evidenceHash: string
   constellationTx: string
@@ -2347,6 +2351,9 @@ export type RaiseDisputePayload = {
   targetTag: DisputeTargetTag
   livenessSeconds?: number
   bond?: number
+  evidenceNote?: string | null
+  evidenceAttachments?: DisputeEvidenceAttachment[]
+  evidenceUri?: string
 }
 
 export async function raiseDispute(payload: RaiseDisputePayload) {
@@ -2391,6 +2398,9 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     ipId: payload.ipId,
     targetTag: payload.targetTag,
     evidenceCid: evidenceInput,
+    evidenceUri: payload.evidenceUri ?? null,
+    evidenceNote: payload.evidenceNote ?? null,
+    evidenceAttachments: payload.evidenceAttachments ?? [],
     livenessSeconds,
     bond: payload.bond ?? 0,
     reporterPrincipal: actor.principal,
@@ -2414,7 +2424,10 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     disputeId,
     ipId: payload.ipId,
     targetTag: payload.targetTag,
-    evidenceCid: payload.evidenceCid,
+    evidenceCid: evidenceInput,
+    evidenceUri: payload.evidenceUri ?? null,
+    evidenceNote: payload.evidenceNote ?? null,
+    evidenceAttachments: payload.evidenceAttachments ?? [],
     txHash,
     evidenceHash,
     constellationTx,
@@ -2439,6 +2452,9 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
       ipId: payload.ipId,
       targetTag: payload.targetTag,
       evidenceCid: evidenceInput,
+      evidenceUri: payload.evidenceUri ?? null,
+      evidenceNote: payload.evidenceNote ?? null,
+      evidenceAttachments: payload.evidenceAttachments ?? [],
       constellationTx,
       constellationExplorerUrl,
       txHash

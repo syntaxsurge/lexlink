@@ -34,9 +34,10 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
         <CardHeader>
           <CardTitle>Report an IP asset</CardTitle>
           <CardDescription>
-            Submit evidence and tag selection to trigger Story’s UMA-backed
-            dispute process. Reports require Internet Identity sign-in so we can
-            anchor the reporter principal.
+            Upload screenshots, audio, video, or documents—or supply a source
+            URL—and we’ll pin everything to IPFS before triggering Story’s
+            UMA-backed dispute process. Reports require Internet Identity
+            sign-in so we can anchor the reporter principal.
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-6'>

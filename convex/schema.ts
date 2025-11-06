@@ -106,6 +106,20 @@ export default defineSchema({
     ipId: v.string(),
     targetTag: v.string(),
     evidenceCid: v.string(),
+    evidenceUri: v.optional(v.string()),
+    evidenceNote: v.optional(v.string()),
+    evidenceAttachments: v.optional(
+      v.array(
+        v.object({
+          uri: v.string(),
+          name: v.string(),
+          mimeType: v.string(),
+          size: v.number(),
+          source: v.union(v.literal('upload'), v.literal('url')),
+          originalUrl: v.optional(v.string())
+        })
+      )
+    ),
     txHash: v.string(),
     evidenceHash: v.string(),
     constellationTx: v.string(),
