@@ -312,7 +312,7 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
               How it works
             </CardTitle>
             <CardDescription className='text-sm text-muted-foreground'>
-              A production flow mirroring the ProvenanceAI reference implementation: generate media, store metadata, register on Story, and log every creator.
+              Generate media, store metadata, register on Story, and log every creator.
             </CardDescription>
           </CardHeader>
           <CardContent className='space-y-4 text-sm leading-relaxed text-muted-foreground'>
@@ -467,15 +467,28 @@ function ResultStat({
   )
 }
 
+const IPFS_GATEWAYS = [
+  'https://gateway.pinata.cloud/ipfs/',
+  'https://apac.orbitor.dev/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://nftstorage.link/ipfs/'
+] as const
+
 function resolveAssetUrl(uri: string) {
   if (!uri) return ''
+  const sources = buildGatewaySources(uri)
+  return sources[0] ?? uri
+}
+
+function buildGatewaySources(uri: string) {
+  const urls = new Set<string>()
   if (uri.startsWith('ipfs://')) {
-    return uri.replace('ipfs://', 'https://ipfs.io/ipfs/')
+    const cid = uri.replace('ipfs://', '').replace(/^\/+/, '')
+    IPFS_GATEWAYS.forEach(gateway => urls.add(`${gateway}${cid}`))
+  } else if (uri.includes('/ipfs/')) {
+    const cidPath = uri.substring(uri.indexOf('/ipfs/') + '/ipfs/'.length)
+    IPFS_GATEWAYS.forEach(gateway => urls.add(`${gateway}${cidPath}`))
   }
-  try {
-    const parsed = new URL(uri)
-    return parsed.toString()
-  } catch {
-    return uri
-  }
+  urls.add(uri)
+  return Array.from(urls)
 }
