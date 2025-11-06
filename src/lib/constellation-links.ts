@@ -8,7 +8,7 @@ const NETWORK_LINKS: Record<
   { explorer: string; api: string }
 > = {
   integrationnet: {
-    explorer: 'https://explorer.integrationnet.constellationnetwork.io',
+    explorer: 'https://integrationnet.dagexplorer.io',
     api: 'https://be-integrationnet.constellationnetwork.io'
   },
   testnet: {

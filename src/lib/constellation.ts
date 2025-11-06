@@ -15,7 +15,7 @@ type ConstellationConfig = {
 }
 
 const CONSTELLATION_EXPLORERS: Record<ConstellationNetwork, string> = {
-  integrationnet: 'https://explorer.integrationnet.constellationnetwork.io',
+  integrationnet: 'https://integrationnet.dagexplorer.io',
   testnet: 'https://explorer.testnet.constellationnetwork.io',
   mainnet: 'https://explorer.mainnet.constellationnetwork.io'
 }
