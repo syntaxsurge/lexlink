@@ -27,8 +27,7 @@ export async function POST(
     ) {
       return NextResponse.json(
         {
-          status: 'pending',
-          error: message
+          status: 'pending'
         },
         { status: 200 }
       )
