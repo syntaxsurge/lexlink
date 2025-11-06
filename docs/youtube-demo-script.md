@@ -1,64 +1,79 @@
-# LexLink YouTube Demo Script (6 minutes)
+# LexLink YouTube Demo Script (6–8 minutes)
 
-This script follows the production build with Internet Identity, shadcn UI, invoice tracking, and the automated licensing worker. Each beat has an on-screen cue and a suggested voice-over.
-
-—
-
-## Segment 1 — Cold open (0:00 – 0:20)
-- On-screen: Landing page (`/`). Light pan and highlight “Launch Console”.
-- Voice-over: “This is LexLink — Story Protocol licensing, ICP Bitcoin escrow, and Constellation audit trails in one console.”
-
-## Segment 2 — Secure sign-in (0:20 – 0:45)
-- On-screen: `/signin`. Emphasise the Internet Identity hero copy and card.
-- Voice-over: “Operators authenticate with Internet Identity. We verify the delegation server-side and seed roles in Convex.”
-
-## Segment 3 — Overview tour (0:45 – 1:15)
-- On-screen: `/dashboard`. Show KPI cards, Pending Invoices widget, Recent Audit Activity.
-- Voice-over: “One place for Story, ICP, Constellation, and Convex mirrors. Every privileged action writes to the audit ledger.”
-
-## Segment 4 — Register IP asset (1:15 – 1:55)
-- On-screen: `IP Registry`. Fill the form with:
-  - Title `Midnight Marriage`
-  - Creation timestamp `2025-02-15T12:00`
-  - Description `An AI-assisted house track; commercial licensing enabled.`
-  - Cover Image `https://cdn2.suno.ai/image_large_8bcba6bc-3f60-4921-b148-f32a59086a4c.jpeg`
-  - Media URL `https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3`
-  - Media Type `audio/mpeg`
-  - Price `0.002500 BTC`
-  - Royalty `10%`
-  - Creator `LexLink Demo / 0x1111…1111`
-  - IP metadata + NFT metadata URIs.
-- Voice-over: “We mint an SPG NFT, attach PIL terms, mirror to Convex, and log `ip_asset.registered`.”
-- On-screen: Highlight the success panel (IP ID, token ID, license terms ID) and open the Story IP Explorer link.
-
-## Segment 5 — Generate ckBTC invoice (1:55 – 2:25)
-- On-screen: `Licenses → Generate License Order` with payment mode set to ckBTC. Pick the new IP, buyer `0x21b06cdfeb63b64396f3a7f5f0f4dc8034fb72ca`.
-- Voice-over: “The order builder derives a deterministic ckBTC subaccount and stores the ICRC-1 escrow account alongside the share link.”
-- On-screen: Submit → Pending Invoices table shows new row (status Pending, ckBTC account string, amount in BTC).
-- Voice-over: “Everything lands in Convex instantly so the automation can monitor balances.”
-
-## Segment 6 — Funding & auto-finalise (2:25 – 3:20)
-- On-screen: Open `/pay/[orderId]`, click “Pay with ckBTC”, authenticate with Internet Identity, and send ckTESTBTC.
-- Voice-over: “Before recording, mint ckTESTBTC for your principal at https://testnet-faucet.ckboost.com/ — no minter polling needed.”
-- Show the Pending row flip from Pending → Finalised after the ledger balance updates. Toast notes “License minted”.
-- Voice-over: “The worker verifies the ledger balance, mints the Story license, and anchors Constellation evidence automatically.”
-
-## Segment 7 — Raise dispute (4:15 – 4:40)
-- On-screen: `Disputes` → new dispute (`IMPROPER_USAGE`, CID `ipfs://bafkreihdwdcej3m2vxxevidencelexlinkdemo`, liveness `259200`, bond `0`).
-- Voice-over: “Disputes route through Story’s UMA integration and the evidence hash anchors on Constellation.”
-
-## Segment 8 — Compliance ledger & roles (4:40 – 5:15)
-- On-screen: `Compliance` tab. Scroll JSON payloads.
-- Voice-over: “The compliance tab is the ledger of record. Every action includes actor principal, resource ID, and payload JSON.”
-- On-screen: `Settings` → current session + operators table.
-- Voice-over: “Roles live in Convex. Operators can elevate creators and viewers; viewers authenticate with Internet Identity only.”
+A factual, click-by-click walkthrough of the current LexLink build. Each segment lists the screen and an accurate voice‑over that mirrors the app’s behavior today.
 
 —
 
-## Appendix: quick-reference URLs
+## 1) Problem framing (0:00 – 0:30)
+- On‑screen: Landing page (`/`), “Real problems we address” section.
+- Voice‑over: “Teams struggle to prove rights and provenance, buyers can’t tell if assets are clean, and compliance needs an auditable chain of custody. LexLink unifies Story Protocol licensing, ICP Bitcoin settlement, and Constellation evidence so creators can monetize safely and buyers trust what they’re licensing.”
+
+## 2) Secure sign‑in (0:30 – 0:50)
+- On‑screen: `/signin` → Sign in with Internet Identity.
+- Voice‑over: “Authentication uses Internet Identity. The server verifies the delegation and persists your principal and role in Convex.”
+
+## 3) Dashboard overview (0:50 – 1:20)
+- On‑screen: `/dashboard` KPIs, Pending Payments, Recent Audit Activity.
+- Voice‑over: “The overview mirrors Story, ckBTC/BTC invoices, and audit events. Every privileged action writes a structured event payload with your principal.”
+
+## 4) Create IP via AI Studio (1:20 – 2:10)
+- On‑screen: `/dashboard/ai`.
+- Voice‑over: “You can register any existing asset from IP Registry, but for this demo we’ll generate one in AI Studio. The studio renders media, computes hashes, mints a Story IP Asset, attaches PIL license terms, and mirrors everything to Convex.”
+- On‑screen: Submit a prompt, confirm the generated preview, then watch the registration complete. Click the Story explorer link for the new IP ID.
+
+## 5) List the asset for sale (2:10 – 2:50)
+- On‑screen: `/dashboard/licenses` → Generate License Order.
+- Voice‑over: “Pick the IP, amount, and payment mode. ckBTC orders derive a deterministic ICRC‑1 subaccount; BTC orders derive a new P2WPKH address. The order is saved with a shareable pay link.”
+- On‑screen: After submit, the order appears in Pending Payments with status, amount, and destination (ckBTC escrow or BTC address).
+
+## 6) Buyer checkout and wallet capture (2:50 – 3:40)
+- On‑screen: open the share link `/pay/[orderId]` as the buyer session.
+- Voice‑over: “Buyers authenticate with Internet Identity, set their default license wallet inline, and pay with ckBTC or follow BTC instructions.”
+- On‑screen: For ckBTC, click Pay, send ckTESTBTC. The page auto‑refreshes when escrow balance increases.
+- Voice‑over: “Once funded, the server mints the Story license token and anchors a C2PA archive, a verifiable credential, and a Constellation hash. The buyer’s default wallet is remembered for future purchases.”
+
+## 7) Buyer’s My Licenses (3:40 – 4:05)
+- On‑screen: `/dashboard/purchases` (buyer session).
+- Voice‑over: “My Licenses lists every claimed order for this principal with one‑click links: Story explorer, Constellation explorer, C2PA archive, and the VC download. The default license wallet is shown at the top.”
+
+## 8) Seller’s license management (4:05 – 4:35)
+- On‑screen: switch to the seller/operator session → `/dashboard/licenses`.
+- Voice‑over: “The Licenses tab shows pending invoices, manual finalization for native BTC, and a full order history sorted by update time. Each row links to mempool, Story, and Constellation.”
+
+## 9) Public “Report IP” (4:35 – 5:00)
+- On‑screen: Header → “Report IP” or the button on the invoice page → `/report`.
+- Voice‑over: “Anyone can report misuse. Reporters upload evidence or paste a source URL. LexLink pins the files to IPFS, builds a single evidence bundle CID, and passes that to Story’s Dispute Module.”
+- On‑screen: Submit a dispute with tag `IMPROPER_USAGE`. Show the returned Dispute ID and evidence bundle link.
+
+## 10) Owner’s Disputes Inbox (5:00 – 5:30)
+- On‑screen: `/dashboard/disputes` (owner/operator session).
+- Voice‑over: “The inbox shows disputes against assets you own: reporter principal, tag, evidence bundle, and on‑chain tx. On testnet you can simulate UMA judgement; on mainnet UMA reviewers arbitrate. Once upheld, Story tags the IP and downstream actions respect that tag.”
+
+## 11) Compliance and audit (5:30 – 5:55)
+- On‑screen: `/dashboard/compliance`.
+- Voice‑over: “A searchable audit trail with actor principal, resource IDs, and payload JSON for registrations, invoices, settlements, disputes, and training batches.”
+
+## 12) Settings (5:55 – 6:10)
+- On‑screen: `/dashboard/settings`.
+- Voice‑over: “Session details and role‑based controls live here. Sessions auto‑expire; rotate credentials as needed.”
+
+## 13) Gallery and marketplace (6:10 – 6:40)
+- On‑screen: `/gallery` then `/marketplace`.
+- Voice‑over: “The gallery surfaces registered media and attribution. The marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders safely.”
+
+## 14) How creators earn (6:40 – 7:10)
+- On‑screen: Show an IP’s royalty and minting settings (from IP detail cards and Licenses order builder).
+- Voice‑over: “Revenue comes from minting fees per license and ongoing royalties on derivatives encoded in PIL terms. Disputes can carry bonds on UMA; upheld claims return bonds plus a portion of the counter‑party bond to the winner.”
+
+—
+
+## Appendix: quick‑reference URLs
 - Story IP Explorer (Aeneid): `https://aeneid.explorer.story.foundation/`
 - StoryScan (Aeneid): `https://aeneid.storyscan.io/`
-- IntegrationNet Explorer: `https://explorer.mainnet.constellationnetwork.io/`
+- Constellation explorers:
+  - IntegrationNet: `https://integrationnet.dagexplorer.io/`
+  - Testnet: `https://explorer.testnet.constellationnetwork.io/`
+  - Mainnet: `https://explorer.mainnet.constellationnetwork.io/`
 - Bitcoin testnet explorer: `https://mempool.space/testnet/`
 - ckBTC testnet faucet: `https://testnet-faucet.ckboost.com/`
-- Internet Identity docs: `https://internetcomputer.org/internet-identity`
+- Internet Identity: `https://internetcomputer.org/docs/current/concepts/identity/internet-identity/`
