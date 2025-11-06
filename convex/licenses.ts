@@ -180,15 +180,10 @@ export const storeEvidencePayload = mutationGeneric({
       throw new Error('License order not found')
     }
 
-    const blob = new Blob([args.payload], { type: 'application/json' })
-    const storageId = await ctx.storage.store(blob)
-
     await ctx.db.patch(license._id, {
-      evidenceStorageId: storageId,
+      evidencePayload: args.payload,
       updatedAt: Date.now()
     })
-
-    return storageId
   }
 })
 
@@ -237,7 +232,7 @@ export const markCompleted = mutationGeneric({
     complianceScore: v.number(),
     ckbtcMintedSats: v.optional(v.number()),
     ckbtcBlockIndex: v.optional(v.number()),
-    evidenceStorageId: v.optional(v.id('_storage'))
+    evidencePayload: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -264,7 +259,7 @@ export const markCompleted = mutationGeneric({
       complianceScore: args.complianceScore,
       ckbtcMintedSats: args.ckbtcMintedSats ?? license.ckbtcMintedSats,
       ckbtcBlockIndex: args.ckbtcBlockIndex ?? license.ckbtcBlockIndex,
-      evidenceStorageId: args.evidenceStorageId ?? license.evidenceStorageId,
+      evidencePayload: args.evidencePayload ?? license.evidencePayload,
       status: 'finalized',
       finalizedAt: Date.now(),
       updatedAt: Date.now()

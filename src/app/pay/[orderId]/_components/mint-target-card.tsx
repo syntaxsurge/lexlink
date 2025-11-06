@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { ChangeEvent, useEffect, useMemo, useState, useTransition } from 'react'
 
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
@@ -93,7 +93,9 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
         <Input
           id='mint-to'
           value={mintTo}
-          onChange={event => setMintTo(event.target.value)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setMintTo(event.target.value)
+          }
           placeholder='0x…'
           spellCheck={false}
         />
@@ -118,7 +120,9 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
           type='checkbox'
           className='h-4 w-4 rounded border border-border bg-background text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
           checked={rememberPreference}
-          onChange={event => setRememberPreference(event.target.checked)}
+          onChange={(event: ChangeEvent<HTMLInputElement>) =>
+            setRememberPreference(event.target.checked)
+          }
         />
         <Label htmlFor='remember-wallet' className='cursor-pointer'>
           Remember this wallet for future purchases

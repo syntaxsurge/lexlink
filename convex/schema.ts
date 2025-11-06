@@ -60,7 +60,7 @@ export default defineSchema({
     complianceScore: v.number(),
     trainingUnits: v.number(),
     ownerPrincipal: v.optional(v.string()),
-    evidenceStorageId: v.optional(v.id('_storage'))
+    evidencePayload: v.optional(v.string())
   })
     .index('by_orderId', ['orderId'])
     .index('by_ipId', ['ipId'])

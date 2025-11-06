@@ -93,7 +93,7 @@ export type LicenseRecord = {
   complianceScore: number
   trainingUnits: number
   ownerPrincipal?: string
-  evidenceStorageId?: string
+  evidencePayload?: string
 }
 
 export type DisputeRecord = {
@@ -1439,15 +1439,13 @@ async function finalizeOrder({
   const evidenceJson = JSON.stringify(evidencePayload, null, 2)
   const evidenceHash = sha256Hex(evidenceJson)
 
-  let evidenceStorageId: string | null = null
+  let evidenceStored = false
   try {
-    evidenceStorageId = (await convex.mutation(
-      'licenses:storeEvidencePayload' as any,
-      {
-        orderId: order.orderId,
-        payload: evidenceJson
-      }
-    )) as string
+    await convex.mutation('licenses:storeEvidencePayload' as any, {
+      orderId: order.orderId,
+      payload: evidenceJson
+    })
+    evidenceStored = true
   } catch (error) {
     console.warn('Failed to persist license evidence payload:', error)
   }
@@ -1523,7 +1521,7 @@ async function finalizeOrder({
     complianceScore,
     ckbtcMintedSats: minted?.sats,
     ckbtcBlockIndex: minted?.blockIndex,
-    evidenceStorageId: evidenceStorageId ?? undefined
+    evidencePayload: evidenceStored ? evidenceJson : undefined
   })
 
   await recordEvent({
