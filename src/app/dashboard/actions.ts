@@ -22,6 +22,7 @@ import {
   confirmPayment,
   fetchAttestation
 } from '@/lib/icp'
+import { generateImageFromPrompt } from '@/lib/ai'
 import { uploadBytes, uploadJson, ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   readPaymentMode,
@@ -56,6 +57,9 @@ export type IpRecord = {
   mediaHash: `0x${string}`
   commercialUse: boolean
   derivativesAllowed: boolean
+  creators?: CreatorShare[]
+  tags?: string[]
+  aiMetadata?: AiMetadataRecord
   ownerPrincipal?: string
 }
 
@@ -144,11 +148,50 @@ export type ProfileRecord = {
   updatedAt: number
 }
 
+type CreatorSocialInput = {
+  platform: string
+  url: string
+}
+
+export type CreatorSocialLink = {
+  platform: string
+  url: string
+}
+
+export type CreatorShare = {
+  name: string
+  address: string
+  contributionPercent: number
+  role?: string
+  description?: string
+  socialMedia?: CreatorSocialLink[]
+}
+
+export type AiMetadataRecord = {
+  prompt: string
+  model: string
+  provider?: string
+  enhancedPrompt?: string
+  generatedAt: number
+  contentHash?: string
+}
+
+type AiMetadataInput = {
+  prompt: string
+  model: string
+  provider?: string
+  enhancedPrompt?: string
+  generatedAt?: number | string
+  contentHash?: string
+}
+
 type CreatorInput = {
   name: string
   address: string
   role?: string
+  description?: string
   contributionPercent: number
+  socialMedia?: CreatorSocialInput[]
 }
 
 type SerializedFile = {
@@ -175,6 +218,8 @@ export type RegisterIpPayload = {
   media: AssetInput
   mediaType: string
   creators?: CreatorInput[]
+  tags?: string[]
+  aiMetadata?: AiMetadataInput
   priceSats: number
   royaltyBps: number
   commercialUse: boolean
@@ -182,6 +227,18 @@ export type RegisterIpPayload = {
   nftAttributes?: NftAttributeInput[]
   relationships?: RelationshipInput[]
   customMetadata?: Record<string, unknown>
+}
+
+export type GenerateAiIpPayload = {
+  prompt: string
+  title: string
+  description: string
+  tags?: string[]
+  priceBtc: number
+  royaltyPercent: number
+  commercialUse: boolean
+  derivativesAllowed: boolean
+  enhancePrompt?: boolean
 }
 
 type RelationshipInput = {
@@ -446,12 +503,54 @@ function sanitizeCreators(creators?: CreatorInput[]) {
       name: creator.name.trim(),
       address: creator.address.trim(),
       role: creator.role?.trim() || undefined,
-      contributionPercent: creator.contributionPercent
+      description: creator.description?.trim() || undefined,
+      contributionPercent: creator.contributionPercent,
+      socialMedia: sanitizeCreatorSocialLinks(creator.socialMedia)
     }))
     .filter(
       creator =>
         creator.name.length > 0 && creator.address.length > 0
     )
+}
+
+function sanitizeCreatorSocialLinks(
+  links?: CreatorSocialInput[]
+): CreatorSocialLink[] | undefined {
+  if (!links) {
+    return undefined
+  }
+  const normalized = links
+    .map(link => {
+      const platform = link.platform?.trim() ?? ''
+      const normalizedUrl = normalizeCreatorUrl(link.url)
+      if (!platform || !normalizedUrl) {
+        return null
+      }
+      return {
+        platform,
+        url: normalizedUrl
+      }
+    })
+    .filter((value): value is CreatorSocialLink => value !== null)
+
+  return normalized.length > 0 ? normalized : undefined
+}
+
+function normalizeCreatorUrl(url?: string) {
+  const value = url?.trim()
+  if (!value) {
+    return null
+  }
+  const candidates = [value, `https://${value}`]
+  for (const candidate of candidates) {
+    try {
+      const parsed = new URL(candidate)
+      return parsed.toString()
+    } catch {
+      continue
+    }
+  }
+  return null
 }
 
 function sanitizeRelationships(relationships?: RelationshipInput[]) {
@@ -490,6 +589,70 @@ function ensurePercent(creators: CreatorInput[]) {
   if (Math.abs(total - 100) > 0.001) {
     throw new Error('Creator contributionPercent values must total 100')
   }
+}
+
+function sanitizeTags(tags?: string[]) {
+  if (!tags) {
+    return undefined
+  }
+  const seen = new Set<string>()
+  const deduped: string[] = []
+  for (const raw of tags) {
+    const tag = raw?.trim()
+    if (!tag) {
+      continue
+    }
+    const key = tag.toLowerCase()
+    if (!seen.has(key)) {
+      seen.add(key)
+      deduped.push(tag)
+    }
+  }
+  return deduped.length > 0 ? deduped : undefined
+}
+
+function normalizeAiMetadata(
+  metadata?: AiMetadataInput
+): AiMetadataRecord | undefined {
+  if (!metadata) {
+    return undefined
+  }
+  const prompt = metadata.prompt?.trim() ?? ''
+  const model = metadata.model?.trim() ?? ''
+  if (!prompt || !model) {
+    return undefined
+  }
+
+  let generatedAt = Date.now()
+  if (metadata.generatedAt !== undefined) {
+    const value = metadata.generatedAt
+    if (typeof value === 'string') {
+      const parsed = Date.parse(value)
+      generatedAt = Number.isFinite(parsed) ? parsed : Date.now()
+    } else if (typeof value === 'number' && Number.isFinite(value)) {
+      generatedAt = value
+    }
+  }
+
+  return {
+    prompt,
+    model,
+    provider: metadata.provider?.trim() || undefined,
+    enhancedPrompt: metadata.enhancedPrompt?.trim() || undefined,
+    generatedAt,
+    contentHash: normalizeContentHash(metadata.contentHash)
+  }
+}
+
+function normalizeContentHash(hash?: string) {
+  if (!hash) {
+    return undefined
+  }
+  const trimmed = hash.trim()
+  if (!trimmed) {
+    return undefined
+  }
+  return trimmed.startsWith('0x') ? trimmed : `0x${trimmed}`
 }
 
 function normalizeCustomMetadata(
@@ -1082,6 +1245,8 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   const actor = await requireRole(['operator', 'creator'])
   const creators = sanitizeCreators(payload.creators)
   const relationships = sanitizeRelationships(payload.relationships)
+  const tags = sanitizeTags(payload.tags)
+  const aiMetadata = normalizeAiMetadata(payload.aiMetadata)
   ensurePercent(creators)
   const convex = getConvexClient()
   const storyClient = getStoryClient()
@@ -1112,14 +1277,21 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
   ])
 
   const creatorMetadata = creators.map(creator => {
-    const base = {
-      name: creator.name ?? '',
-      address: creator.address ?? '',
+    const metadata: Record<string, unknown> = {
+      name: creator.name,
+      address: creator.address,
       contributionPercent: creator.contributionPercent
     }
-    return creator.role
-      ? { ...base, role: creator.role }
-      : base
+    if (creator.role) {
+      metadata.role = creator.role
+    }
+    if (creator.description) {
+      metadata.description = creator.description
+    }
+    if (creator.socialMedia && creator.socialMedia.length > 0) {
+      metadata.socialMedia = creator.socialMedia
+    }
+    return metadata
   })
 
   const ipMetadataPayload: Record<string, unknown> = {
@@ -1146,6 +1318,23 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
       commercialUse: payload.commercialUse,
       derivativesAllowed: payload.derivativesAllowed,
       royaltyPercent: Math.min(payload.royaltyBps / 100, 100)
+    }
+  }
+
+  if (tags) {
+    ipMetadataPayload.tags = tags
+  }
+
+  if (aiMetadata) {
+    ipMetadataPayload.aiMetadata = {
+      prompt: aiMetadata.prompt,
+      model: aiMetadata.model,
+      generatedAt: aiMetadata.generatedAt,
+      ...(aiMetadata.provider ? { provider: aiMetadata.provider } : {}),
+      ...(aiMetadata.enhancedPrompt
+        ? { enhancedPrompt: aiMetadata.enhancedPrompt }
+        : {}),
+      ...(aiMetadata.contentHash ? { contentHash: aiMetadata.contentHash } : {})
     }
   }
 
@@ -1235,6 +1424,14 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
     mediaUrl: mediaAsset.uri,
     mediaHash: mediaAsset.hash,
     mediaType,
+    creators: creators.length > 0 ? creators : undefined,
+    tags,
+    aiMetadata: aiMetadata
+      ? {
+          ...aiMetadata,
+          generatedAt: Math.trunc(aiMetadata.generatedAt)
+        }
+      : undefined,
     ipMetadataUri,
     ipMetadataHash,
     nftMetadataUri,
@@ -1272,8 +1469,140 @@ export async function registerIpAsset(payload: RegisterIpPayload) {
       imageHash: imageAsset.hash,
       mediaUri: mediaAsset.uri,
       mediaHash: mediaAsset.hash
-    }
+    },
+    creators,
+    tags,
+    aiMetadata
   }
+}
+
+export async function generateAiIpAsset(payload: GenerateAiIpPayload) {
+  const actor = await requireRole(['operator', 'creator'])
+  const prompt = payload.prompt.trim()
+  if (prompt.length < 10) {
+    throw new Error('Provide a descriptive prompt (at least 10 characters)')
+  }
+  const title = payload.title.trim()
+  if (title.length < 3) {
+    throw new Error('Title must be at least 3 characters')
+  }
+  const description = payload.description.trim()
+  if (description.length < 20) {
+    throw new Error('Description must be at least 20 characters')
+  }
+
+  const priceSats = Math.round(payload.priceBtc * 100_000_000)
+  if (!Number.isFinite(priceSats) || priceSats <= 0) {
+    throw new Error('Price must be greater than zero')
+  }
+
+  const royaltyBps = Math.round(payload.royaltyPercent * 100)
+  if (!Number.isFinite(royaltyBps) || royaltyBps < 0 || royaltyBps > 10000) {
+    throw new Error('Royalties must be between 0% and 100%')
+  }
+
+  const generation = await generateImageFromPrompt({
+    prompt,
+    enhancePrompt: payload.enhancePrompt ?? true
+  })
+
+  const fileNameBase = `${slugify(title)}-ai`
+  const fileName = ensureExtension(fileNameBase, generation.mimeType)
+  const base64 = Buffer.from(generation.bytes).toString('base64')
+  const serialized: SerializedFile = {
+    name: fileName,
+    type: generation.mimeType,
+    size: generation.bytes.length,
+    data: `data:${generation.mimeType};base64,${base64}`
+  }
+
+  const creatorSocial =
+    env.AI_CREATOR_SOCIAL_URL !== undefined
+      ? [
+          {
+            platform: env.AI_CREATOR_SOCIAL_PLATFORM,
+            url: env.AI_CREATOR_SOCIAL_URL
+          }
+        ]
+      : undefined
+
+  const creators: CreatorInput[] = [
+    {
+      name: env.AI_CREATOR_NAME,
+      address: env.AI_CREATOR_ADDRESS,
+      role: 'AI Generator',
+      description: env.AI_CREATOR_DESCRIPTION,
+      contributionPercent: 100,
+      socialMedia: creatorSocial
+    }
+  ]
+
+  const tags = sanitizeTags(payload.tags)
+
+  const aiMetadata: AiMetadataInput = {
+    prompt,
+    model: generation.model,
+    provider: generation.provider,
+    enhancedPrompt: generation.enhancedPrompt,
+    generatedAt: Date.now(),
+    contentHash: generation.contentHash
+  }
+
+  const registration = await registerIpAsset({
+    title,
+    description,
+    createdAt: new Date().toISOString(),
+    image: { kind: 'file', file: serialized },
+    media: { kind: 'file', file: serialized },
+    mediaType: generation.mimeType,
+    creators,
+    tags,
+    aiMetadata,
+    priceSats,
+    royaltyBps,
+    commercialUse: payload.commercialUse,
+    derivativesAllowed: payload.derivativesAllowed
+  })
+
+  await recordEvent({
+    actor,
+    action: 'ip_asset.generated',
+    payload: {
+      ipId: registration.ipId,
+      model: generation.model,
+      provider: generation.provider,
+      contentHash: generation.contentHash
+    },
+    resourceId: registration.ipId
+  })
+
+  return {
+    ...registration,
+    contentHash: generation.contentHash,
+    enhancedPrompt: generation.enhancedPrompt ?? prompt,
+    model: generation.model,
+    provider: generation.provider
+  }
+}
+
+export async function loadPublicCatalog() {
+  const convex = getConvexClient()
+  const raw = (await convex.query('ipAssets:list' as any, {})) as Array<
+    IpRecord & { _id: string; _creationTime: number }
+  >
+
+  return raw
+    .map(record => {
+      const { _id, _creationTime, ...rest } = record as IpRecord & {
+        _id: string
+        _creationTime: number
+      }
+      return {
+        ...rest,
+        createdAt: rest.createdAt ?? _creationTime
+      }
+    })
+    .sort((a, b) => b.createdAt - a.createdAt)
 }
 
 export async function createLicenseOrder({

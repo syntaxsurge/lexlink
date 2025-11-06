@@ -11,6 +11,7 @@ import {
   Scale,
   ScrollText,
   Settings,
+  Sparkles,
   WalletCards
 } from 'lucide-react'
 import { signOut, useSession } from 'next-auth/react'
@@ -29,6 +30,7 @@ const routes = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/dashboard/purchases', label: 'My Licenses', icon: WalletCards },
   { href: '/dashboard/ip', label: 'IP Registry', icon: BookOpen },
+  { href: '/dashboard/ai', label: 'AI Studio', icon: Sparkles },
   { href: '/dashboard/licenses', label: 'Licenses', icon: ScrollText },
   { href: '/dashboard/disputes', label: 'Disputes', icon: Scale },
   { href: '/dashboard/compliance', label: 'Compliance', icon: BarChart3 },

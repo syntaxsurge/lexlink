@@ -48,6 +48,21 @@ const creatorSchema = z.object({
     .trim()
     .max(120, 'Creator roles are limited to 120 characters')
     .optional(),
+  description: z
+    .string()
+    .trim()
+    .max(280, 'Creator descriptions are limited to 280 characters')
+    .optional(),
+  socialPlatform: z
+    .string()
+    .trim()
+    .max(60, 'Social platform labels are limited to 60 characters')
+    .optional(),
+  socialUrl: z
+    .string()
+    .trim()
+    .max(300, 'Social links are limited to 300 characters')
+    .optional(),
   pct: z
     .number({
       invalid_type_error: 'Contribution must be a number'
@@ -115,6 +130,7 @@ const formSchema = z
       .optional(),
     relationships: z.array(relationshipSchema).optional(),
     nftAttributes: z.array(attributeSchema).optional(),
+    tags: z.string().optional(),
     customMetadata: z.string().optional()
   })
   .superRefine((values, ctx) => {
@@ -216,12 +232,27 @@ export function RegisterIpForm() {
           name: string
           address: string
           role?: string
+          description?: string
           contributionPercent: number
+          socialMedia?: Array<{
+            platform: string
+            url: string
+          }>
         }>
         relationships: Array<{
           parentIpId: string
           type: string
         }>
+        tags: string[]
+        aiMetadata:
+          | {
+              prompt: string
+              enhancedPrompt?: string
+              model: string
+              provider?: string
+              contentHash?: string
+            }
+          | null
       }
   >(null)
   const [error, setError] = useState<string | null>(null)
@@ -243,6 +274,7 @@ export function RegisterIpForm() {
       creators: [],
       relationships: [],
       nftAttributes: [],
+      tags: '',
       customMetadata: ''
     }
   })
@@ -371,19 +403,31 @@ export function RegisterIpForm() {
         )
 
         const creatorEntries = (values.creators ?? [])
-          .map(creator => ({
-            name: creator.name.trim(),
-            wallet: creator.wallet.trim(),
-            role: creator.role?.trim() ?? '',
-            contributionPercent: creator.pct
-          }))
+          .map(creator => {
+            const socialLinks = []
+            const platform = creator.socialPlatform?.trim()
+            const url = creator.socialUrl?.trim()
+            if (platform && url) {
+              socialLinks.push({ platform, url })
+            }
+            return {
+              name: creator.name.trim(),
+              wallet: creator.wallet.trim(),
+              role: creator.role?.trim() ?? '',
+              description: creator.description?.trim() ?? '',
+              contributionPercent: creator.pct,
+              socialMedia: socialLinks
+            }
+          })
           .filter(creator => creator.name && creator.wallet)
 
         const payloadCreators = creatorEntries.map(creator => ({
           name: creator.name,
           address: creator.wallet,
           role: creator.role || undefined,
-          contributionPercent: creator.contributionPercent
+          description: creator.description || undefined,
+          contributionPercent: creator.contributionPercent,
+          socialMedia: creator.socialMedia.length ? creator.socialMedia : undefined
         }))
 
         const relationshipEntries = (values.relationships ?? [])
@@ -393,9 +437,13 @@ export function RegisterIpForm() {
           }))
           .filter(rel => rel.parentIpId && rel.type)
 
-        const customMetadata = parseOptionalJsonRecord(
-          values.customMetadata
-        )
+        const customMetadata = parseOptionalJsonRecord(values.customMetadata)
+
+        const tags =
+          values.tags
+            ?.split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0) ?? undefined
 
         const normalizedMediaType =
           values.mediaType?.trim() || detectedMime || 'application/octet-stream'
@@ -412,6 +460,7 @@ export function RegisterIpForm() {
           commercialUse: values.commercialUse,
           derivativesAllowed: values.derivativesAllowed,
           creators: payloadCreators,
+          tags,
           nftAttributes:
             attributes.length > 0
               ? attributes.map(attribute => ({
@@ -429,7 +478,9 @@ export function RegisterIpForm() {
           tokenId: response.tokenId,
           licenseTermsId: response.licenseTermsId,
           creators: payloadCreators,
-          relationships: relationshipEntries
+          relationships: relationshipEntries,
+          tags: response.tags ?? tags ?? [],
+          aiMetadata: response.aiMetadata ?? null
         })
       } catch (err) {
         const message =
@@ -653,6 +704,18 @@ export function RegisterIpForm() {
             Advanced metadata
           </summary>
           <div className='mt-3 space-y-6'>
+            <Field label='Tags (comma separated)' error={errors.tags?.message}>
+              <Input
+                id='tags'
+                placeholder='electronic, ai-music, nightlife'
+                {...register('tags')}
+              />
+              <Hint>
+                Tags surface on the public gallery and marketplace. Separate
+                each tag with a comma.
+              </Hint>
+            </Field>
+
             <AdvancedCreators className='text-sm' />
 
             <AdvancedRelationships className='text-sm' />
@@ -799,8 +862,67 @@ export function RegisterIpForm() {
                         Role: {creator.role}
                       </div>
                     )}
+                    {creator.description && (
+                      <p className='mt-2 text-[11px] leading-relaxed text-muted-foreground'>
+                        {creator.description}
+                      </p>
+                    )}
+                    {creator.socialMedia && creator.socialMedia.length > 0 && (
+                      <div className='mt-2 flex flex-wrap gap-2'>
+                        {creator.socialMedia.map(link => (
+                          <ResultLink key={link.url} href={link.url} variant='outline'>
+                            {link.platform}
+                          </ResultLink>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+          {result.tags.length > 0 && (
+            <div className='space-y-1'>
+              <dt className='font-semibold text-muted-foreground'>Tags</dt>
+              <dd className='flex flex-wrap gap-2'>
+                {result.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className='rounded-md border border-border/60 bg-background/60 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </dd>
+            </div>
+          )}
+          {result.aiMetadata && (
+            <div className='space-y-2'>
+              <dt className='font-semibold text-muted-foreground'>AI Generation</dt>
+              <div className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'>
+                <p className='font-medium text-foreground'>
+                  {result.aiMetadata.model}{' '}
+                  {result.aiMetadata.provider ? `· ${result.aiMetadata.provider}` : ''}
+                </p>
+                <p className='mt-1 text-[11px] text-muted-foreground'>
+                  Prompt:{' '}
+                  <span className='font-medium text-foreground'>
+                    {result.aiMetadata.enhancedPrompt ?? result.aiMetadata.prompt}
+                  </span>
+                </p>
+                {result.aiMetadata.enhancedPrompt && (
+                  <p className='mt-1 text-[11px] text-muted-foreground'>
+                    Original prompt:{' '}
+                    <span className='font-medium text-foreground'>
+                      {result.aiMetadata.prompt}
+                    </span>
+                  </p>
+                )}
+                {result.aiMetadata.contentHash && (
+                  <p className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
+                    Content hash: {result.aiMetadata.contentHash}
+                  </p>
+                )}
               </div>
             </div>
           )}

@@ -9,7 +9,11 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { logoutInternetIdentity } from '@/lib/internet-identity-client'
 
-const links = [{ href: '/', label: 'Home' }]
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/gallery', label: 'Gallery' },
+  { href: '/marketplace', label: 'Marketplace' }
+]
 
 export function SiteHeader() {
   const { data: session, status } = useSession()

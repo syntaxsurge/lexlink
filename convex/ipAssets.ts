@@ -33,6 +33,36 @@ export const insert = mutationGeneric({
     mediaUrl: v.string(),
     mediaType: v.string(),
     mediaHash: v.string(),
+    creators: v.optional(
+      v.array(
+        v.object({
+          name: v.string(),
+          address: v.string(),
+          contributionPercent: v.number(),
+          role: v.optional(v.string()),
+          description: v.optional(v.string()),
+          socialMedia: v.optional(
+            v.array(
+              v.object({
+                platform: v.string(),
+                url: v.string()
+              })
+            )
+          )
+        })
+      )
+    ),
+    tags: v.optional(v.array(v.string())),
+    aiMetadata: v.optional(
+      v.object({
+        prompt: v.string(),
+        model: v.string(),
+        provider: v.optional(v.string()),
+        enhancedPrompt: v.optional(v.string()),
+        generatedAt: v.number(),
+        contentHash: v.optional(v.string())
+      })
+    ),
     ipMetadataUri: v.string(),
     ipMetadataHash: v.string(),
     nftMetadataUri: v.string(),

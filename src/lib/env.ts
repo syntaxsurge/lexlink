@@ -133,7 +133,26 @@ const serverEnvSchema = z.object({
   CONSTELLATION_METAGRAPH_PRIVATE_KEY: z
     .string()
     .regex(/^0x[0-9a-fA-F]{64}$/, 'CONSTELLATION_METAGRAPH_PRIVATE_KEY must be hex')
-    .optional()
+    .optional(),
+  OPENAI_API_KEY: z.string().min(10),
+  OPENAI_API_BASE: z.string().url().default('https://api.openai.com/v1'),
+  OPENAI_IMAGE_MODEL: z.string().default('gpt-image-1'),
+  OPENAI_IMAGE_SIZE: z.string().default('1024x1024'),
+  OPENAI_IMAGE_QUALITY: z.enum(['standard', 'hd']).default('standard'),
+  DEEPSEEK_API_KEY: z.string().min(10).optional(),
+  AI_CREATOR_NAME: z
+    .string()
+    .min(2)
+    .default('LexLink AI Studio'),
+  AI_CREATOR_ADDRESS: z
+    .string()
+    .regex(/^0x[0-9a-fA-F]{40}$/, 'AI_CREATOR_ADDRESS must be a hex address'),
+  AI_CREATOR_DESCRIPTION: z
+    .string()
+    .min(2)
+    .default('Autonomous LexLink agent orchestrating AI asset creation.'),
+  AI_CREATOR_SOCIAL_URL: z.string().url().optional(),
+  AI_CREATOR_SOCIAL_PLATFORM: z.string().min(2).default('Website')
 })
 
 type PublicEnv = z.infer<typeof publicEnvSchema>
@@ -206,7 +225,18 @@ function parseEnv() {
       process.env.CONSTELLATION_METAGRAPH_DATA_L1_URL,
     CONSTELLATION_METAGRAPH_L0_URL: process.env.CONSTELLATION_METAGRAPH_L0_URL,
     CONSTELLATION_METAGRAPH_PRIVATE_KEY:
-      process.env.CONSTELLATION_METAGRAPH_PRIVATE_KEY
+      process.env.CONSTELLATION_METAGRAPH_PRIVATE_KEY,
+    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    OPENAI_API_BASE: process.env.OPENAI_API_BASE,
+    OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL,
+    OPENAI_IMAGE_SIZE: process.env.OPENAI_IMAGE_SIZE,
+    OPENAI_IMAGE_QUALITY: process.env.OPENAI_IMAGE_QUALITY,
+    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
+    AI_CREATOR_NAME: process.env.AI_CREATOR_NAME,
+    AI_CREATOR_ADDRESS: process.env.AI_CREATOR_ADDRESS,
+    AI_CREATOR_DESCRIPTION: process.env.AI_CREATOR_DESCRIPTION,
+    AI_CREATOR_SOCIAL_URL: process.env.AI_CREATOR_SOCIAL_URL,
+    AI_CREATOR_SOCIAL_PLATFORM: process.env.AI_CREATOR_SOCIAL_PLATFORM
   })
 
   return { publicEnv, serverEnv }
@@ -281,9 +311,12 @@ const resolvedConstellationMemoMax =
 const resolvedConstellationTxAmount =
   serverEnv.CONSTELLATION_TX_AMOUNT_DAG ?? undefined
 
+const openAiBase = serverEnv.OPENAI_API_BASE.replace(/\/$/, '')
+
 export const env = {
   ...publicEnv,
   ...serverEnv,
+  OPENAI_API_BASE: openAiBase,
   NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
     publicEnv.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID ?? ckbtcLedgerId,
   CKBTC_LEDGER_CANISTER_ID: ckbtcLedgerId,
