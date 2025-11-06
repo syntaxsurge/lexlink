@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { signOut, useSession } from 'next-auth/react'
@@ -29,9 +30,20 @@ export function SiteHeader() {
       <div className='container-edge flex items-center justify-between gap-4 py-4'>
         <Link
           href='/'
-          className='flex items-center gap-2 text-lg font-semibold'
+          className='group flex items-center gap-3 text-lg font-semibold leading-none'
         >
-          LexLink
+          <Image
+            src='/images/lexlink-logo.png'
+            alt='LexLink logo'
+            width={40}
+            height={40}
+            priority
+            sizes='40px'
+            className='h-9 w-9 rounded-md border border-transparent transition-all group-hover:border-foreground/20 group-hover:shadow-sm sm:h-10 sm:w-10'
+          />
+          <span className='text-base font-semibold tracking-tight text-foreground sm:text-lg'>
+            LexLink
+          </span>
         </Link>
         <nav className='flex items-center gap-2'>
           {links.map(link => (
