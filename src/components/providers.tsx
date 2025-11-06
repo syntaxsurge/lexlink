@@ -6,6 +6,7 @@ import { SessionProvider } from 'next-auth/react'
 
 import { InternetIdentityProvider } from '@/components/auth/internet-identity-provider'
 import { ThemeProvider } from '@/components/theme-provider'
+import { TopNavigationLoader } from '@/components/top-navigation-loader'
 import { Toaster } from '@/components/ui/sonner-toaster'
 
 type ProvidersProps = {
@@ -17,6 +18,7 @@ export function Providers({ children }: ProvidersProps) {
     <SessionProvider>
       <InternetIdentityProvider>
         <ThemeProvider>
+          <TopNavigationLoader />
           {children}
           <Toaster />
         </ThemeProvider>
