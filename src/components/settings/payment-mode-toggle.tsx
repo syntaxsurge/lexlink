@@ -70,25 +70,24 @@ export function PaymentModeToggle({
               disabled={isPending}
               onClick={() => apply(option.value)}
             >
-              <div className='flex items-center gap-2'>
+              <div className='flex flex-wrap items-center gap-2'>
                 <span className='text-sm font-semibold'>{option.label}</span>
                 {defaultMode === option.value && (
-                  <Badge variant='outline'>Default</Badge>
+                  <Badge variant='outline' className='flex-shrink-0'>Default</Badge>
                 )}
-                {active && <Badge>Active</Badge>}
+                {active && <Badge className='flex-shrink-0'>Active</Badge>}
               </div>
-              <p className='text-xs text-muted-foreground'>
+              <p className='whitespace-normal break-words text-xs leading-relaxed text-muted-foreground'>
                 {option.description}
               </p>
             </Button>
           )
         })}
       </div>
-      <p className='text-xs text-muted-foreground'>
-        Mode persists per operator session. Default is set via PAYMENT_MODE=
-        {defaultMode}.
+      <p className='break-words text-xs leading-relaxed text-muted-foreground'>
+        Mode persists per operator session. Default is set via PAYMENT_MODE={defaultMode}.
       </p>
-      {error && <p className='text-xs text-destructive'>{error}</p>}
+      {error && <p className='break-words text-xs text-destructive'>{error}</p>}
     </div>
   )
 }

@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { Eye } from 'lucide-react'
+
 import {
   loadAuditTrail,
   loadCkbtcSnapshot,
@@ -20,6 +22,15 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Table,
   TableBody,
@@ -73,28 +84,99 @@ function MetricCard({
 
 function EventItem({ event }: { event: AuditEventRecord }) {
   return (
-    <div className='rounded-2xl border border-border/60 bg-card/70 p-4 text-sm shadow-sm'>
-      <div className='flex items-center justify-between gap-3'>
-        <div className='flex items-center gap-2'>
-          <Badge variant='outline' className='rounded-full px-3 py-1 text-xs'>
+    <div className='rounded-lg border border-border/60 bg-background/70 p-3 shadow-sm transition-colors hover:bg-accent/50'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
+        <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
+          <Badge variant='outline' className='flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs'>
             {event.action}
           </Badge>
           {event.resourceId && (
-            <span className='break-all font-mono text-xs text-muted-foreground'>
-              {event.resourceId}
+            <span className='truncate font-mono text-xs text-muted-foreground'>
+              {event.resourceId.slice(0, 20)}…
             </span>
           )}
         </div>
-        <span className='text-xs text-muted-foreground'>
+        <span className='flex-shrink-0 text-xs text-muted-foreground'>
           {formatDate(event.createdAt)}
         </span>
       </div>
-      <div className='mt-3 grid gap-1 text-xs text-muted-foreground'>
-        {event.actorAddress && <div>Actor: {event.actorAddress}</div>}
-        {event.actorPrincipal && <div>Principal: {event.actorPrincipal}</div>}
-        <pre className='mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 font-mono text-[11px] text-foreground'>
-          {JSON.stringify(event.payload, null, 2)}
-        </pre>
+      <div className='mt-2.5 flex items-center justify-between gap-2'>
+        <div className='min-w-0 flex-1 text-xs text-muted-foreground'>
+          {event.actorAddress && (
+            <div className='truncate'>Actor: {event.actorAddress}</div>
+          )}
+          {event.actorPrincipal && (
+            <div className='truncate'>Principal: {event.actorPrincipal}</div>
+          )}
+        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant='ghost' size='sm' className='h-7 flex-shrink-0 text-xs'>
+              <Eye className='mr-1.5 h-3.5 w-3.5' />
+              View Details
+            </Button>
+          </DialogTrigger>
+          <DialogContent className='max-w-3xl'>
+            <DialogHeader>
+              <DialogTitle>Audit Event Details</DialogTitle>
+              <DialogDescription>
+                Complete payload and metadata for {event.action}
+              </DialogDescription>
+            </DialogHeader>
+            <div className='space-y-4'>
+              <div className='grid gap-3 text-sm'>
+                <div>
+                  <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                    Action
+                  </span>
+                  <p className='mt-1'>
+                    <Badge variant='outline'>{event.action}</Badge>
+                  </p>
+                </div>
+                {event.resourceId && (
+                  <div>
+                    <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                      Resource ID
+                    </span>
+                    <p className='mt-1 break-all font-mono text-xs'>{event.resourceId}</p>
+                  </div>
+                )}
+                {event.actorAddress && (
+                  <div>
+                    <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                      Actor Address
+                    </span>
+                    <p className='mt-1 break-all font-mono text-xs'>{event.actorAddress}</p>
+                  </div>
+                )}
+                {event.actorPrincipal && (
+                  <div>
+                    <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                      Actor Principal
+                    </span>
+                    <p className='mt-1 break-all font-mono text-xs'>{event.actorPrincipal}</p>
+                  </div>
+                )}
+                <div>
+                  <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                    Timestamp
+                  </span>
+                  <p className='mt-1 text-xs'>{formatDate(event.createdAt)}</p>
+                </div>
+              </div>
+              <div>
+                <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+                  Payload
+                </span>
+                <ScrollArea className='mt-2 h-[300px] w-full rounded-lg border border-border/60'>
+                  <pre className='whitespace-pre-wrap break-words p-4 font-mono text-[11px] leading-relaxed'>
+                    {JSON.stringify(event.payload, null, 2)}
+                  </pre>
+                </ScrollArea>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

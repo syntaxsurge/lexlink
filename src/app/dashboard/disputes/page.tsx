@@ -27,6 +27,10 @@ import {
 } from '@/lib/constellation-links'
 import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import { env } from '@/lib/env'
+import {
+  ipAssetExplorerUrl,
+  type StoryNetwork
+} from '@/lib/story-links'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
@@ -34,7 +38,8 @@ function formatDate(ms: number) {
 
 const CONSTELLATION_NETWORK =
   (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
-const STORY_NETWORK = env.NEXT_PUBLIC_STORY_NETWORK ?? 'aeneid'
+const STORY_NETWORK =
+  (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
 
 export default async function DisputesPage() {
   const { ips, disputes } = await loadDashboardData()
@@ -101,6 +106,7 @@ export default async function DisputesPage() {
                     : null
 
               const ipTitle = ipIndex.get(dispute.ipId) ?? 'Unknown IP'
+              const storyExplorer = ipAssetExplorerUrl(dispute.ipId, STORY_NETWORK)
               const evidenceUrl = dispute.evidenceUri
                 ? dispute.evidenceUri.startsWith('ipfs://')
                   ? `${IPFS_GATEWAYS[0]}${dispute.evidenceUri.replace('ipfs://', '')}`
@@ -140,14 +146,25 @@ export default async function DisputesPage() {
 
                         <div className='flex items-start gap-2'>
                           <dt className='min-w-[120px] text-muted-foreground'>
-                            IP Asset ID:
+                            IP Asset:
                           </dt>
                           <dd className='flex-1'>
-                            <TextDialog
-                              title='IP Asset ID'
-                              content={dispute.ipId}
-                              truncateLength={20}
-                            />
+                            <div className='flex flex-wrap items-center gap-2'>
+                              <TextDialog
+                                title='IP Asset ID'
+                                content={dispute.ipId}
+                                truncateLength={20}
+                              />
+                              <Link
+                                href={storyExplorer}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+                              >
+                                Story explorer
+                                <ExternalLink className='h-3 w-3 flex-shrink-0' />
+                              </Link>
+                            </div>
                           </dd>
                         </div>
 
