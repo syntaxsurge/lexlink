@@ -88,7 +88,7 @@ async function getActor(): Promise<EscrowActor> {
 
   cachedActor = Actor.createActor<EscrowActor>(idlFactory as any, {
     agent,
-    canisterId: env.ICP_ESCROW_CANISTER_ID
+    canisterId: env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   })
 
   return cachedActor

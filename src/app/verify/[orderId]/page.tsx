@@ -215,12 +215,6 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
                 ? `${receipt.complianceScore}/100`
                 : 'Pending'}
             </p>
-            <p className='text-xs text-muted-foreground'>
-              Training units logged:{' '}
-              {typeof receipt.trainingUnits === 'number'
-                ? receipt.trainingUnits.toLocaleString()
-                : '0'}
-            </p>
           </div>
           {receipt.constellationAnchoredAt && (
             <p className='text-xs text-muted-foreground'>

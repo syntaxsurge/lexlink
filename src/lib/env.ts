@@ -23,7 +23,7 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_SITE_DOMAIN: z.string().min(3).default('localhost:3000'),
   NEXT_PUBLIC_STORY_NETWORK: z.enum(['aeneid', 'mainnet']).default('aeneid'),
   NEXT_PUBLIC_ICP_HOST: z.string().url().optional(),
-  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string().optional(),
+  NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID: z.string(),
   NEXT_PUBLIC_ICP_CKBTC_HOST: z.string().url().optional(),
   NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   NEXT_PUBLIC_ICP_CKBTC_NETWORK: z
@@ -94,7 +94,6 @@ const serverEnvSchema = z.object({
     .positive()
     .default(259200),
   ICP_HOST: z.string().url(),
-  ICP_ESCROW_CANISTER_ID: z.string(),
   ICP_IDENTITY_PEM_PATH: z.string().min(1).default('icp/icp_identity.pem'),
   CONSTELLATION_ENABLED: z
     .enum(['true', 'false'])
@@ -217,9 +216,6 @@ function parseEnv() {
       process.env.STORY_DISPUTE_BOND_TOKEN_ADDRESS,
     STORY_DISPUTE_DEFAULT_LIVENESS: process.env.STORY_DISPUTE_DEFAULT_LIVENESS,
     ICP_HOST: process.env.ICP_HOST ?? process.env.NEXT_PUBLIC_ICP_HOST,
-    ICP_ESCROW_CANISTER_ID:
-      process.env.ICP_ESCROW_CANISTER_ID ??
-      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID,
     ICP_IDENTITY_PEM_PATH:
       process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
     CONSTELLATION_ENABLED: process.env.CONSTELLATION_ENABLED,
@@ -241,7 +237,7 @@ function parseEnv() {
     ICP_CKBTC_NETWORK: process.env.ICP_CKBTC_NETWORK,
     CKBTC_MERCHANT_PRINCIPAL:
       process.env.CKBTC_MERCHANT_PRINCIPAL ??
-      process.env.ICP_ESCROW_CANISTER_ID,
+      process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID,
     CONVEX_URL: process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL,
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     VC_ISSUER_DID: process.env.VC_ISSUER_DID,

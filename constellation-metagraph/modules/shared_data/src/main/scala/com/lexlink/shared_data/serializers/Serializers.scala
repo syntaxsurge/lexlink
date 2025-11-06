@@ -15,7 +15,6 @@ object Serializers {
   implicit val dataUpdateEncoder: Encoder[DataUpdate] = Encoder.instance {
     case l: LicenseUpdate => l.asJson
     case d: DisputeUpdate => d.asJson
-    case t: TrainingBatchUpdate => t.asJson
     case other => throw new IllegalArgumentException(s"Unknown DataUpdate type: ${other.getClass.getSimpleName}")
   }
 
@@ -25,8 +24,7 @@ object Serializers {
   implicit val dataUpdateDecoder: Decoder[DataUpdate] =
     List[Decoder[DataUpdate]](
       Decoder[LicenseUpdate].widen,
-      Decoder[DisputeUpdate].widen,
-      Decoder[TrainingBatchUpdate].widen
+      Decoder[DisputeUpdate].widen
     ).reduceLeft(_ or _)
 
   /**

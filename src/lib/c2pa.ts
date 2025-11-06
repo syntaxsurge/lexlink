@@ -40,7 +40,7 @@ export async function createLicenseArchive({
     type: ['CreativeWork', 'DigitalDocument'],
     claimGenerator: 'LexLink Attestation Service',
     claimDescription:
-      'This work is licensed through LexLink with verifiable Bitcoin settlement, Story Protocol license token, and Constellation timestamp evidence.',
+      'This work is licensed through LexLink with verifiable ckBTC settlement, Story Protocol license token, and Constellation timestamp evidence.',
     assertions: [
       {
         label: 'org.lexlink.license',

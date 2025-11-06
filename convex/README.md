@@ -4,7 +4,7 @@ LexLink uses Convex to mirror Story/ICP/Constellation state for fast dashboard
 queries. The schema defines two tables:
 
 - `ips` – catalog of registered IP assets keyed by `ipId`.
-- `licenses` – license orders with Bitcoin settlement metadata.
+- `licenses` – license orders with ckBTC settlement metadata.
 
 Functions:
 
@@ -15,8 +15,8 @@ Functions:
 - `licenses.ts`
   - `list` – fetch all license orders.
   - `get` – fetch a license order by `orderId`.
-  - `insert` – insert a pending order with an allocated BTC address.
-  - `markCompleted` – update a license with the BTC txid, attestation hash,
+- `insert` – insert a pending order with an allocated ckBTC escrow target.
+- `markCompleted` – update a license with the ckBTC settlement reference, attestation hash,
     Constellation transaction hash, and minted Story token ID.
 
 The Next.js server actions call these functions via `ConvexHttpClient`; no code

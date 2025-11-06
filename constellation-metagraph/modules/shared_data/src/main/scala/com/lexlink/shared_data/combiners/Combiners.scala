@@ -26,13 +26,11 @@ object Combiners {
       // Separate updates by type
       val newLicenses = updates.collect { case l: LicenseUpdate => l }
       val newDisputes = updates.collect { case d: DisputeUpdate => d }
-      val newBatches = updates.collect { case t: TrainingBatchUpdate => t }
 
       // Update OnChainState (append-only)
       val newOnChainState = LexLinkOnChainState(
         licenses = oldState.onChain.licenses ++ newLicenses,
-        disputes = oldState.onChain.disputes ++ newDisputes,
-        trainingBatches = oldState.onChain.trainingBatches ++ newBatches
+        disputes = oldState.onChain.disputes ++ newDisputes
       )
 
       // Rebuild CalculatedState from scratch (for simplicity; could be optimized)
@@ -74,15 +72,6 @@ object Combiners {
       .mapValues(_.toList)
       .toMap
 
-    // Build training batch indices
-    val trainingBatchesByBatchId = onChain.trainingBatches.map(t => t.batchId -> t).toMap
-
-    val trainingBatchesByIpId = onChain.trainingBatches
-      .groupBy(_.ipId)
-      .view
-      .mapValues(_.toList)
-      .toMap
-
     // Calculate aggregates
     val totalRevenueSats = onChain.licenses.map(_.amountSats).sum
 
@@ -92,11 +81,8 @@ object Combiners {
       licensesByBuyer = licensesByBuyer,
       disputesByDisputeId = disputesByDisputeId,
       disputesByIpId = disputesByIpId,
-      trainingBatchesByBatchId = trainingBatchesByBatchId,
-      trainingBatchesByIpId = trainingBatchesByIpId,
       totalLicenses = onChain.licenses.length.toLong,
       totalDisputes = onChain.disputes.length.toLong,
-      totalTrainingBatches = onChain.trainingBatches.length.toLong,
       totalRevenueSats = totalRevenueSats
     )
   }

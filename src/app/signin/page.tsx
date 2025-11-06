@@ -60,8 +60,8 @@ export default function SignInPage() {
             </h1>
             <p className='max-w-2xl text-lg leading-relaxed text-muted-foreground'>
               Sign in with a principal you control to orchestrate Story Protocol
-              registrations, ICP Bitcoin escrow, and Constellation evidence.
-              Your session automatically grants operator permissions.
+              registrations, ICP ckBTC escrow, and Constellation evidence. Your
+              session automatically grants operator permissions.
             </p>
           </div>
 

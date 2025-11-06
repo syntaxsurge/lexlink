@@ -140,14 +140,6 @@ const painPoints = [
       'Every settlement produces downloadable C2PA archives, verifiable credentials, and Constellation receipts.'
   },
   {
-    problem: 'AI regulations demand disclosures about licensed training data.',
-    sourceLabel: 'EU AI Act Transparency Obligations',
-    sourceUrl:
-      'https://digital-strategy.ec.europa.eu/en/policies/european-approach-artificial-intelligence',
-    solution:
-      'LexLink tracks licensed training batches and publishes Constellation-backed receipts at /verify/training.'
-  },
-  {
     problem: 'Manual licensing flows depend on emails, PDFs, and invoices.',
     sourceLabel: 'U.S. Copyright Office · Music Marketplace Study',
     sourceUrl:
@@ -157,7 +149,7 @@ const painPoints = [
   }
 ]
 
-export const references = [
+const references = [
   {
     label: 'Story Protocol — Programmable IP License (PIL)',
     href: 'https://docs.story.foundation/concepts/programmable-ip-license/overview'

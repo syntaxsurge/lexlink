@@ -15,7 +15,7 @@ import org.tessellation.schema.SnapshotOrdinal
  * Design Philosophy:
  * - Immutable historical snapshot (never changes after publication)
  * - Comprehensive evidence bundle (all verification artifacts)
- * - Cross-chain references (Story Protocol, ICP, Bitcoin)
+ * - Cross-chain references (Story Protocol, ICP ckBTC)
  * - Compliance-ready (verifiable credentials, C2PA, attestations)
  */
 @derive(decoder, encoder)
@@ -49,7 +49,6 @@ case class LicenseUpdate(
 
   // ===== COMPLIANCE METRICS =====
   complianceScore: Int,          // 0-100 composite compliance score
-  trainingUnits: Long,           // AI training units consumed (if applicable)
 
   // ===== TEMPORAL TRACKING =====
   timestamp: Long,               // Unix milliseconds when license completed
@@ -79,18 +78,6 @@ case class DisputeUpdate(
 ) extends DataUpdate
 
 /**
- * TrainingBatchUpdate - Immutable record of AI training data usage
- */
-@derive(decoder, encoder)
-case class TrainingBatchUpdate(
-  batchId: String,               // UUID identifying this training batch
-  ipId: String,                  // Story Protocol IP ID used for training
-  units: Long,                   // Number of training units consumed
-  evidenceHash: String,          // SHA-256 hash of training evidence
-  timestamp: Long                // Unix milliseconds when batch recorded
-) extends DataUpdate
-
-/**
  * LexLinkOnChainState - List of all updates received by the metagraph
  *
  * This represents the raw append-only log of all data submissions.
@@ -99,8 +86,7 @@ case class TrainingBatchUpdate(
 @derive(decoder, encoder)
 case class LexLinkOnChainState(
   licenses: List[LicenseUpdate],
-  disputes: List[DisputeUpdate],
-  trainingBatches: List[TrainingBatchUpdate]
+  disputes: List[DisputeUpdate]
 ) extends DataOnChainState
 
 /**
@@ -119,13 +105,9 @@ case class LexLinkCalculatedState(
   disputesByDisputeId: Map[String, DisputeUpdate],     // disputeId -> dispute
   disputesByIpId: Map[String, List[DisputeUpdate]],    // ipId -> all disputes for that IP
 
-  trainingBatchesByBatchId: Map[String, TrainingBatchUpdate], // batchId -> batch
-  trainingBatchesByIpId: Map[String, List[TrainingBatchUpdate]], // ipId -> all training batches
-
   // Aggregate statistics
   totalLicenses: Long,
   totalDisputes: Long,
-  totalTrainingBatches: Long,
   totalRevenueSats: Long
 ) extends DataCalculatedState
 
@@ -136,11 +118,8 @@ object LexLinkCalculatedState {
     licensesByBuyer = Map.empty,
     disputesByDisputeId = Map.empty,
     disputesByIpId = Map.empty,
-    trainingBatchesByBatchId = Map.empty,
-    trainingBatchesByIpId = Map.empty,
     totalLicenses = 0,
     totalDisputes = 0,
-    totalTrainingBatches = 0,
     totalRevenueSats = 0
   )
 }
@@ -151,8 +130,7 @@ object LexLinkCalculatedState {
 @derive(decoder, encoder)
 case class LicenseQueryResponse(
   license: LicenseUpdate,
-  relatedDisputes: List[DisputeUpdate],
-  relatedTraining: List[TrainingBatchUpdate]
+  relatedDisputes: List[DisputeUpdate]
 )
 
 @derive(decoder, encoder)
@@ -161,10 +139,8 @@ case class IpAssetAnalytics(
   totalLicenses: Int,
   totalRevenueSats: Long,
   totalDisputes: Int,
-  totalTrainingUnits: Long,
   licenses: List[LicenseUpdate],
-  disputes: List[DisputeUpdate],
-  trainingBatches: List[TrainingBatchUpdate]
+  disputes: List[DisputeUpdate]
 )
 
 @derive(decoder, encoder)
@@ -179,7 +155,6 @@ case class BuyerProfile(
 case class NetworkStatistics(
   totalLicenses: Long,
   totalDisputes: Long,
-  totalTrainingBatches: Long,
   totalRevenueSats: Long,
   uniqueIpAssets: Int,
   uniqueBuyers: Int

@@ -20,7 +20,7 @@ import org.tessellation.schema.semver.{MetagraphVersion, TessellationVersion}
  * LexLink Metagraph L0 Node
  *
  * This is the entry point for the Metagraph L0 layer, which:
- * - Serves as the query API for license, dispute, and training data
+ * - Serves as the query API for license and dispute data
  * - Coordinates with Data L1 nodes for consensus
  * - Exposes custom HTTP endpoints for data access
  */
@@ -37,8 +37,7 @@ object Main extends CurrencyL0App(
           DataState(
             LexLinkOnChainState(
               licenses = List.empty,
-              disputes = List.empty,
-              trainingBatches = List.empty
+              disputes = List.empty
             ),
             LexLinkCalculatedState.empty
           )
@@ -54,9 +53,6 @@ object Main extends CurrencyL0App(
 
             case dispute: DisputeUpdate =>
               currentState.map(state => Validations.validateDisputeUpdate(dispute, state))
-
-            case batch: TrainingBatchUpdate =>
-              currentState.map(state => Validations.validateTrainingBatchUpdate(batch, state))
 
             case _ =>
               IO.pure(s"Unknown update type: ${update.getClass.getSimpleName}".invalidNec)

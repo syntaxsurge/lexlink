@@ -184,7 +184,7 @@ function EventItem({ event }: { event: AuditEventRecord }) {
 
 export default async function OverviewPage() {
   const [
-    { principal, ips, licenses, disputes, trainingBatches },
+    { principal, ips, licenses, disputes },
     auditTrail,
     ckbtcSnapshot
   ] = await Promise.all([
@@ -207,10 +207,6 @@ export default async function OverviewPage() {
         ) / finalizedOrders.length
       )
     : 0
-  const totalTrainingUnits = licenses.reduce(
-    (sum, license) => sum + (license.trainingUnits ?? 0),
-    0
-  )
 
   return (
     <div className='space-y-8'>
@@ -230,11 +226,6 @@ export default async function OverviewPage() {
           title='Average Compliance'
           hint='Score across completed sales'
           value={`${averageCompliance}/100`}
-        />
-        <MetricCard
-          title='Training Units Logged'
-          hint='Constellation-evidenced AI batches'
-          value={totalTrainingUnits.toLocaleString()}
         />
       </div>
 
@@ -496,9 +487,9 @@ export default async function OverviewPage() {
       <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
         <CardHeader className='flex flex-row items-center justify-between'>
           <div>
-            <CardTitle>Training Meter Activity</CardTitle>
+            <CardTitle>Settlement History</CardTitle>
             <CardDescription>
-              Constellation IntegrationNet heartbeats emitted for AI usage.
+              Recent finalized licenses with Constellation anchors.
             </CardDescription>
           </div>
         </CardHeader>
@@ -507,64 +498,64 @@ export default async function OverviewPage() {
             <Table className='min-w-full'>
               <TableHeader>
                 <TableRow>
-                  <TableHead className='whitespace-nowrap'>Batch</TableHead>
+                  <TableHead className='whitespace-nowrap'>Order</TableHead>
                   <TableHead className='whitespace-nowrap'>IP ID</TableHead>
-                  <TableHead className='whitespace-nowrap'>Units</TableHead>
-                  <TableHead className='whitespace-nowrap'>
-                    Constellation Tx
-                  </TableHead>
-                  <TableHead className='whitespace-nowrap'>Timestamp</TableHead>
+                  <TableHead className='whitespace-nowrap'>Status</TableHead>
+                  <TableHead className='whitespace-nowrap'>Constellation Tx</TableHead>
+                  <TableHead className='whitespace-nowrap'>Score</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {trainingBatches.length === 0 && (
+                {finalizedOrders.length === 0 && (
                   <TableRow>
                     <TableCell
                       colSpan={5}
                       className='text-center text-sm text-muted-foreground'
                     >
-                      No training batches recorded yet.
+                      No finalized licenses yet.
                     </TableCell>
                   </TableRow>
                 )}
-                {trainingBatches.slice(0, 6).map(batch => {
-                  const batchExplorerUrl =
-                    batch.constellationExplorerUrl &&
-                    batch.constellationExplorerUrl.length > 0
-                      ? batch.constellationExplorerUrl
-                      : batch.constellationTx
+                {finalizedOrders.slice(0, 6).map(order => {
+                  const orderExplorerUrl =
+                    order.constellationExplorerUrl &&
+                    order.constellationExplorerUrl.length > 0
+                      ? order.constellationExplorerUrl
+                      : order.constellationTx
                         ? constellationExplorerUrl(
                             constellationNetwork,
-                            batch.constellationTx
+                            order.constellationTx
                           )
                         : null
                   return (
-                    <TableRow key={batch.batchId}>
+                    <TableRow key={order.orderId}>
                       <TableCell className='whitespace-nowrap font-medium'>
-                        {batch.batchId.slice(0, 10)}…
+                        {order.orderId.slice(0, 10)}…
                       </TableCell>
                       <TableCell className='break-all font-mono text-xs'>
-                        {batch.ipId}
+                        {order.ipId}
                       </TableCell>
-                      <TableCell className='whitespace-nowrap'>
-                        {batch.units.toLocaleString()}
+                      <TableCell className='whitespace-nowrap capitalize'>
+                        {order.status}
                       </TableCell>
                       <TableCell className='break-all font-mono text-xs'>
-                        {batchExplorerUrl ? (
+                        {orderExplorerUrl ? (
                           <Link
-                            href={batchExplorerUrl}
+                            href={orderExplorerUrl}
                             target='_blank'
                             rel='noreferrer'
                             className='text-primary underline-offset-4 hover:underline'
                           >
-                            {batch.constellationTx}
+                            {order.constellationTx}
                           </Link>
                         ) : (
-                          batch.constellationTx || 'pending'
+                          <span className='text-muted-foreground'>
+                            Pending anchor
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className='whitespace-nowrap'>
-                        {formatDate(batch.createdAt)}
+                      <TableCell className='whitespace-nowrap text-xs'>
+                        {order.complianceScore}/100
                       </TableCell>
                     </TableRow>
                   )

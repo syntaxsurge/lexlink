@@ -52,23 +52,6 @@ object Validations {
     ).reduceLeft(_ combine _)
   }
 
-  /**
-   * Validates a TrainingBatchUpdate before accepting it into the metagraph
-   */
-  def validateTrainingBatchUpdate(
-    batch: TrainingBatchUpdate,
-    state: Option[LexLinkCalculatedState]
-  ): DataApplicationValidationErrorOr[Unit] = {
-    List(
-      validateBatchId(batch.batchId),
-      validateStoryIpId(batch.ipId),
-      validateUnits(batch.units),
-      validateHash(batch.evidenceHash, "evidenceHash"),
-      validateTimestamp(batch.timestamp),
-      validateNotDuplicateBatch(batch.batchId, state)
-    ).reduceLeft(_ combine _)
-  }
-
   // ===== INDIVIDUAL VALIDATORS =====
 
   private def validateOrderId(orderId: String): DataApplicationValidationErrorOr[Unit] =
@@ -82,12 +65,6 @@ object Validations {
       ().validNec
     else
       "disputeId must be non-empty and <= 128 characters".invalidNec
-
-  private def validateBatchId(batchId: String): DataApplicationValidationErrorOr[Unit] =
-    if (batchId.nonEmpty && batchId.length <= 128)
-      ().validNec
-    else
-      "batchId must be non-empty and <= 128 characters".invalidNec
 
   private def validateStoryIpId(ipId: String): DataApplicationValidationErrorOr[Unit] =
     if (ipId.matches("^0x[a-fA-F0-9]{40}$"))
@@ -131,12 +108,6 @@ object Validations {
     else
       s"amountSats must be positive, got: $amount".invalidNec
 
-  private def validateUnits(units: Long): DataApplicationValidationErrorOr[Unit] =
-    if (units >= 0)
-      ().validNec
-    else
-      s"units must be non-negative, got: $units".invalidNec
-
   private def validateComplianceScore(score: Int): DataApplicationValidationErrorOr[Unit] =
     if (score >= 0 && score <= 100)
       ().validNec
@@ -170,18 +141,6 @@ object Validations {
     state match {
       case Some(s) if s.disputesByDisputeId.contains(disputeId) =>
         s"Dispute with disputeId $disputeId already exists in metagraph".invalidNec
-      case _ =>
-        ().validNec
-    }
-  }
-
-  private def validateNotDuplicateBatch(
-    batchId: String,
-    state: Option[LexLinkCalculatedState]
-  ): DataApplicationValidationErrorOr[Unit] = {
-    state match {
-      case Some(s) if s.trainingBatchesByBatchId.contains(batchId) =>
-        s"Training batch with batchId $batchId already exists in metagraph".invalidNec
       case _ =>
         ().validNec
     }

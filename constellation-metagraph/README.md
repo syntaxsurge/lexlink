@@ -1,6 +1,6 @@
 # LexLink Constellation Metagraph
 
-Production-grade Constellation Network metagraph for immutable license, dispute, and AI training provenance.
+Production-grade Constellation Network metagraph for immutable license and dispute provenance.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ This metagraph implements a **dual-layer legal-blockchain architecture**:
 
 - **Story Protocol** (Layer 1): Mutable legal contracts and IP asset registry
 - **Constellation Network** (This metagraph): Immutable audit trail with cryptographic proofs
-- **ICP Canister**: Cross-chain orchestration and Bitcoin escrow
+- **ICP Canister**: Cross-chain orchestration and ckBTC escrow
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -65,20 +65,6 @@ case class DisputeUpdate(
 )
 ```
 
-### TrainingBatchUpdate
-
-Immutable record of AI training data usage:
-
-```scala
-case class TrainingBatchUpdate(
-  batchId: String,
-  ipId: String,
-  units: Long,
-  evidenceHash: String,
-  timestamp: Long
-)
-```
-
 ## Query API
 
 The L0 layer exposes rich query endpoints:
@@ -86,7 +72,7 @@ The L0 layer exposes rich query endpoints:
 ### License Queries
 
 - `GET /licenses` - List all licenses
-- `GET /licenses/{orderId}` - Get license + related disputes/training
+- `GET /licenses/{orderId}` - Get license + related disputes
 - `GET /licenses/by-buyer/{principal}` - Get buyer profile
 
 ### IP Asset Analytics
@@ -95,19 +81,12 @@ The L0 layer exposes rich query endpoints:
   - Total licenses sold
   - Total revenue (sats)
   - Dispute count
-  - Training usage
 
 ### Dispute Queries
 
 - `GET /disputes` - List all disputes
 - `GET /disputes/{disputeId}` - Get dispute details
 - `GET /disputes/by-ip/{ipId}` - Get disputes for an IP
-
-### Training Batch Queries
-
-- `GET /training-batches` - List all batches
-- `GET /training-batches/{batchId}` - Get batch details
-- `GET /training-batches/by-ip/{ipId}` - Get training for an IP
 
 ### Network Statistics
 
@@ -171,12 +150,6 @@ All submissions are validated before acceptance:
 - ✅ Dispute ID must be non-empty
 - ✅ Evidence CID must be valid IPFS CID
 - ✅ No duplicate dispute IDs
-
-### TrainingBatchUpdate Validation
-
-- ✅ Batch ID must be non-empty
-- ✅ Units must be non-negative
-- ✅ No duplicate batch IDs
 
 ## Deployment
 
@@ -293,8 +266,7 @@ async function getLicenseDetails(orderId: string) {
 
   return {
     license: data.license,
-    relatedDisputes: data.relatedDisputes,
-    relatedTraining: data.relatedTraining
+    relatedDisputes: data.relatedDisputes
   }
 }
 ```

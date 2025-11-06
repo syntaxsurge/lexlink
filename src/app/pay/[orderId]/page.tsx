@@ -27,7 +27,7 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
   }
 
   const escrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   const ledgerConfigured = Boolean(
     env.CKBTC_LEDGER_CANISTER_ID || env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID
   )

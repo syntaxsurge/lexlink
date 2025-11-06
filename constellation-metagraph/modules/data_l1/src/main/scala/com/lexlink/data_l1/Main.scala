@@ -44,9 +44,6 @@ object Main extends CurrencyL1App(
             case dispute: DisputeUpdate =>
               currentState.map(state => Validations.validateDisputeUpdate(dispute, state))
 
-            case batch: TrainingBatchUpdate =>
-              currentState.map(state => Validations.validateTrainingBatchUpdate(batch, state))
-
             case _ =>
               IO.pure(s"Unknown update type: ${update.getClass.getSimpleName}".invalidNec)
           }

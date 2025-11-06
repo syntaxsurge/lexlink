@@ -1101,7 +1101,7 @@ export async function loadCkbtcSnapshot(): Promise<CkbtcSnapshot> {
     }
 
     const escrowPrincipal =
-      env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+      env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
     const openOrders = scopedLicenses.filter(license =>
       ['pending', 'funded', 'confirmed'].includes(license.status)
     )
@@ -1209,7 +1209,7 @@ export async function autoFinalizeCkbtcOrder(orderId: string) {
   }
 
   const escrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
 
   if (!escrowPrincipal) {
     throw new Error(
@@ -1648,10 +1648,10 @@ export async function createLicenseOrder({
   const ckbtcSubaccount = formatSubaccountHex(deriveOrderSubaccount(orderId))
 
   const ckbtcEscrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   if (!ckbtcEscrowPrincipal) {
     throw new Error(
-      'Escrow principal not configured for ckBTC settlement. Set CKBTC_MERCHANT_PRINCIPAL or ICP_ESCROW_CANISTER_ID.'
+      'Escrow principal not configured for ckBTC settlement. Set CKBTC_MERCHANT_PRINCIPAL or NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID.'
     )
   }
 
@@ -2147,7 +2147,7 @@ export async function completeLicenseSale({
     )
   }
   const escrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   if (!escrowPrincipal) {
     throw new Error(
       'Escrow principal not configured for ckBTC ledger settlement.'
@@ -2774,7 +2774,7 @@ export async function completeLicenseSaleSystem({
     )
   }
   const escrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID
   if (!escrowPrincipal) {
     throw new Error(
       'Escrow principal not configured for ckBTC ledger settlement.'

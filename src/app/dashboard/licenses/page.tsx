@@ -67,7 +67,9 @@ function statusStyles(status: string) {
 export default async function LicensesPage() {
   const { ips, licenses } = await loadDashboardData()
   const ckbtcEscrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID ?? ''
+    env.CKBTC_MERCHANT_PRINCIPAL ??
+    env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID ??
+    ''
 
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)

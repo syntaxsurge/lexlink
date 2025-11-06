@@ -9,17 +9,15 @@ LexLink is a production-ready, cross-protocol legaltech stack:
   attestations.
 - **Constellation IntegrationNet** receives an on-ledger heartbeat for every
   completed license sale so auditors can correlate Story transactions with
-  ckBTC settlements and AI training batches.
+  ckBTC settlements.
 - **C2PA passport + VC issuance** produce a downloadable archive containing a
   manifest that references the Story license token, ckBTC payment reference, and
   Constellation proof along with a signed Ed25519 verifiable credential.
-- **AI Training Meter** records metered micro-payments, anchors each batch to
-  IntegrationNet, and automatically increases the license compliance score.
 - **UMA-backed dispute intake** exposes a public report form, mirrors evidence
   in Convex, and routes owners through a disputes inbox with UMA judgement
   simulation for testnets and on-chain resolution tracking.
 - **Convex** stores operational mirrors (IP catalogue, license orders, evidence
-  hashes, C2PA bundles, VC documents, and training batches) to power the
+  hashes, C2PA bundles, and VC documents) to power the
   dashboard.
 - **NextAuth + Internet Identity** provide delegated operator sessions with
   Convex-backed roles and a full audit ledger.
@@ -60,7 +58,6 @@ NEXT_PUBLIC_SITE_DOMAIN="localhost:3000"
 NEXT_PUBLIC_IDENTITY_PROVIDER_URL="https://identity.internetcomputer.org" # optional override
 NEXT_PUBLIC_STORY_NETWORK="aeneid" # or 'mainnet'
 NEXT_PUBLIC_ICP_HOST="http://127.0.0.1:4943"            # optional fallback for dev
-NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID="<local-canister-id>"
 
 # Public RPCs
 NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
@@ -81,7 +78,7 @@ STORY_DISPUTE_DEFAULT_LIVENESS="259200"
 
 # ICP ckBTC escrow canister
 ICP_HOST="https://icp0.io"                           # or local replica
-ICP_ESCROW_CANISTER_ID="<canister-id>"
+NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID="bqf6p-rqaaa-aaaaa-qc46q-cai"
 ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
 
 # Constellation anchoring
@@ -116,10 +113,10 @@ Use this checklist to source every value in `.env.local`.
   - Override when pointing to a custom Internet Identity deployment; defaults to `https://identity.internetcomputer.org`
 - `NEXT_PUBLIC_STORY_NETWORK`
   - Switch Story explorer links between `aeneid` (testnet, default) and `mainnet`
-- `ICP_HOST` / `ICP_ESCROW_CANISTER_ID`
+- `ICP_HOST`
   - Server-side configuration for the ICP escrow canister (production / staging)
 - `NEXT_PUBLIC_ICP_HOST` / `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID`
-  - Optional overrides that allow pointing the frontend at a local replica without redefining server envs (useful when `dfx start` is running on `http://127.0.0.1:4943`)
+  - Frontend + shared configuration for the escrow canister; useful when `dfx start` is running on `http://127.0.0.1:4943`
 
 #### Local ICP escrow canister workflow (dfx)
 
@@ -139,7 +136,6 @@ dfx canister call btc_escrow request_deposit_address '("invoice-demo")'
 export NEXT_PUBLIC_ICP_HOST="http://127.0.0.1:4943"
 export NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
 export ICP_HOST="http://127.0.0.1:4943"
-export ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
 export ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
 export NEXT_PUBLIC_IC_NETWORK="local"
 ```
@@ -195,7 +191,7 @@ export NEXT_PUBLIC_IC_NETWORK="local"
 - `ICP_HOST`
   - Playground: `https://icp0.io`
   - Local replica: `http://127.0.0.1:4943`
-- `ICP_ESCROW_CANISTER_ID`
+- `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID`
   - Deploy (Playground): `dfx deploy --playground btc_escrow`
   - Read ID: `dfx canister id btc_escrow --playground`
   - Local: `dfx start --background && dfx deploy btc_escrow && dfx canister id btc_escrow`
@@ -302,7 +298,8 @@ The canister exposes three methods:
 - `settle_ckbtc(orderId: Text)`
 - `attestation(orderId: Text) -> Text`
 
-Configure `ICP_ESCROW_CANISTER_ID` with the output of deployment.
+Configure `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID` with the output of deployment.
+The deployed Candid UI is available at: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=bqf6p-rqaaa-aaaaa-qc46q-cai.
 
 ## 6. Production build
 
@@ -347,8 +344,8 @@ pnpm lint
    and a signed Ed25519 verifiable credential. Both are stored in Convex and
    exposed through the dashboard.
 5. **Compliance dashboard** – Every completed order shows the Story IP ID,
-   settlement reference, Constellation tx hash, attestation hash, compliance score, and
-   training units with one-click downloads for the C2PA archive and VC payload.
+   settlement reference, Constellation tx hash, attestation hash, compliance score,
+   and one-click downloads for the C2PA archive and VC payload.
 6. **Raise disputes** – Reporters upload evidence files or cite URLs, the
    server pins everything to IPFS as a single bundle CID, calls Story’s Dispute
    Module (UMA arbitration), anchors the payload to Constellation, and owners

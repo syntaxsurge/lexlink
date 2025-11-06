@@ -51,7 +51,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 11) Compliance and audit (5:30 – 5:55)
 - On‑screen: `/dashboard/compliance`.
-- Voice‑over: “A searchable audit trail with actor principal, resource IDs, and payload JSON for registrations, invoices, settlements, disputes, and training batches.”
+- Voice‑over: “A searchable audit trail with actor principal, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.”
 
 ## 12) Settings (5:55 – 6:10)
 - On‑screen: `/dashboard/settings`.
@@ -74,6 +74,5 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - IntegrationNet: `https://integrationnet.dagexplorer.io/`
   - Testnet: `https://explorer.testnet.constellationnetwork.io/`
   - Mainnet: `https://explorer.mainnet.constellationnetwork.io/`
-- Bitcoin testnet explorer: `https://mempool.space/testnet/`
 - ckBTC testnet faucet: `https://testnet-faucet.ckboost.com/`
 - Internet Identity: `https://internetcomputer.org/docs/current/concepts/identity/internet-identity/`

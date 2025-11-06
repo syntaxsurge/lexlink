@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'LexLink',
   description:
-    'LexLink connects Story Protocol licensing, ICP Bitcoin escrow, and Constellation evidence into a single IP commerce platform.'
+    'LexLink connects Story Protocol licensing, ICP ckBTC escrow, and Constellation evidence into a single IP commerce platform.'
 }
 
 export default function RootLayout({

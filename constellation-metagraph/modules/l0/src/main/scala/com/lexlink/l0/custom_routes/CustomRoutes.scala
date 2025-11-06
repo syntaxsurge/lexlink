@@ -13,8 +13,8 @@ import org.tessellation.currency.dataApplication.dataApplication.DataApplication
 /**
  * Custom HTTP API routes for querying the LexLink metagraph
  *
- * These endpoints provide rich querying capabilities over the license,
- * dispute, and training data stored in the Constellation DAG.
+ * These endpoints provide rich querying capabilities over the license
+ * and dispute data stored in the Constellation DAG.
  */
 object CustomRoutes {
   def make[F[_]: Async](): DataApplicationCustomRoutes[F] = {
@@ -42,13 +42,9 @@ object CustomRoutes {
               case Some(license) =>
                 val relatedDisputes = state.calculated.disputesByIpId
                   .getOrElse(license.ipId, List.empty)
-                val relatedTraining = state.calculated.trainingBatchesByIpId
-                  .getOrElse(license.ipId, List.empty)
-
                 Ok(LicenseQueryResponse(
                   license = license,
-                  relatedDisputes = relatedDisputes,
-                  relatedTraining = relatedTraining
+                  relatedDisputes = relatedDisputes
                 ).asJson)
 
               case None =>
@@ -77,24 +73,16 @@ object CustomRoutes {
               .getOrElse(ipId, List.empty)
             val disputes = state.calculated.disputesByIpId
               .getOrElse(ipId, List.empty)
-            val training = state.calculated.trainingBatchesByIpId
-              .getOrElse(ipId, List.empty)
-
             val totalRevenue = licenses.map(_.amountSats).sum
-            val totalTrainingUnits = training.map(_.units).sum
 
             Ok(IpAssetAnalytics(
               ipId = ipId,
               totalLicenses = licenses.length,
               totalRevenueSats = totalRevenue,
               totalDisputes = disputes.length,
-              totalTrainingUnits = totalTrainingUnits,
               licenses = licenses,
-              disputes = disputes,
-              trainingBatches = training
+              disputes = disputes
             ).asJson)
-
-          // ===== DISPUTE QUERIES =====
 
           case GET -> Root / "disputes" =>
             // Returns all disputes
@@ -123,36 +111,6 @@ object CustomRoutes {
               "disputes" -> disputes
             ).asJson)
 
-          // ===== TRAINING BATCH QUERIES =====
-
-          case GET -> Root / "training-batches" =>
-            // Returns all training batches
-            val batches = state.calculated.trainingBatchesByBatchId.values.toList
-            Ok(Map(
-              "total" -> batches.length,
-              "batches" -> batches
-            ).asJson)
-
-          case GET -> Root / "training-batches" / batchId =>
-            // Get training batch by ID
-            state.calculated.trainingBatchesByBatchId.get(batchId) match {
-              case Some(batch) =>
-                Ok(batch.asJson)
-              case None =>
-                NotFound(Map("error" -> s"Training batch not found: $batchId").asJson)
-            }
-
-          case GET -> Root / "training-batches" / "by-ip" / ipId =>
-            // Get all training batches for an IP asset
-            val batches = state.calculated.trainingBatchesByIpId
-              .getOrElse(ipId, List.empty)
-            Ok(Map(
-              "ipId" -> ipId,
-              "total" -> batches.length,
-              "totalUnits" -> batches.map(_.units).sum,
-              "batches" -> batches
-            ).asJson)
-
           // ===== NETWORK STATISTICS =====
 
           case GET -> Root / "stats" =>
@@ -163,7 +121,6 @@ object CustomRoutes {
             Ok(NetworkStatistics(
               totalLicenses = state.calculated.totalLicenses,
               totalDisputes = state.calculated.totalDisputes,
-              totalTrainingBatches = state.calculated.totalTrainingBatches,
               totalRevenueSats = state.calculated.totalRevenueSats,
               uniqueIpAssets = uniqueIpAssets,
               uniqueBuyers = uniqueBuyers
