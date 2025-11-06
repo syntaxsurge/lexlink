@@ -22,6 +22,12 @@ import type {
 const FALLBACK_IMAGE =
   'https://images.lexlink.dev/fallback-ip-asset.png'
 
+const IPFS_GATEWAYS = [
+  'https://nftstorage.link/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://ipfs.io/ipfs/'
+]
+
 type IpAssetCardProps = {
   asset: IpRecord
   network?: StoryNetwork
@@ -53,7 +59,7 @@ export function IpAssetCard({
     >
       <CardHeader className='space-y-3'>
         <div className='relative overflow-hidden rounded-xl border border-border/60 bg-muted/30'>
-          {renderMediaPreview(asset.mediaType, mediaUrl, imageUrl)}
+          {renderMediaPreview(asset.mediaType, mediaUrl, imageUrl, asset.mediaUrl, asset.imageUrl)}
           {asset.aiMetadata ? (
             <Badge className='absolute left-3 top-3 border border-primary/40 bg-primary/20 text-primary-foreground backdrop-blur'>
               AI Generated
@@ -174,7 +180,13 @@ export function IpAssetCard({
   )
 }
 
-function renderMediaPreview(mediaType: string, mediaUrl: string, imageUrl: string) {
+function renderMediaPreview(
+  mediaType: string,
+  mediaUrl: string,
+  imageUrl: string,
+  rawMediaUrl: string,
+  rawImageUrl: string
+) {
   if (mediaType.startsWith('video/')) {
     return (
       <video
@@ -189,6 +201,7 @@ function renderMediaPreview(mediaType: string, mediaUrl: string, imageUrl: strin
   }
 
   if (mediaType.startsWith('audio/')) {
+    const audioSources = buildIpfsSources(rawMediaUrl)
     return (
       <div className='flex h-56 flex-col items-center justify-center gap-4 bg-background/85 p-6'>
         <Image
@@ -203,15 +216,12 @@ function renderMediaPreview(mediaType: string, mediaUrl: string, imageUrl: strin
               target.src = FALLBACK_IMAGE
             }
           }}
+          unoptimized={isIpfsUri(rawImageUrl)}
         />
-        <audio
-          src={mediaUrl}
-          controls
-          preload='none'
-          controlsList='play nodownload'
-          className='w-full rounded-md bg-background/80'
-          crossOrigin='anonymous'
-        >
+        <audio controls preload='none' controlsList='play nodownload' className='w-full rounded-md bg-background/80'>
+          {audioSources.map(source => (
+            <source key={source} src={source} />
+          ))}
           Your browser does not support the audio element.
         </audio>
       </div>
@@ -225,7 +235,7 @@ function renderMediaPreview(mediaType: string, mediaUrl: string, imageUrl: strin
       width={800}
       height={600}
       className='h-56 w-full object-cover'
-      unoptimized={imageUrl.startsWith('https://ipfs')}
+      unoptimized={isIpfsUri(rawImageUrl)}
       onError={event => {
         const target = event.currentTarget as HTMLImageElement
         if (target.src !== FALLBACK_IMAGE) {
@@ -241,7 +251,7 @@ function resolveAssetUrl(uri: string) {
     return FALLBACK_IMAGE
   }
   if (uri.startsWith('ipfs://')) {
-    return `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`
+    return buildIpfsSources(uri)[0] ?? FALLBACK_IMAGE
   }
   try {
     const parsed = new URL(uri)
@@ -249,6 +259,23 @@ function resolveAssetUrl(uri: string) {
   } catch {
     return uri
   }
+}
+
+function buildIpfsSources(uri: string) {
+  if (!uri) return []
+  if (uri.startsWith('ipfs://')) {
+    const cid = uri.replace('ipfs://', '').replace(/^\/+/, '')
+    return IPFS_GATEWAYS.map(gateway => `${gateway}${cid}`)
+  }
+  if (uri.includes('/ipfs/')) {
+    const cidPath = uri.substring(uri.indexOf('/ipfs/') + '/ipfs/'.length)
+    return IPFS_GATEWAYS.map(gateway => `${gateway}${cidPath}`)
+  }
+  return [uri]
+}
+
+function isIpfsUri(uri: string) {
+  return uri.startsWith('ipfs://') || uri.includes('/ipfs/')
 }
 
 function CreatorChip({ creator }: { creator: CreatorShare }) {
