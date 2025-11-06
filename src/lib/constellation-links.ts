@@ -8,15 +8,15 @@ const NETWORK_LINKS: Record<
   { explorer: string; api: string }
 > = {
   integrationnet: {
-    explorer: 'https://integrationnet.constellationnetwork.io',
+    explorer: 'https://explorer.integrationnet.constellationnetwork.io',
     api: 'https://be-integrationnet.constellationnetwork.io'
   },
   testnet: {
-    explorer: 'https://testnet.constellationnetwork.io',
+    explorer: 'https://explorer.testnet.constellationnetwork.io',
     api: 'https://be-testnet.constellationnetwork.io'
   },
   mainnet: {
-    explorer: 'https://explorer.constellationnetwork.io',
+    explorer: 'https://explorer.mainnet.constellationnetwork.io',
     api: 'https://be-mainnet.constellationnetwork.io'
   }
 }
@@ -30,7 +30,7 @@ export function constellationExplorerUrl(
   txHash: string
 ) {
   const { explorer } = resolveNetworkLinks(network)
-  return `${explorer.replace(/\/$/, '')}/transaction/${txHash}`
+  return `${explorer.replace(/\/$/, '')}/transactions/${encodeURIComponent(txHash)}`
 }
 
 export function constellationTransactionApiUrl(
@@ -38,5 +38,5 @@ export function constellationTransactionApiUrl(
   txHash: string
 ) {
   const { api } = resolveNetworkLinks(network)
-  return `${api.replace(/\/$/, '')}/transactions/${txHash}`
+  return `${api.replace(/\/$/, '')}/transactions/${encodeURIComponent(txHash)}`
 }

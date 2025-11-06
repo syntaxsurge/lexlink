@@ -17,7 +17,7 @@ type ConstellationConfig = {
 const CONSTELLATION_EXPLORERS: Record<ConstellationNetwork, string> = {
   integrationnet: 'https://explorer.integrationnet.constellationnetwork.io',
   testnet: 'https://explorer.testnet.constellationnetwork.io',
-  mainnet: 'https://explorer.constellationnetwork.io'
+  mainnet: 'https://explorer.mainnet.constellationnetwork.io'
 }
 
 const MIN_SEND_AMOUNT = 1e-8
