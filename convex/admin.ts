@@ -348,7 +348,8 @@ const disputeSeeds = [
     livenessSeconds: 259200,
     bond: 0,
     createdAt: baseTime + 1000 * 60 * 180,
-    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai'
+    ownerPrincipal: 'l72uw-4iaaa-aaaap-abcek-cai',
+    reporterPrincipal: 'bclva-oyaaa-aaaap-abceq-cai'
   }
 ] as const
 
