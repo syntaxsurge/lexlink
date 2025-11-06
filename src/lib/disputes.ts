@@ -1,6 +1,6 @@
 import { uploadBytes, uploadJson } from '@/lib/ipfs'
 
-const MAX_EVIDENCE_FILE_BYTES = 25 * 1024 * 1024 // 25 MB per attachment
+const MAX_EVIDENCE_FILE_BYTES = 5 * 1024 * 1024 // 5 MB per attachment
 
 export type DisputeEvidenceAttachment = {
   uri: `ipfs://${string}`
