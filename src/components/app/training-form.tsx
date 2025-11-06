@@ -29,11 +29,15 @@ interface TrainingFormProps {
 }
 
 export function TrainingForm({ ips }: TrainingFormProps) {
-  const [result, setResult] = useState<null | {
-    batchId: string
-    constellationTx: string
-    evidenceHash: string
-  }>(null)
+  const [result, setResult] = useState<
+    | null
+    | {
+        batchId: string
+        constellationTx: string
+        constellationStatus: string
+        evidenceHash: string
+      }
+  >(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -118,7 +122,9 @@ export function TrainingForm({ ips }: TrainingFormProps) {
               Constellation Tx
             </dt>
             <dd className='break-all font-mono text-xs'>
-              {result.constellationTx}
+              {result.constellationTx
+                ? result.constellationTx
+                : `skipped (${result.constellationStatus})`}
             </dd>
           </div>
           <div className='flex flex-col gap-1'>

@@ -1,5 +1,3 @@
-import { Buffer } from 'node:buffer'
-
 import Link from 'next/link'
 
 import {
@@ -28,6 +26,8 @@ import {
 } from '@/components/ui/table'
 import { readPaymentMode } from '@/lib/payment-mode'
 import { env } from '@/lib/env'
+import { ipfsGatewayUrl } from '@/lib/ipfs'
+import { Buffer } from 'node:buffer'
 
 const MAINNET_MEMPOOL = 'https://mempool.space'
 const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
@@ -460,14 +460,17 @@ export default async function LicensesPage() {
             </p>
           )}
           {finalizedOrders.map(order => {
-            if (!order.c2paArchive || !order.vcDocument) {
+            if (!order.c2paArchiveUri || !order.vcDocument) {
               return null
             }
-            const archiveHref = `data:application/zip;base64,${order.c2paArchive}`
+            const archiveHref = ipfsGatewayUrl(order.c2paArchiveUri)
             const vcHref = `data:application/json;base64,${Buffer.from(
               order.vcDocument,
               'utf-8'
             ).toString('base64')}`
+            const archiveFileName =
+              order.c2paArchiveFileName ??
+              `lexlink-license-${order.orderId}.zip`
             return (
               <div
                 key={`${order.orderId}-bundle`}
@@ -480,7 +483,7 @@ export default async function LicensesPage() {
                   </p>
                 </div>
                 <Button asChild size='sm' variant='secondary'>
-                  <a href={archiveHref} download={`lexlink-license-${order.orderId}.zip`}>
+                  <a href={archiveHref} download={archiveFileName} target='_blank' rel='noreferrer'>
                     Download C2PA
                   </a>
                 </Button>

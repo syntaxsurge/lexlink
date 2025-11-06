@@ -7,7 +7,7 @@ import { DisputeTargetTag } from '@story-protocol/core-sdk'
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
 import { createLicenseArchive } from '@/lib/c2pa'
 import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
-import { publishEvidence } from '@/lib/constellation'
+import { publishEvidence, type EvidenceResult } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
 import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
@@ -82,7 +82,9 @@ export type LicenseRecord = {
   finalizedAt?: number
   contentHash: string
   c2paHash: string
-  c2paArchive: string
+  c2paArchiveUri?: string
+  c2paArchiveFileName?: string
+  c2paArchiveSize?: number
   vcDocument: string
   vcHash: string
   complianceScore: number
@@ -1371,7 +1373,9 @@ async function finalizeOrder({
     timestamp: Date.now()
   })
   const evidenceHash = sha256Hex(evidencePayload)
-  const constellationTx = await publishEvidence(evidenceHash)
+  const evidenceResult = await publishEvidence(evidenceHash)
+  const constellationTx =
+    evidenceResult.status === 'ok' ? evidenceResult.txHash : ''
 
   const archive = await createLicenseArchive({
     assetBuffer: mediaBuffer,
@@ -1384,6 +1388,24 @@ async function finalizeOrder({
     contentHash,
     licenseTokenId
   })
+  const archiveBuffer = Buffer.from(archive.archiveBase64, 'base64')
+  const archiveSize = archiveBuffer.length
+  const archiveFileName =
+    archive.suggestedFileName ??
+    `lexlink-license-${slugify(order.orderId)}.zip`
+
+  let c2paArchiveUri: string | undefined
+  try {
+    c2paArchiveUri = await uploadBytes(
+      archiveFileName,
+      new Uint8Array(archiveBuffer)
+    )
+  } catch (error) {
+    console.warn('Failed to pin C2PA archive to IPFS:', error)
+  }
+  const c2paDownloadUrl = c2paArchiveUri
+    ? ipfsGatewayUrl(c2paArchiveUri)
+    : null
 
   const vc = await generateLicenseCredential({
     subjectId: `did:pkh:eip155:${env.STORY_CHAIN_ID}:${receiver.toLowerCase()}`,
@@ -1398,8 +1420,8 @@ async function finalizeOrder({
   const complianceScore = calculateComplianceScore({
     hasPayment: true,
     hasLicenseToken: true,
-    hasConstellationEvidence: Boolean(constellationTx),
-    hasC2paArchive: Boolean(archive.archiveBase64),
+    hasConstellationEvidence: evidenceResult.status === 'ok',
+    hasC2paArchive: Boolean(c2paArchiveUri ?? archive.archiveBase64),
     trainingUnits: order.trainingUnits
   })
 
@@ -1411,7 +1433,9 @@ async function finalizeOrder({
     tokenOnChainId: licenseTokenId,
     contentHash,
     c2paHash: archive.archiveHash,
-    c2paArchive: archive.archiveBase64,
+    c2paArchiveUri: c2paArchiveUri,
+    c2paArchiveFileName: archiveFileName,
+    c2paArchiveSize: archiveSize,
     vcDocument: vcJson,
     vcHash: vc.hash,
     complianceScore,
@@ -1429,6 +1453,7 @@ async function finalizeOrder({
       constellationTx,
       licenseTokenId,
       paymentMode,
+      constellationStatus: evidenceResult.status,
       ckbtcMintedSats: minted?.sats,
       ckbtcBlockIndex: minted?.blockIndex
     },
@@ -1445,11 +1470,15 @@ async function finalizeOrder({
     c2paArchive: {
       base64: archive.archiveBase64,
       hash: archive.archiveHash,
-      fileName: archive.suggestedFileName
+      fileName: archiveFileName,
+      uri: c2paArchiveUri ?? null,
+      downloadUrl: c2paDownloadUrl,
+      size: archiveSize
     },
     vcDocument: vcJson,
     vcHash: vc.hash,
     paymentReference,
+    constellationStatus: evidenceResult.status,
     minted
   }
 }
@@ -1579,6 +1608,7 @@ export async function completeLicenseSale({
     attestation: result.attestation,
     attestationHash: result.attestationHash,
     constellationTx: result.constellationTx,
+    constellationStatus: result.constellationStatus,
     contentHash: result.contentHash,
     complianceScore: result.complianceScore,
     c2paArchive: result.c2paArchive,
@@ -1643,7 +1673,9 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
 
   const evidenceHash = sha256Hex(evidencePayload)
 
-  const constellationTx = await publishEvidence(evidenceHash)
+  const disputeEvidence = await publishEvidence(evidenceHash)
+  const constellationTx =
+    disputeEvidence.status === 'ok' ? disputeEvidence.txHash : ''
 
   await convex.mutation('disputes:insert' as any, {
     disputeId,
@@ -1793,7 +1825,9 @@ export async function recordTrainingBatch({
     timestamp: Date.now()
   })
   const evidenceHash = sha256Hex(payload)
-  const constellationTx = await publishEvidence(evidenceHash)
+  const trainingEvidence = await publishEvidence(evidenceHash)
+  const constellationTx =
+    trainingEvidence.status === 'ok' ? trainingEvidence.txHash : ''
 
   await convex.mutation('trainingBatches:insert' as any, {
     batchId,
@@ -1814,7 +1848,7 @@ export async function recordTrainingBatch({
       hasPayment: Boolean(license.btcTxId),
       hasLicenseToken: Boolean(license.tokenOnChainId),
       hasConstellationEvidence: Boolean(license.constellationTx),
-      hasC2paArchive: Boolean(license.c2paArchive),
+      hasC2paArchive: Boolean(license.c2paArchiveUri),
       trainingUnits: nextTrainingUnits
     })
 
@@ -1833,6 +1867,7 @@ export async function recordTrainingBatch({
       ipId,
       units,
       constellationTx,
+      constellationStatus: trainingEvidence.status,
       evidenceHash
     },
     resourceId: batchId
@@ -1841,6 +1876,7 @@ export async function recordTrainingBatch({
   return {
     batchId,
     constellationTx,
+    constellationStatus: trainingEvidence.status,
     evidenceHash
   }
 }

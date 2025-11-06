@@ -1,9 +1,6 @@
 import { env } from '@/lib/env'
 
-type ConstellationNetwork =
-  | 'integrationnet'
-  | 'testnet'
-  | 'mainnet'
+type ConstellationNetwork = 'integrationnet' | 'testnet' | 'mainnet'
 
 type NetworkInfo = {
   id: ConstellationNetwork
@@ -13,6 +10,11 @@ type NetworkInfo = {
   networkVersion: string
   testnet: boolean
 }
+
+export type EvidenceResult =
+  | { status: 'disabled'; reason: string }
+  | { status: 'skipped'; reason: string }
+  | { status: 'ok'; txHash: string }
 
 const LOCAL_STORAGE_NAMESPACE = 'lexlink-evidence'
 const DAG_CACHE_PATH = './lexlink-dag-cache'
@@ -56,22 +58,26 @@ function resolveNetworkInfo(): NetworkInfo {
 }
 
 /**
- * Publishes an evidence heartbeat to Constellation.
- *
- * The dag4 SDK requires a localStorage instance and its WASM compression
- * dependency. Both are polyfilled lazily so server routes can call this helper
- * without bundling failures.
+ * Publishes an evidence heartbeat to Constellation. Returns a structured result so
+ * callers can treat anchoring as best-effort without throwing.
  */
-export async function publishEvidence(evidenceHash: string): Promise<string> {
+export async function publishEvidence(
+  evidenceHash: string
+): Promise<EvidenceResult> {
   if (!env.CONSTELLATION_ENABLED) {
-    return `constellation-disabled-${Date.now()}`
+    return { status: 'disabled', reason: 'constellation_disabled' }
   }
 
-  // dag4 internally pulls brotli-wasm. Preloading prevents missing asset errors.
-  try {
-    await import('brotli-wasm')
-  } catch (error) {
-    console.warn('Constellation brotli preload failed:', error)
+  const sinkAddress = env.CONSTELLATION_SINK_ADDRESS
+  const sourceAddress = env.CONSTELLATION_ADDRESS
+
+  if (!sinkAddress || !sourceAddress) {
+    return { status: 'skipped', reason: 'missing_addresses' }
+  }
+
+  if (sinkAddress === sourceAddress) {
+    console.warn('Constellation anchoring skipped: sink equals source.')
+    return { status: 'skipped', reason: 'sink_equals_source' }
   }
 
   try {
@@ -85,66 +91,66 @@ export async function publishEvidence(evidenceHash: string): Promise<string> {
       ;(globalThis as any).localStorage = storage as unknown as Storage
     }
 
-    const storage = (globalThis as any).localStorage as
-      | Storage
-      | undefined
+    const storage = (globalThis as any).localStorage as Storage | undefined
+    const networkInfo = resolveNetworkInfo()
 
     dag4.config({
       appId: 'lexlink',
-      network: resolveNetworkInfo()
+      network: networkInfo
     })
 
+    dag4.account.connect(networkInfo)
     dag4.account.loginPrivateKey(
       env.CONSTELLATION_PRIVATE_KEY.replace(/^0x/, '')
     )
 
-    const fromAddress = dag4.account.address
-    if (fromAddress !== env.CONSTELLATION_ADDRESS) {
+    const derivedAddress = dag4.account.address
+    if (derivedAddress !== sourceAddress) {
       console.warn(
-        `Constellation signer address mismatch (configured ${env.CONSTELLATION_ADDRESS}, derived ${fromAddress}).`
+        `Constellation signer address mismatch (configured ${sourceAddress}, derived ${derivedAddress}).`
       )
     }
 
-    const toAddress = env.CONSTELLATION_SINK_ADDRESS
-    if (toAddress === fromAddress) {
-      console.warn('Constellation anchoring skipped: sink equals source.')
-      return `constellation-skipped-self-send-${Date.now()}`
-    }
-
     const lastRef =
-      await dag4.network.getAddressLastAcceptedTransactionRef(fromAddress)
+      await dag4.network.getAddressLastAcceptedTransactionRef(derivedAddress)
 
-    const {
-      transaction,
-      hash: txHash
-    } = await dag4.account.generateSignedTransactionWithHash(
-      toAddress,
-      0,
-      0,
-      lastRef
-    )
+    const { transaction, hash } =
+      await dag4.account.generateSignedTransactionWithHash(
+        sinkAddress,
+        0,
+        0,
+        lastRef
+      )
 
     const submittedHash = await dag4.network.postTransaction(transaction)
+    const reference = submittedHash ?? hash ?? ''
+
     if (submittedHash) {
       await dag4.account.waitForCheckPointAccepted(submittedHash)
     }
 
-    const reference = submittedHash ?? txHash ?? ''
     if (reference && storage) {
       storage.setItem(
         `${LOCAL_STORAGE_NAMESPACE}:${reference}`,
         JSON.stringify({
           evidenceHash,
           recordedAt: new Date().toISOString(),
-          from: fromAddress,
-          to: toAddress
+          from: derivedAddress,
+          to: sinkAddress,
+          network: networkInfo.id
         })
       )
     }
 
-    return reference || `constellation-pending-${Date.now()}`
+    if (!reference) {
+      return { status: 'skipped', reason: 'missing_reference' }
+    }
+
+    return { status: 'ok', txHash: reference }
   } catch (error) {
+    const message =
+      error instanceof Error ? error.message : String(error ?? 'unknown')
     console.warn('Constellation evidence publishing skipped:', error)
-    return `constellation-skipped-${Date.now()}`
+    return { status: 'skipped', reason: message }
   }
 }

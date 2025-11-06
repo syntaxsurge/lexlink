@@ -226,14 +226,26 @@ Sanity checks
 
 ### Constellation configuration
 
-- The private key controls the DAG address used for evidence pulses. Fund the
-  account on IntegrationNet via the public faucet.
-- `CONSTELLATION_SINK_ADDRESS` must point at a different wallet (no private key required) to
-  receive the zero-value memo transactions that anchor evidence.
-- Set `CONSTELLATION_ADDRESS` and `NEXT_PUBLIC_DAG_ADDRESS` to the same signing address so
-  the dashboard can render deep links without exposing the private key.
-- Use `CONSTELLATION_ENABLED` to disable ledger writes in lower envs and
-  `CONSTELLATION_NETWORK` to flip between IntegrationNet, testnet, and mainnet.
+- Provision two IntegrationNet wallets: one signer (source) and one sink. The
+  [wallets overview](https://docs.constellationnetwork.io/network-intro/tools/wallets)
+  walks through Stargazer installation and exporting the private key.
+- Fund the signer through the IntegrationNet faucet (documented in
+  [IntegrationNet](https://docs.constellationnetwork.io/network-apis/integrationnet))
+  and verify balances in the
+  [block explorer](https://docs.constellationnetwork.io/network-apis/block-explorer-apis).
+- Keep `CONSTELLATION_ADDRESS` equal to the signer and
+  `CONSTELLATION_SINK_ADDRESS` equal to the second address; they must differ or
+  dag4 rejects the transaction.
+- Reference the dag4 docs when troubleshooting:
+  [connecting to the network](https://docs.constellationnetwork.io/network-apis/api-reference/dag4.js/connecting-to-the-network),
+  [interacting with wallets](https://docs.constellationnetwork.io/network-apis/api-reference/dag4.js/interacting-with-wallets),
+  and
+  [sending transactions](https://docs.constellationnetwork.io/network-apis/api-reference/dag4.js/sending-transactions).
+- Evidence pulses send 0 DAG with the latest reference. Anchoring failures no
+  longer block licensing, but hashes are only persisted when the dag4 call
+  returns `status: "ok"`.
+- C2PA archives are pinned to IPFS during finalization; the Convex record stores
+  the gateway-safe URI, file name, and size instead of base64 blobs.
 - `VC_ISSUER_DID` and `VC_PRIVATE_KEY` sign the verifiable credentials that
   accompany each license passport. Use a dedicated Ed25519 key pair for demos.
 

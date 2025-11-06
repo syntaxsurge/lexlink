@@ -32,7 +32,9 @@ type LicenseSeed = {
   updatedAt: number
   contentHash: string
   c2paHash: string
-  c2paArchive: string
+  c2paArchiveUri?: string
+  c2paArchiveFileName?: string
+  c2paArchiveSize?: number
   vcDocument: string
   vcHash: string
   complianceScore: number
@@ -161,7 +163,9 @@ const licenseSeeds: LicenseSeed[] = [
     contentHash: 'ipfs://midnight-marriage/content.json',
     c2paHash:
       '0x1a9d5c7b8e3f4a6d5c7b8e3f4a6d5c7b8e3f4a6d5c7b8e3f4a6d5c7b8e3f4a6d',
-    c2paArchive: 'https://assets.lexlink.dev/c2pa/midnight-marriage.c2pa',
+    c2paArchiveUri: 'https://assets.lexlink.dev/c2pa/midnight-marriage.c2pa',
+    c2paArchiveFileName: 'midnight-marriage.c2pa',
+    c2paArchiveSize: 312000,
     vcDocument: 'https://assets.lexlink.dev/vc/midnight-marriage.json',
     vcHash:
       '0x7b2c5d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b6d8f1e3a4b',
@@ -194,7 +198,9 @@ const licenseSeeds: LicenseSeed[] = [
     contentHash: 'ipfs://solar-echo/content.json',
     c2paHash:
       '0x5c7b8e3f4a6d7c8b9e0f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f',
-    c2paArchive: 'https://assets.lexlink.dev/c2pa/solar-echo.c2pa',
+    c2paArchiveUri: 'https://assets.lexlink.dev/c2pa/solar-echo.c2pa',
+    c2paArchiveFileName: 'solar-echo.c2pa',
+    c2paArchiveSize: 284000,
     vcDocument: 'https://assets.lexlink.dev/vc/solar-echo.json',
     vcHash:
       '0xf1e3a5c7d9b2c4e6a8f0b2d4c6e8a0c2f4e6a8b0c2d4e6f8a0b2c4d6e8f0a2b4',
@@ -223,7 +229,6 @@ const licenseSeeds: LicenseSeed[] = [
     updatedAt: baseTime + 1000 * 60 * 300,
     contentHash: '',
     c2paHash: '',
-    c2paArchive: '',
     vcDocument: '',
     vcHash: '',
     complianceScore: 0,

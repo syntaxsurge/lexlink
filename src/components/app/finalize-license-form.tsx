@@ -28,6 +28,7 @@ type FinalizeResult = {
   licenseTokenId: string
   attestationHash: string
   constellationTx: string
+  constellationStatus?: string
   contentHash: string
   complianceScore: number
   paymentMode: PaymentMode
@@ -37,6 +38,9 @@ type FinalizeResult = {
     base64: string
     fileName: string
     hash: string
+    uri: string | null
+    downloadUrl: string | null
+    size: number
   }
   vcDocument: string
   vcHash: string
@@ -88,6 +92,9 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
 
   const c2paHref = useMemo(() => {
     if (!result) return ''
+    if (result.c2paArchive.downloadUrl) {
+      return result.c2paArchive.downloadUrl
+    }
     return `data:application/zip;base64,${result.c2paArchive.base64}`
   }, [result])
 
@@ -181,7 +188,11 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
               Constellation Tx
             </dt>
             <dd className='break-all font-mono text-xs'>
-              {result.constellationTx}
+              {result.constellationTx
+                ? result.constellationTx
+                : result.constellationStatus === 'ok'
+                  ? 'pending-reference'
+                  : `skipped (${result.constellationStatus ?? 'unknown'})`}
             </dd>
           </div>
           <div className='flex flex-col gap-1'>
