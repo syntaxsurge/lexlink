@@ -1,32 +1,28 @@
-'use client'
-
+import { ArrowUpRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useEffect, useMemo, useState } from 'react'
 
-import { ArrowUpRight } from 'lucide-react'
-
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-import {
-  ipAssetExplorerUrl,
-  type StoryNetwork
-} from '@/lib/story-links'
 import type {
   AiMetadataRecord,
   CreatorShare,
   IpRecord
 } from '@/app/dashboard/actions'
-
-const FALLBACK_IMAGE =
-  'https://images.lexlink.dev/fallback-ip-asset.png'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  ipAssetExplorerUrl,
+  type StoryNetwork
+} from '@/lib/story-links'
+import { cn } from '@/lib/utils'
 
 const IPFS_GATEWAYS = [
-  'https://nftstorage.link/ipfs/',
+  'https://gateway.pinata.cloud/ipfs/',
+  'https://apac.orbitor.dev/ipfs/',
   'https://cloudflare-ipfs.com/ipfs/',
-  'https://ipfs.io/ipfs/'
-]
+  'https://nftstorage.link/ipfs/'
+] as const
 
 type IpAssetCardProps = {
   asset: IpRecord
@@ -45,8 +41,25 @@ export function IpAssetCard({
   actionSlot,
   highlightActions = false
 }: IpAssetCardProps) {
-  const mediaUrl = resolveAssetUrl(asset.mediaUrl)
-  const imageUrl = resolveAssetUrl(asset.imageUrl)
+  const imageSources = useMemo(() => buildIpfsSources(asset.imageUrl), [asset.imageUrl])
+  const mediaSources = useMemo(() => buildIpfsSources(asset.mediaUrl), [asset.mediaUrl])
+  const [imageSourceIndex, setImageSourceIndex] = useState(0)
+
+  useEffect(() => {
+    setImageSourceIndex(0)
+  }, [asset.imageUrl])
+
+  const activeImageUrl =
+    imageSourceIndex >= 0 ? imageSources[imageSourceIndex] ?? asset.imageUrl ?? '' : ''
+
+  const handleImageError = () => {
+    if (imageSourceIndex < imageSources.length - 1) {
+      setImageSourceIndex(prev => prev + 1)
+    } else {
+      setImageSourceIndex(-1)
+    }
+  }
+
   const royaltyPercent = (asset.royaltyBps / 100).toFixed(2)
   const creators = asset.creators ?? []
 
@@ -59,7 +72,12 @@ export function IpAssetCard({
     >
       <CardHeader className='space-y-3'>
         <div className='relative overflow-hidden rounded-xl border border-border/60 bg-muted/30'>
-          {renderMediaPreview(asset.mediaType, mediaUrl, imageUrl, asset.mediaUrl, asset.imageUrl)}
+          {renderMediaPreview({
+            mediaType: asset.mediaType,
+            mediaSources,
+            imageSrc: activeImageUrl,
+            onImageError: handleImageError
+          })}
           {asset.aiMetadata ? (
             <Badge className='absolute left-3 top-3 border border-primary/40 bg-primary/20 text-primary-foreground backdrop-blur'>
               AI Generated
@@ -180,101 +198,117 @@ export function IpAssetCard({
   )
 }
 
-function renderMediaPreview(
-  mediaType: string,
-  mediaUrl: string,
-  imageUrl: string,
-  rawMediaUrl: string,
-  rawImageUrl: string
-) {
-  if (mediaType.startsWith('video/')) {
+function renderMediaPreview({
+  mediaType,
+  mediaSources,
+  imageSrc,
+  onImageError
+}: {
+  mediaType?: string
+  mediaSources: string[]
+  imageSrc: string
+  onImageError: () => void
+}) {
+  const type = (mediaType ?? '').toLowerCase()
+
+  if (type.startsWith('video/')) {
+    const [primary, ...fallbacks] = mediaSources
+    if (!primary && !imageSrc) {
+      return (
+        <div className='flex h-56 items-center justify-center bg-muted/40 text-xs text-muted-foreground'>
+          Video preview unavailable
+        </div>
+      )
+    }
+    const sources = [primary, ...fallbacks, imageSrc].filter(Boolean) as string[]
     return (
       <video
-        src={mediaUrl}
-        poster={imageUrl}
+        key={sources[0]}
+        poster={imageSrc || undefined}
         controls
         preload='metadata'
         className='h-56 w-full object-cover'
-        crossOrigin='anonymous'
-      />
+      >
+        {sources.map(source => (
+          <source key={source} src={source} />
+        ))}
+        Your browser does not support the video element.
+      </video>
     )
   }
 
-  if (mediaType.startsWith('audio/')) {
-    const audioSources = buildIpfsSources(rawMediaUrl)
+  if (type.startsWith('audio/')) {
+    const audioSources = mediaSources.length > 0 ? mediaSources : imageSrc ? [imageSrc] : []
     return (
       <div className='flex h-56 flex-col items-center justify-center gap-4 bg-background/85 p-6'>
-        <Image
-          src={imageUrl}
-          alt='Audio cover'
-          width={160}
-          height={160}
-          className='h-36 w-36 rounded-lg object-cover shadow-lg'
-          onError={event => {
-            const target = event.currentTarget as HTMLImageElement
-            if (target.src !== FALLBACK_IMAGE) {
-              target.src = FALLBACK_IMAGE
-            }
-          }}
-          unoptimized={isIpfsUri(rawImageUrl)}
-        />
-        <audio controls preload='none' controlsList='play nodownload' className='w-full rounded-md bg-background/80'>
-          {audioSources.map(source => (
-            <source key={source} src={source} />
-          ))}
-          Your browser does not support the audio element.
-        </audio>
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt='Audio cover'
+            width={160}
+            height={160}
+            className='h-36 w-36 rounded-lg object-cover shadow-lg'
+            unoptimized={isIpfsUri(imageSrc)}
+            onError={onImageError}
+          />
+        ) : (
+          <div className='flex h-36 w-36 items-center justify-center rounded-lg bg-muted/40 text-xs text-muted-foreground'>
+            Cover unavailable
+          </div>
+        )}
+        {audioSources.length > 0 ? (
+          <audio controls preload='none' controlsList='play nodownload' className='w-full rounded-md bg-background/80'>
+            {audioSources.map(source => (
+              <source key={source} src={source} />
+            ))}
+            Your browser does not support the audio element.
+          </audio>
+        ) : (
+          <div className='text-xs text-muted-foreground'>Audio preview unavailable</div>
+        )}
+      </div>
+    )
+  }
+
+  if (!imageSrc) {
+    return (
+      <div className='flex h-56 items-center justify-center bg-muted/40 text-xs text-muted-foreground'>
+        Artwork unavailable
       </div>
     )
   }
 
   return (
     <Image
-      src={imageUrl}
-      alt={mediaType}
+      src={imageSrc}
+      alt={mediaType ?? 'Asset preview'}
       width={800}
       height={600}
       className='h-56 w-full object-cover'
-      unoptimized={isIpfsUri(rawImageUrl)}
-      onError={event => {
-        const target = event.currentTarget as HTMLImageElement
-        if (target.src !== FALLBACK_IMAGE) {
-          target.src = FALLBACK_IMAGE
-        }
-      }}
+      unoptimized={isIpfsUri(imageSrc)}
+      onError={onImageError}
     />
   )
 }
 
-function resolveAssetUrl(uri: string) {
+function buildIpfsSources(uri?: string) {
   if (!uri) {
-    return FALLBACK_IMAGE
+    return []
   }
-  if (uri.startsWith('ipfs://')) {
-    return buildIpfsSources(uri)[0] ?? FALLBACK_IMAGE
-  }
-  try {
-    const parsed = new URL(uri)
-    return parsed.toString()
-  } catch {
-    return uri
-  }
-}
-
-function buildIpfsSources(uri: string) {
-  if (!uri) return []
+  const sources = new Set<string>()
   if (uri.startsWith('ipfs://')) {
     const cid = uri.replace('ipfs://', '').replace(/^\/+/, '')
-    return IPFS_GATEWAYS.map(gateway => `${gateway}${cid}`)
-  }
-  if (uri.includes('/ipfs/')) {
+    IPFS_GATEWAYS.forEach(gateway => sources.add(`${gateway}${cid}`))
+  } else if (uri.includes('/ipfs/')) {
     const cidPath = uri.substring(uri.indexOf('/ipfs/') + '/ipfs/'.length)
-    return IPFS_GATEWAYS.map(gateway => `${gateway}${cidPath}`)
+    IPFS_GATEWAYS.forEach(gateway => sources.add(`${gateway}${cidPath}`))
   }
-  return [uri]
+  sources.add(uri)
+  return Array.from(sources)
 }
 
-function isIpfsUri(uri: string) {
+function isIpfsUri(uri?: string) {
+  if (!uri) return false
   return uri.startsWith('ipfs://') || uri.includes('/ipfs/')
 }
 
