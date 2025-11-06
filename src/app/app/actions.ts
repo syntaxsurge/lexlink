@@ -1341,7 +1341,7 @@ async function finalizeOrder({
     amount: 1,
     receiver,
     maxMintingFee: 0,
-    maxRevenueShare: 100_000_000
+    maxRevenueShare: 100
   })
 
   if (!mintResponse.licenseTokenIds?.length) {
