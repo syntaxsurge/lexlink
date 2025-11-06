@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   ipAssetExplorerUrl,
   type StoryNetwork
@@ -209,7 +208,7 @@ function resolveAssetUrl(uri: string) {
     return FALLBACK_IMAGE
   }
   if (uri.startsWith('ipfs://')) {
-    return ipfsGatewayUrl(uri)
+    return `https://ipfs.io/ipfs/${uri.replace('ipfs://', '')}`
   }
   try {
     const parsed = new URL(uri)
