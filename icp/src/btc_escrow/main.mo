@@ -116,21 +116,19 @@ persistent actor btc_escrow {
     }
   };
 
-  let defaultMode : PaymentMode = switch (Prim.envVar("PAYMENT_MODE")) {
+  let defaultMode : PaymentMode = switch (Prim.envVar<system>("PAYMENT_MODE")) {
     case (?value) { parseMode(value) };
     case null { #ckbtc };
   };
 
-  let ckbtcMinterId : ?Text = Prim.envVar("CKBTC_MINTER_CANISTER_ID");
+  let ckbtcMinterId : ?Text = Prim.envVar<system>("CKBTC_MINTER_CANISTER_ID");
 
-  let keyName : Text = switch (Prim.envVar("ECDSA_KEY_NAME")) {
+  let keyName : Text = switch (Prim.envVar<system>("ECDSA_KEY_NAME")) {
     case (?value) { value };
     case null { "dfx_test_key" };
   };
 
-  let canisterPrincipal : Principal = Prim.principalOfActor(this);
-
-  let btcNetwork : Bitcoin.Network = switch (Prim.envVar("BTC_NETWORK")) {
+  let btcNetwork : Bitcoin.Network = switch (Prim.envVar<system>("BTC_NETWORK")) {
     case (?value) {
       let normalized = Text.toLowercase(value);
       if (normalized == "mainnet") {
@@ -176,9 +174,8 @@ persistent actor btc_escrow {
       case (?existing) { existing };
       case null {
         let hash = Sha256.fromArray(#sha256, Blob.toArray(Text.encodeUtf8(orderId)));
-        let blob = Blob.fromArray(hash);
-        ckbtcSubaccounts := Trie.put(ckbtcSubaccounts, key(orderId), Text.equal, blob).0;
-        blob
+        ckbtcSubaccounts := Trie.put(ckbtcSubaccounts, key(orderId), Text.equal, hash).0;
+        hash
       };
     }
   };
@@ -282,7 +279,7 @@ persistent actor btc_escrow {
           case (#ckbtc) {
             let subaccount = ensureCkbtcSubaccount(orderId);
             let address = await ckbtcMinter().get_btc_address({
-              owner = ?canisterPrincipal;
+              owner = null;
               subaccount = ?subaccount;
             });
             addressBook := Trie.put(addressBook, key(orderId), Text.equal, address).0;
@@ -347,7 +344,7 @@ persistent actor btc_escrow {
     };
 
     let result = await ckbtcMinter().update_balance({
-      owner = ?canisterPrincipal;
+      owner = null;
       subaccount = ?subaccount;
     });
 
