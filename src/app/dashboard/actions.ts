@@ -2,11 +2,13 @@
 
 import crypto from 'node:crypto'
 
+import { revalidatePath } from 'next/cache'
+
 import {
   DisputeTargetTag,
   convertCIDtoHashIPFS
 } from '@story-protocol/core-sdk'
-import { getAddress, parseAbi } from 'viem'
+import { getAddress } from 'viem'
 
 import { generateImageFromPrompt } from '@/lib/ai'
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
@@ -25,13 +27,13 @@ import { fetchAttestation } from '@/lib/icp'
 import { uploadBytes, uploadJson, ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   getStoryClient,
-  getStoryWalletClient,
-  storyAccount,
-  storyChain,
   getDefaultLicenseTerms,
   getDefaultLicensingConfig
 } from '@/lib/story'
-import type { DisputeEvidenceAttachment } from '@/lib/disputes'
+import {
+  createDisputeEvidenceBundle,
+  type DisputeEvidenceAttachment
+} from '@/lib/disputes'
 import { generateLicenseCredential } from '@/lib/vc'
 
 export type IpRecord = {
@@ -113,10 +115,24 @@ export type DisputeRecord = {
   constellationExplorerUrl?: string | null
   status: string
   livenessSeconds: number
+  livenessDeadline?: number
   bond: number
+  reporterBond?: number
+  counterBond?: number
   createdAt: number
+  respondedAt?: number
+  responseTxHash?: string
+  responseEvidenceCid?: string
+  responseEvidenceUri?: string
+  responseNote?: string | null
+  responseAttachments?: DisputeEvidenceAttachment[]
+  resolvedAt?: number
+  resolutionTx?: string
+  resolutionStatus?: string | null
   ownerPrincipal?: string
   reporterPrincipal: string
+  watchers?: string[]
+  assertionId?: string
 }
 
 export type AuditEventRecord = {
@@ -188,13 +204,6 @@ type SerializedFile = {
   size: number
   data: string
 }
-
-const DISPUTE_MODULE_ABI = parseAbi([
-  'function setDisputeJudgement(uint256 disputeId, bool decision, bytes data)',
-  'function resolveDispute(uint256 disputeId, bytes data)'
-])
-
-const EMPTY_BYTES = '0x' as `0x${string}`
 
 type AssetInput =
   | { kind: 'file'; file: SerializedFile }
@@ -406,6 +415,35 @@ async function assertActorOwnsIp({
   }
 }
 
+async function applyDisputeTagToIp({
+  convex,
+  ipId,
+  targetTag
+}: {
+  convex: ConvexClient
+  ipId: string
+  targetTag: DisputeTargetTag | string
+}) {
+  const record = (await convex.query('ipAssets:getById' as any, {
+    ipId
+  })) as (IpRecord & { _id: string }) | null
+
+  if (!record) {
+    return
+  }
+
+  const tags = new Set(record.tags ?? [])
+  tags.add('DISPUTED')
+  if (targetTag) {
+    tags.add(String(targetTag))
+  }
+
+  await convex.mutation('ipAssets:setTags' as any, {
+    ipId,
+    tags: Array.from(tags)
+  })
+}
+
 function parseDisputeId(value: string): bigint {
   if (!value || value.startsWith('pending')) {
     throw new Error(
@@ -462,35 +500,6 @@ function normalizeEvidenceCid(input: string): string {
   }
 
   return candidate
-}
-
-async function writeDisputeJudgementTx(
-  disputeId: bigint,
-  uphold: boolean
-): Promise<`0x${string}`> {
-  const wallet = getStoryWalletClient()
-  return wallet.writeContract({
-    address: env.STORY_DISPUTE_MODULE_ADDRESS as `0x${string}`,
-    abi: DISPUTE_MODULE_ABI,
-    functionName: 'setDisputeJudgement',
-    args: [disputeId, uphold, EMPTY_BYTES],
-    chain: storyChain,
-    account: storyAccount
-  })
-}
-
-async function writeDisputeResolveTx(
-  disputeId: bigint
-): Promise<`0x${string}`> {
-  const wallet = getStoryWalletClient()
-  return wallet.writeContract({
-    address: env.STORY_DISPUTE_MODULE_ADDRESS as `0x${string}`,
-    abi: DISPUTE_MODULE_ABI,
-    functionName: 'resolveDispute',
-    args: [disputeId, EMPTY_BYTES],
-    chain: storyChain,
-    account: storyAccount
-  })
 }
 
 async function assertActorOwnsLicense({
@@ -2256,6 +2265,9 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
   const disputeId =
     response.disputeId?.toString() ?? `pending-${crypto.randomUUID()}`
   const txHash = response.txHash ?? ''
+  const now = Date.now()
+  const livenessDeadline = now + livenessSeconds * 1000
+  const reporterBond = payload.bond ?? 0
 
   const evidencePayload = {
     kind: 'DISPUTE_RAISED',
@@ -2270,7 +2282,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     bond: payload.bond ?? 0,
     reporterPrincipal: actor.principal,
     txHash,
-    timestamp: Date.now()
+    timestamp: now
   }
 
   const evidenceJson = JSON.stringify(evidencePayload, null, 2)
@@ -2284,6 +2296,11 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     disputeEvidence.status === 'ok' ? disputeEvidence.txHash : ''
   const constellationExplorerUrl =
     disputeEvidence.status === 'ok' ? disputeEvidence.explorerUrl : ''
+
+  const watchers = new Set<string>([actor.principal])
+  if (ownerPrincipal) {
+    watchers.add(ownerPrincipal)
+  }
 
   const disputeRecord: Record<string, unknown> = {
     disputeId,
@@ -2299,8 +2316,11 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     constellationExplorerUrl,
     status: 'raised',
     livenessSeconds,
-    bond: payload.bond ?? 0,
-    reporterPrincipal: actor.principal
+    livenessDeadline,
+    bond: reporterBond,
+    reporterBond,
+    reporterPrincipal: actor.principal,
+    watchers: Array.from(watchers)
   }
 
   if (ownerPrincipal) {
@@ -2336,14 +2356,151 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
   }
 }
 
-export async function setDisputeJudgement({
-  disputeId,
-  uphold
-}: {
-  disputeId: string
-  uphold: boolean
-}) {
+export type RespondToDisputeResult =
+  | {
+      ok: true
+      txHash: string
+      evidenceCid: string
+      evidenceUri: string
+    }
+  | {
+    ok: false
+    error: string
+  }
+
+export async function respondToDisputeAction(
+  formData: FormData
+): Promise<RespondToDisputeResult> {
   const actor = await requireRole(['operator', 'creator'])
+  const disputeId = String(formData.get('disputeId') ?? '').trim()
+
+  if (!disputeId) {
+    return { ok: false, error: 'Missing dispute ID.' }
+  }
+
+  const convex = getConvexClient()
+  const dispute = (await convex.query('disputes:getById' as any, {
+    disputeId
+  })) as (DisputeRecord & { _id: string }) | null
+
+  if (!dispute) {
+    return { ok: false, error: 'Dispute not found.' }
+  }
+
+  const ownerPrincipal = await ensureDisputeOwner({
+    dispute,
+    convex,
+    ipOwners: new Map<string, string>()
+  })
+
+  if (!ownerPrincipal || ownerPrincipal !== actor.principal) {
+    return { ok: false, error: 'Only the asset owner can respond.' }
+  }
+
+  const files = formData
+    .getAll('files')
+    .filter((value): value is File => value instanceof File && value.size > 0)
+  const note = (formData.get('note') as string | null) ?? null
+  const url = (formData.get('url') as string | null) ?? null
+
+  if (files.length === 0 && (!url || url.trim().length === 0)) {
+    return {
+      ok: false,
+      error: 'Attach at least one file or provide a source URL.'
+    }
+  }
+
+  try {
+    const bundle = await createDisputeEvidenceBundle({
+      files,
+      url,
+      note
+    })
+
+    const storyClient = getStoryClient()
+    const numericId = parseDisputeId(dispute.disputeId)
+    const assertionIdHex =
+      (dispute.assertionId as `0x${string}` | undefined) ??
+      ((await storyClient.dispute.disputeIdToAssertionId(
+        Number(numericId)
+      )) as `0x${string}`)
+
+    const response = await storyClient.dispute.disputeAssertion({
+      ipId: dispute.ipId as `0x${string}`,
+      assertionId: assertionIdHex,
+      counterEvidenceCID: bundle.bundleCid
+    })
+
+    const txHash = response.txHash ?? ''
+    const respondedAt = Date.now()
+
+    const responsePayload = {
+      kind: 'DISPUTE_RESPONDED',
+      disputeId: dispute.disputeId,
+      ipId: dispute.ipId,
+      counterEvidenceCid: bundle.bundleCid,
+      counterEvidenceUri: bundle.bundleUri,
+      note: bundle.note ?? null,
+      attachments: bundle.attachments,
+      txHash,
+      timestamp: respondedAt,
+      ownerPrincipal
+    }
+
+    const evidenceJson = JSON.stringify(responsePayload, null, 2)
+    const evidenceHash = sha256Hex(evidenceJson)
+
+    const constellationResponse = await publishEvidence({
+      ...responsePayload,
+      evidenceHash
+    })
+
+    await convex.mutation('disputes:setResponse' as any, {
+      disputeId: dispute.disputeId,
+      status: 'contested',
+      responseTxHash: txHash,
+      responseEvidenceCid: bundle.bundleCid,
+      responseEvidenceUri: bundle.bundleUri,
+      responseNote: bundle.note ?? null,
+      responseAttachments: bundle.attachments,
+      respondedAt,
+      assertionId: assertionIdHex
+    })
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/disputes')
+
+    await recordEvent({
+      actor,
+      action: 'dispute.responded',
+      payload: {
+        disputeId: dispute.disputeId,
+        txHash,
+        counterEvidenceCid: bundle.bundleCid,
+        counterEvidenceUri: bundle.bundleUri,
+        constellationTx:
+          constellationResponse.status === 'ok'
+            ? constellationResponse.txHash
+            : null
+      },
+      resourceId: dispute.disputeId
+    })
+
+    return {
+      ok: true,
+      txHash,
+      evidenceCid: bundle.bundleCid,
+      evidenceUri: bundle.bundleUri
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unable to submit response.'
+    return { ok: false, error: message }
+  }
+}
+
+export async function settleDisputeAction(disputeId: string) {
+  const actor = await requireRole(['operator', 'creator', 'viewer'])
   const convex = getConvexClient()
 
   const dispute = (await convex.query('disputes:getById' as any, {
@@ -2354,31 +2511,56 @@ export async function setDisputeJudgement({
     throw new Error('Dispute not found')
   }
 
-  const ownerPrincipal = await ensureDisputeOwner({
-    dispute,
-    convex,
-    ipOwners: new Map<string, string>()
+  const numericId = parseDisputeId(dispute.disputeId)
+  const storyClient = getStoryClient()
+  const response = await storyClient.dispute.resolveDispute({
+    disputeId: numericId
   })
 
-  if (!ownerPrincipal || ownerPrincipal !== actor.principal) {
-    throw new Error('Only the asset owner can set judgement on this dispute.')
+  const txHash = response.txHash ?? ''
+  const resolvedAt = Date.now()
+  const resolutionPayload = {
+    kind: 'DISPUTE_SETTLED',
+    disputeId: dispute.disputeId,
+    ipId: dispute.ipId,
+    targetTag: dispute.targetTag,
+    txHash,
+    settledBy: actor.principal,
+    timestamp: resolvedAt
   }
-
-  const numericId = parseDisputeId(dispute.disputeId)
-  const txHash = await writeDisputeJudgementTx(numericId, uphold)
+  const resolutionHash = sha256Hex(JSON.stringify(resolutionPayload, null, 2))
+  const resolutionEvidence = await publishEvidence({
+    ...resolutionPayload,
+    evidenceHash: resolutionHash
+  })
 
   await convex.mutation('disputes:setStatus' as any, {
     disputeId: dispute.disputeId,
-    status: uphold ? 'upheld' : 'rejected'
+    status: 'resolved',
+    resolvedAt,
+    resolutionTx: txHash,
+    resolutionStatus: 'resolved'
   })
+
+  await applyDisputeTagToIp({
+    convex,
+    ipId: dispute.ipId,
+    targetTag: dispute.targetTag
+  })
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/disputes')
 
   await recordEvent({
     actor,
-    action: 'dispute.judged',
+    action: 'dispute.resolved',
     payload: {
       disputeId: dispute.disputeId,
-      uphold,
-      txHash
+      txHash,
+      constellationTx:
+        resolutionEvidence.status === 'ok'
+          ? resolutionEvidence.txHash
+          : null
     },
     resourceId: dispute.disputeId
   })
@@ -2386,8 +2568,14 @@ export async function setDisputeJudgement({
   return { txHash }
 }
 
-export async function resolveDisputeAction(disputeId: string) {
-  const actor = await requireRole(['operator', 'creator'])
+export async function toggleDisputeWatchAction({
+  disputeId,
+  follow
+}: {
+  disputeId: string
+  follow: boolean
+}) {
+  const actor = await requireSession()
   const convex = getConvexClient()
 
   const dispute = (await convex.query('disputes:getById' as any, {
@@ -2398,35 +2586,27 @@ export async function resolveDisputeAction(disputeId: string) {
     throw new Error('Dispute not found')
   }
 
-  const ownerPrincipal = await ensureDisputeOwner({
-    dispute,
-    convex,
-    ipOwners: new Map<string, string>()
-  })
-
-  if (!ownerPrincipal || ownerPrincipal !== actor.principal) {
-    throw new Error('Only the asset owner can resolve this dispute.')
+  const watchers = new Set(dispute.watchers ?? [])
+  if (follow) {
+    watchers.add(actor.principal)
+  } else {
+    watchers.delete(actor.principal)
+  }
+  watchers.add(dispute.reporterPrincipal)
+  if (dispute.ownerPrincipal) {
+    watchers.add(dispute.ownerPrincipal)
   }
 
-  const numericId = parseDisputeId(dispute.disputeId)
-  const txHash = await writeDisputeResolveTx(numericId)
-
-  await convex.mutation('disputes:setStatus' as any, {
+  await convex.mutation('disputes:setWatchers' as any, {
     disputeId: dispute.disputeId,
-    status: 'resolved'
+    watchers: Array.from(watchers)
   })
 
-  await recordEvent({
-    actor,
-    action: 'dispute.resolved',
-    payload: {
-      disputeId: dispute.disputeId,
-      txHash
-    },
-    resourceId: dispute.disputeId
-  })
+  revalidatePath('/dashboard/disputes')
 
-  return { txHash }
+  return {
+    watchers: Array.from(watchers)
+  }
 }
 
 export async function loadDashboardData() {
@@ -2469,18 +2649,28 @@ export async function loadDashboardData() {
     }
   }
 
-  const disputes = [] as DisputeRecord[]
+  const inbox = [] as DisputeRecord[]
+  const filed = [] as DisputeRecord[]
+  const watching = [] as DisputeRecord[]
+
   for (const dispute of disputesRaw as DisputeRecord[]) {
     const owner = await ensureDisputeOwner({
       dispute,
       convex,
       ipOwners
     })
+    const enriched: DisputeRecord = {
+      ...dispute,
+      ownerPrincipal: owner
+    }
     if (owner === actor.principal) {
-      disputes.push({
-        ...dispute,
-        ownerPrincipal: owner
-      })
+      inbox.push(enriched)
+    }
+    if (dispute.reporterPrincipal === actor.principal) {
+      filed.push(enriched)
+    }
+    if ((dispute.watchers ?? []).includes(actor.principal)) {
+      watching.push(enriched)
     }
   }
 
@@ -2488,7 +2678,11 @@ export async function loadDashboardData() {
     principal: actor.principal,
     ips,
     licenses,
-    disputes
+    disputes: {
+      inbox,
+      filed,
+      watching
+    }
   }
 }
 

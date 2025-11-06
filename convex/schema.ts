@@ -124,10 +124,35 @@ export default defineSchema({
     constellationExplorerUrl: v.optional(v.string()),
     status: v.string(),
     livenessSeconds: v.number(),
+    livenessDeadline: v.optional(v.number()),
     bond: v.number(),
+    reporterBond: v.optional(v.number()),
+    counterBond: v.optional(v.number()),
     createdAt: v.number(),
+    respondedAt: v.optional(v.number()),
+    responseTxHash: v.optional(v.string()),
+    responseEvidenceCid: v.optional(v.string()),
+    responseEvidenceUri: v.optional(v.string()),
+    responseNote: v.optional(v.string()),
+    responseAttachments: v.optional(
+      v.array(
+        v.object({
+          uri: v.string(),
+          name: v.string(),
+          mimeType: v.string(),
+          size: v.number(),
+          source: v.union(v.literal('upload'), v.literal('url')),
+          originalUrl: v.optional(v.string())
+        })
+      )
+    ),
+    resolvedAt: v.optional(v.number()),
+    resolutionTx: v.optional(v.string()),
+    resolutionStatus: v.optional(v.string()),
     ownerPrincipal: v.optional(v.string()),
-    reporterPrincipal: v.string()
+    reporterPrincipal: v.string(),
+    watchers: v.optional(v.array(v.string())),
+    assertionId: v.optional(v.string())
   })
     .index('by_disputeId', ['disputeId'])
     .index('by_ipId', ['ipId'])

@@ -45,9 +45,9 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 - Voice‑over: “Anyone can report misuse. Reporters upload evidence or paste a source URL. LexLink pins the files to IPFS, builds a single evidence bundle CID, and passes that to Story’s Dispute Module.”
 - On‑screen: Submit a dispute with tag `IMPROPER_USAGE`. Show the returned Dispute ID and evidence bundle link.
 
-## 10) Owner’s Disputes Inbox (5:00 – 5:30)
+## 10) Case Manager (5:00 – 5:30)
 - On‑screen: `/dashboard/disputes` (owner/operator session).
-- Voice‑over: “The inbox shows disputes against assets you own: reporter principal, tag, evidence bundle, and on‑chain tx. On testnet you can simulate UMA judgement; on mainnet UMA reviewers arbitrate. Once upheld, Story tags the IP and downstream actions respect that tag.”
+- Voice‑over: “The Cases view has Inbox, Filed, and Watching tabs. Owners can open a dispute card, add counter evidence, follow deadlines, and trigger settlement once UMA’s liveness window ends. Reporters see the same evidence trail plus the Story + Constellation transactions.”
 
 ## 11) Compliance and audit (5:30 – 5:55)
 - On‑screen: `/dashboard/compliance`.

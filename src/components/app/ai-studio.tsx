@@ -24,6 +24,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import { ipAssetExplorerUrl, type StoryNetwork } from '@/lib/story-links'
 
 const formSchema = z.object({
@@ -340,6 +341,7 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
             />
           </CardContent>
         </Card>
+
       </div>
 
       <div className='space-y-4'>
@@ -475,8 +477,6 @@ function ResultStat({
     </div>
   )
 }
-
-import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 
 function resolveAssetUrl(uri: string) {
   if (!uri) return ''

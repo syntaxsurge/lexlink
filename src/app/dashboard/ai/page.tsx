@@ -11,7 +11,6 @@ export default async function AiGenerationPage() {
     .filter((ip: IpRecord) => Boolean(ip.aiMetadata))
     .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
     .slice(0, 6)
-
   return (
     <div className='space-y-8'>
       <div className='space-y-2'>

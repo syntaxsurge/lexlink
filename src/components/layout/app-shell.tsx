@@ -41,7 +41,7 @@ const routes = [
   { href: '/dashboard/ip', label: 'IP Registry', icon: BookOpen },
   { href: '/dashboard/ai', label: 'AI Studio', icon: Sparkles },
   { href: '/dashboard/licenses', label: 'Licenses', icon: ScrollText },
-  { href: '/dashboard/disputes', label: 'Disputes Inbox', icon: Scale },
+  { href: '/dashboard/disputes', label: 'Cases', icon: Scale },
   { href: '/dashboard/compliance', label: 'Compliance', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings }
 ]

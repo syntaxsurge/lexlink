@@ -29,7 +29,6 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_ICP_CKBTC_NETWORK: z
     .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
     .optional(),
-  NEXT_PUBLIC_CONSTELLATION_METAGRAPH_L0_URL: z.string().url().optional()
 })
 
 const serverEnvSchema = z.object({
@@ -147,19 +146,6 @@ const serverEnvSchema = z.object({
       /^0x[0-9a-fA-F]{64}$/,
       'VC_PRIVATE_KEY must be a 32-byte hex string'
     ),
-  CONSTELLATION_METAGRAPH_ENABLED: z
-    .enum(['true', 'false'])
-    .default('false')
-    .transform(value => value === 'true'),
-  CONSTELLATION_METAGRAPH_DATA_L1_URL: z.string().url().optional(),
-  CONSTELLATION_METAGRAPH_L0_URL: z.string().url().optional(),
-  CONSTELLATION_METAGRAPH_PRIVATE_KEY: z
-    .string()
-    .regex(
-      /^0x[0-9a-fA-F]{64}$/,
-      'CONSTELLATION_METAGRAPH_PRIVATE_KEY must be hex'
-    )
-    .optional(),
   OPENAI_API_KEY: z.string().min(10),
   OPENAI_API_BASE: z.string().url().default('https://api.openai.com/v1'),
   OPENAI_IMAGE_MODEL: z.string().default('dall-e-3'),
@@ -194,8 +180,6 @@ function parseEnv() {
     NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
       process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID,
     NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK,
-    NEXT_PUBLIC_CONSTELLATION_METAGRAPH_L0_URL:
-      process.env.NEXT_PUBLIC_CONSTELLATION_METAGRAPH_L0_URL
   })
 
   const serverEnv = serverEnvSchema.parse({
@@ -242,13 +226,6 @@ function parseEnv() {
     CONVEX_DEPLOYMENT: process.env.CONVEX_DEPLOYMENT,
     VC_ISSUER_DID: process.env.VC_ISSUER_DID,
     VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY,
-    CONSTELLATION_METAGRAPH_ENABLED:
-      process.env.CONSTELLATION_METAGRAPH_ENABLED,
-    CONSTELLATION_METAGRAPH_DATA_L1_URL:
-      process.env.CONSTELLATION_METAGRAPH_DATA_L1_URL,
-    CONSTELLATION_METAGRAPH_L0_URL: process.env.CONSTELLATION_METAGRAPH_L0_URL,
-    CONSTELLATION_METAGRAPH_PRIVATE_KEY:
-      process.env.CONSTELLATION_METAGRAPH_PRIVATE_KEY,
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     OPENAI_API_BASE: process.env.OPENAI_API_BASE,
     OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL,

@@ -106,3 +106,24 @@ export const assignOwner = mutationGeneric({
     })
   }
 })
+
+export const setTags = mutationGeneric({
+  args: {
+    ipId: v.string(),
+    tags: v.array(v.string())
+  },
+  handler: async (ctx, args) => {
+    const record = await ctx.db
+      .query('ips')
+      .withIndex('by_ipId', q => q.eq('ipId', args.ipId))
+      .unique()
+
+    if (!record) {
+      throw new Error('IP asset not found')
+    }
+
+    await ctx.db.patch(record._id, {
+      tags: args.tags
+    })
+  }
+})

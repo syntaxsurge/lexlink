@@ -199,6 +199,7 @@ export default async function OverviewPage() {
   const finalizedOrders = licenses.filter(
     (license: LicenseRecord) => license.status === 'finalized'
   )
+  const disputeInbox = disputes?.inbox ?? []
   const averageCompliance = finalizedOrders.length
     ? Math.round(
         finalizedOrders.reduce(
@@ -286,9 +287,9 @@ export default async function OverviewPage() {
         <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3'>
             <div className='space-y-1'>
-              <CardTitle className='text-lg'>Disputes Monitor</CardTitle>
+              <CardTitle className='text-lg'>Case Monitor</CardTitle>
               <CardDescription className='text-sm'>
-                Active UMA disputes
+                Active Story disputes
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm' className='flex-shrink-0'>
@@ -297,14 +298,14 @@ export default async function OverviewPage() {
           </CardHeader>
           <CardContent>
             <div className='space-y-3'>
-              {disputes.length === 0 && (
+              {disputeInbox.length === 0 && (
                 <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-6 text-center'>
                   <p className='text-sm text-muted-foreground'>
                     No disputes at the moment.
                   </p>
                 </div>
               )}
-              {disputes.slice(0, 3).map((dispute: DisputeRecord) => {
+              {disputeInbox.slice(0, 3).map((dispute: DisputeRecord) => {
                 const disputeExplorerUrl =
                   dispute.constellationExplorerUrl &&
                   dispute.constellationExplorerUrl.length > 0
