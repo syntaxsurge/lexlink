@@ -21,7 +21,7 @@ import {
   confirmPayment,
   fetchAttestation
 } from '@/lib/icp'
-import { uploadBytes, uploadJson } from '@/lib/ipfs'
+import { uploadBytes, uploadJson, ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   readPaymentMode,
   getDefaultPaymentMode,
@@ -1350,7 +1350,8 @@ async function finalizeOrder({
 
   const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
 
-  const mediaResponse = await fetch(ip.mediaUrl)
+  const mediaUrl = ipfsGatewayUrl(ip.mediaUrl)
+  const mediaResponse = await fetch(mediaUrl, { cache: 'no-store' })
   if (!mediaResponse.ok) {
     throw new Error(
       `Failed to fetch media for IP: ${mediaResponse.status} ${mediaResponse.statusText}`
@@ -1375,7 +1376,7 @@ async function finalizeOrder({
   const archive = await createLicenseArchive({
     assetBuffer: mediaBuffer,
     assetFileName:
-      new URL(ip.mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
+      new URL(mediaUrl).pathname.split('/').pop() ?? 'licensed-asset.bin',
     storyLicenseId: licenseTokenId,
     btcTxId: paymentReference,
     constellationTx,
