@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 
 import { signOut, useSession } from 'next-auth/react'
+import { usePathname } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -17,6 +18,7 @@ const links = [
 
 export function SiteHeader() {
   const { data: session, status } = useSession()
+  const pathname = usePathname()
   const isAuthenticated = status === 'authenticated'
   const handleSignOut = () => {
     void (async () => {
@@ -50,22 +52,30 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className='flex items-center gap-2'>
-          {links.map(link => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                'rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
-                'hidden sm:inline-flex'
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {links.map(link => {
+            const isActive =
+              pathname === link.href ||
+              (link.href !== '/' && pathname.startsWith(link.href))
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  'hidden rounded-full px-3 py-2 text-sm font-medium transition-colors sm:inline-flex',
+                  isActive
+                    ? 'bg-foreground text-background shadow'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                )}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
           {isAuthenticated ? (
             <>
               <Button asChild variant='secondary'>
-                <Link href='/dashboard'>Open Console</Link>
+                <Link href='/dashboard'>Dashboard</Link>
               </Button>
               <Button variant='ghost' onClick={handleSignOut}>
                 {principalLabel ?? session?.principal ?? 'Sign out'}
@@ -77,7 +87,7 @@ export function SiteHeader() {
                 <Link href='/signin'>Sign in</Link>
               </Button>
               <Button asChild>
-                <Link href='/signin'>Launch Console</Link>
+                <Link href='/signin'>Launch Dashboard</Link>
               </Button>
             </>
           )}

@@ -1,6 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
+
+import { useSession } from 'next-auth/react'
 
 import { type IpRecord } from '@/app/dashboard/actions'
 import { IpAssetCard } from '@/components/app/ip-asset-card'
@@ -28,6 +31,8 @@ type GalleryExplorerProps = {
 export function GalleryExplorer({ assets, network }: GalleryExplorerProps) {
   const [filter, setFilter] = useState<FilterKey>('all')
   const [query, setQuery] = useState('')
+  const { status } = useSession()
+  const isAuthenticated = status === 'authenticated'
 
   const filteredAssets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -97,17 +102,37 @@ export function GalleryExplorer({ assets, network }: GalleryExplorerProps) {
               key={asset.ipId}
               asset={asset}
               network={network}
+              highlightActions
               actionSlot={
-                <div className='space-y-2 text-xs text-muted-foreground'>
+                <div className='space-y-3 text-xs text-muted-foreground'>
                   <p className='font-semibold text-foreground'>
-                    Ready to license
+                    {isAuthenticated ? 'License this asset' : 'Sign in to license'}
                   </p>
                   <p>
-                    Sign in with Internet Identity to allocate a ckBTC or BTC invoice for this asset.
+                    {isAuthenticated
+                      ? 'Generate a ckBTC or BTC invoice from the dashboard to monetize this registration instantly.'
+                      : 'Sign in with Internet Identity to allocate ckBTC or BTC invoices and manage settlement.'}
                   </p>
-                  <Button asChild size='sm' variant='outline'>
-                    <a href='/signin'>Sign in to license</a>
-                  </Button>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    {isAuthenticated ? (
+                      <>
+                        <Button asChild size='sm' variant='default'>
+                          <Link href={`/dashboard/licenses?ip=${asset.ipId}`}>
+                            Create license order
+                          </Link>
+                        </Button>
+                        <Button asChild size='sm' variant='outline'>
+                          <Link href={`/dashboard/ip?focus=${asset.ipId}`}>
+                            View in dashboard
+                          </Link>
+                        </Button>
+                      </>
+                    ) : (
+                      <Button asChild size='sm' variant='outline'>
+                        <Link href='/signin'>Sign in to license</Link>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               }
             />

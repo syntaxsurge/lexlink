@@ -136,7 +136,7 @@ const serverEnvSchema = z.object({
     .optional(),
   OPENAI_API_KEY: z.string().min(10),
   OPENAI_API_BASE: z.string().url().default('https://api.openai.com/v1'),
-  OPENAI_IMAGE_MODEL: z.string().default('gpt-image-1'),
+  OPENAI_IMAGE_MODEL: z.string().default('dall-e-3'),
   OPENAI_IMAGE_SIZE: z.string().default('1024x1024'),
   OPENAI_IMAGE_QUALITY: z.enum(['standard', 'hd']).default('standard'),
   AI_CREATOR_NAME: z

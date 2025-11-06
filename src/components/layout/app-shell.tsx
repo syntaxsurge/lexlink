@@ -67,9 +67,10 @@ export function AppShell({ children }: AppShellProps) {
         key={route.href}
         href={route.href}
         className={cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted/60',
-          isActive && 'bg-muted text-foreground shadow-sm'
+          'flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm font-medium transition-all hover:border-border hover:bg-muted/40',
+          isActive && 'border-primary/50 bg-primary/10 text-foreground shadow-sm'
         )}
+        aria-current={isActive ? 'page' : undefined}
       >
         <Icon className='h-4 w-4' />
         <span>{route.label}</span>
@@ -79,13 +80,15 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className='flex min-h-[calc(100vh-5rem)] gap-6 py-6'>
-      <aside className='hidden w-60 flex-none flex-col rounded-xl border border-border bg-card/60 p-4 md:flex'>
-        <div className='flex items-center gap-3 rounded-lg border border-border bg-background/70 px-3 py-2'>
+      <aside className='hidden w-64 flex-none flex-col overflow-hidden rounded-2xl border border-border/60 bg-card/70 p-4 shadow-lg md:flex'>
+        <div className='flex items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-3 shadow-sm'>
           <Avatar className='h-9 w-9'>
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
           <div className='flex flex-col'>
-            <span className='text-sm font-medium'>{identityLabel}</span>
+            <span className='text-sm font-semibold text-foreground'>
+              {identityLabel}
+            </span>
             {principal && (
               <span className='text-xs font-mono text-muted-foreground'>
                 {principal}
@@ -98,23 +101,19 @@ export function AppShell({ children }: AppShellProps) {
             )}
           </div>
         </div>
-        <nav className='mt-6 grid gap-1'>{navItems}</nav>
-        <div className='mt-auto pt-6 flex items-center justify-between'>
-          <p className='text-xs text-muted-foreground'>
-            Sessions refresh every 7 days.
-          </p>
-          <Button
-            variant='outline'
-            size='sm'
-            onClick={handleSignOut}
-          >
+        <nav className='mt-6 grid gap-2'>{navItems}</nav>
+        <div className='mt-auto pt-6'>
+          <div className='rounded-xl border border-border/60 bg-background/80 p-3 text-xs text-muted-foreground'>
+            Sessions refresh every 7 days. Use Settings to rotate credentials.
+          </div>
+          <Button variant='ghost' size='sm' className='mt-3 w-full' onClick={handleSignOut}>
             Sign out
           </Button>
         </div>
       </aside>
 
       <div className='flex w-full flex-col'>
-        <header className='flex items-center justify-between gap-3 rounded-xl border border-border bg-card/70 px-4 py-3 shadow-sm'>
+        <header className='flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-gradient-to-r from-background via-card to-background px-4 py-4 shadow-md'>
           <div className='md:hidden'>
             <Sheet>
               <SheetTrigger asChild>
@@ -123,7 +122,7 @@ export function AppShell({ children }: AppShellProps) {
                 </Button>
               </SheetTrigger>
               <SheetContent side='left' className='w-72 p-6'>
-                <div className='flex items-center gap-3 rounded-lg border border-border bg-background/70 px-3 py-2'>
+                <div className='flex items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-3'>
                   <Avatar className='h-9 w-9'>
                     <AvatarFallback>{fallback}</AvatarFallback>
                   </Avatar>
@@ -148,29 +147,24 @@ export function AppShell({ children }: AppShellProps) {
               </SheetContent>
             </Sheet>
           </div>
-          <div>
-            <h1 className='text-lg font-semibold leading-tight'>
-              LexLink Console
+          <div className='space-y-1'>
+            <h1 className='text-2xl font-semibold tracking-tight text-foreground'>
+              LexLink Dashboard
             </h1>
-            <p className='text-sm text-muted-foreground'>
-              Onboard IP, allocate Bitcoin invoices, and anchor evidence across
-              Story, ICP, and Constellation.
+            <p className='text-sm text-muted-foreground max-w-xl'>
+              Monitor registrations, settle licenses, and trace provenance across Story, ICP, and Constellation from a single control center.
             </p>
           </div>
           <div className='hidden items-center gap-2 md:flex'>
             <Button variant='outline' size='sm' asChild>
               <Link href='/dashboard/settings'>Session settings</Link>
             </Button>
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={handleSignOut}
-            >
+            <Button variant='ghost' size='sm' onClick={handleSignOut}>
               Sign out
             </Button>
           </div>
         </header>
-        <main className='mt-4 flex-1'>{children}</main>
+        <main className='mt-6 flex-1 space-y-6'>{children}</main>
       </div>
     </div>
   )

@@ -1,6 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
+
+import { useSession } from 'next-auth/react'
 
 import { type IpRecord } from '@/app/dashboard/actions'
 import { IpAssetCard } from '@/components/app/ip-asset-card'
@@ -19,6 +22,8 @@ type MarketplaceBoardProps = {
 export function MarketplaceBoard({ assets, network }: MarketplaceBoardProps) {
   const [sort, setSort] = useState<SortKey>('latest')
   const [query, setQuery] = useState('')
+  const { status } = useSession()
+  const isAuthenticated = status === 'authenticated'
 
   const sortedAssets = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -98,22 +103,34 @@ export function MarketplaceBoard({ assets, network }: MarketplaceBoardProps) {
               network={network}
               highlightActions
               actionSlot={
-                <div className='space-y-2 text-xs text-muted-foreground'>
+                <div className='space-y-3 text-xs text-muted-foreground'>
                   <p className='font-semibold text-foreground'>
-                    License this asset
+                    {isAuthenticated ? 'Launch a licensing workflow' : 'Sign in to license'}
                   </p>
                   <p>
-                    Sign in to allocate an invoice or contact the operator for negotiated terms.
+                    {isAuthenticated
+                      ? 'Generate a ckBTC invoice or share a Story checkout link with your buyer in a few clicks.'
+                      : 'Authenticate to create ckBTC or BTC invoices and manage settlement history.'}
                   </p>
                   <div className='flex flex-wrap gap-2'>
-                    <Button asChild size='sm' variant='default'>
-                      <a href={`/signin`}>Sign in</a>
-                    </Button>
-                    <Button asChild size='sm' variant='outline'>
-                      <a href={`/dashboard/licenses?ip=${asset.ipId}`}>
-                        Create ckBTC invoice
-                      </a>
-                    </Button>
+                    {isAuthenticated ? (
+                      <>
+                        <Button asChild size='sm' variant='default'>
+                          <Link href={`/dashboard/licenses?ip=${asset.ipId}`}>
+                            Create ckBTC invoice
+                          </Link>
+                        </Button>
+                        <Button asChild size='sm' variant='outline'>
+                          <Link href={`/dashboard/purchases`}>
+                            Review buyer receipts
+                          </Link>
+                        </Button>
+                      </>
+                    ) : (
+                      <Button asChild size='sm' variant='default'>
+                        <Link href='/signin'>Sign in</Link>
+                      </Button>
+                    )}
                   </div>
                 </div>
               }

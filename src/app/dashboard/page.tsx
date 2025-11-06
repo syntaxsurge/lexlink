@@ -57,11 +57,13 @@ function MetricCard({
   value: string
 }) {
   return (
-    <Card className='border-none bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-lg'>
-      <CardHeader>
-        <CardDescription className='text-slate-300'>{title}</CardDescription>
-        <CardTitle className='text-3xl font-semibold'>{value}</CardTitle>
-        <p className='text-xs text-slate-400'>{hint}</p>
+    <Card className='overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 via-background to-background text-foreground shadow'>
+      <CardHeader className='space-y-3'>
+        <CardDescription className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+          {title}
+        </CardDescription>
+        <CardTitle className='truncate text-3xl font-semibold'>{value}</CardTitle>
+        <p className='text-xs text-muted-foreground/80'>{hint}</p>
       </CardHeader>
     </Card>
   )
@@ -69,12 +71,14 @@ function MetricCard({
 
 function EventItem({ event }: { event: AuditEventRecord }) {
   return (
-    <div className='rounded-lg border border-border bg-card/70 p-4 text-sm'>
+    <div className='rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm text-sm'>
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
-          <Badge variant='outline'>{event.action}</Badge>
+          <Badge variant='outline' className='rounded-full px-3 py-1 text-xs'>
+            {event.action}
+          </Badge>
           {event.resourceId && (
-            <span className='font-mono text-xs text-muted-foreground'>
+            <span className='break-all font-mono text-xs text-muted-foreground'>
               {event.resourceId}
             </span>
           )}
@@ -86,7 +90,7 @@ function EventItem({ event }: { event: AuditEventRecord }) {
       <div className='mt-3 grid gap-1 text-xs text-muted-foreground'>
         {event.actorAddress && <div>Actor: {event.actorAddress}</div>}
         {event.actorPrincipal && <div>Principal: {event.actorPrincipal}</div>}
-        <pre className='mt-2 max-h-32 overflow-y-auto rounded bg-muted/40 p-2 text-[11px] text-foreground'>
+        <pre className='mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-muted/40 p-3 font-mono text-[11px] text-foreground'>
           {JSON.stringify(event.payload, null, 2)}
         </pre>
       </div>
@@ -122,9 +126,9 @@ export default async function OverviewPage() {
   )
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-8'>
       <PrincipalSummary principal={principal} />
-      <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
+      <div className='grid gap-4 sm:grid-cols-2 2xl:grid-cols-4'>
         <MetricCard
           title='Registered IP Assets'
           hint='Story Protocol records mirrored in Convex'
@@ -155,7 +159,7 @@ export default async function OverviewPage() {
       </div>
 
       <div className='grid gap-6 lg:grid-cols-2'>
-        <Card className='border-border/60 bg-card/60'>
+        <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between'>
             <div>
               <CardTitle>Pending License Payments</CardTitle>
@@ -169,48 +173,52 @@ export default async function OverviewPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order</TableHead>
-                  <TableHead>IP</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingOrders.length === 0 && (
+            <div className='overflow-x-auto'>
+              <Table className='min-w-full'>
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={4}
-                      className='text-center text-sm text-muted-foreground'
-                    >
-                      No pending invoices — great job!
-                    </TableCell>
+                    <TableHead className='whitespace-nowrap'>Order</TableHead>
+                    <TableHead className='whitespace-nowrap'>IP</TableHead>
+                    <TableHead className='whitespace-nowrap'>Buyer</TableHead>
+                    <TableHead className='whitespace-nowrap'>Status</TableHead>
                   </TableRow>
-                )}
-                {pendingOrders.map(order => (
-                  <TableRow key={order.orderId}>
-                    <TableCell className='font-medium'>
-                      {order.orderId.slice(0, 8)}…
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.ipId.slice(0, 10)}…
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {(order.mintTo ?? order.buyer ?? 'pending').slice(0, 10)}…
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant='outline'>{order.status}</Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pendingOrders.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className='text-center text-sm text-muted-foreground'
+                      >
+                        No pending invoices — great job!
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {pendingOrders.map(order => (
+                    <TableRow key={order.orderId}>
+                      <TableCell className='whitespace-nowrap font-medium'>
+                        {order.orderId.slice(0, 8)}…
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap font-mono text-xs'>
+                        {order.ipId.slice(0, 10)}…
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap font-mono text-xs'>
+                        {(order.mintTo ?? order.buyer ?? 'pending').slice(0, 10)}…
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap'>
+                        <Badge variant='outline' className='rounded-full px-2 py-0.5 text-xs capitalize'>
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className='border-border/60 bg-card/60'>
+        <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between'>
             <div>
               <CardTitle>Disputes Monitor</CardTitle>
@@ -242,41 +250,41 @@ export default async function OverviewPage() {
               return (
                 <div
                   key={dispute.disputeId}
-                  className='rounded-lg border border-border bg-background/60 p-4'
+                  className='rounded-xl border border-border/60 bg-background/70 p-4'
                 >
-                <div className='flex items-center justify-between gap-2'>
-                  <span className='font-medium'>
-                    {dispute.disputeId.slice(0, 10)}…
-                  </span>
-                  <Badge>{dispute.status}</Badge>
-                </div>
-                <dl className='mt-3 grid gap-2 text-xs'>
-                  <div>
-                    <dt className='text-muted-foreground'>IP ID</dt>
-                    <dd className='font-mono'>{dispute.ipId}</dd>
+                  <div className='flex items-center justify-between gap-2'>
+                    <span className='font-medium'>
+                      {dispute.disputeId.slice(0, 10)}…
+                    </span>
+                    <Badge className='rounded-full px-2 py-0.5 capitalize'>{dispute.status}</Badge>
                   </div>
-                  <div>
-                    <dt className='text-muted-foreground'>Evidence CID</dt>
-                    <dd className='font-mono'>{dispute.evidenceCid}</dd>
-                  </div>
-                  <div>
-                    <dt className='text-muted-foreground'>Constellation Tx</dt>
-                    <dd className='font-mono'>
-                      {disputeExplorerUrl ? (
-                        <Link
-                          href={disputeExplorerUrl}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-primary underline-offset-4 hover:underline'
-                        >
-                          {dispute.constellationTx}
-                        </Link>
-                      ) : (
-                        dispute.constellationTx || 'pending'
-                      )}
-                    </dd>
-                  </div>
-                </dl>
+                  <dl className='mt-3 grid gap-3 text-xs'>
+                    <div className='space-y-1'>
+                      <dt className='text-muted-foreground'>IP ID</dt>
+                      <dd className='break-words font-mono text-[11px]'>{dispute.ipId}</dd>
+                    </div>
+                    <div className='space-y-1'>
+                      <dt className='text-muted-foreground'>Evidence CID</dt>
+                      <dd className='break-all font-mono text-[11px]'>{dispute.evidenceCid}</dd>
+                    </div>
+                    <div className='space-y-1'>
+                      <dt className='text-muted-foreground'>Constellation Tx</dt>
+                      <dd className='break-all font-mono text-[11px]'>
+                        {disputeExplorerUrl ? (
+                          <Link
+                            href={disputeExplorerUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary underline-offset-4 hover:underline'
+                          >
+                            {dispute.constellationTx}
+                          </Link>
+                        ) : (
+                          dispute.constellationTx || 'pending'
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
               )
             })}
@@ -285,7 +293,7 @@ export default async function OverviewPage() {
       </div>
 
       <div className='grid gap-6 lg:grid-cols-2'>
-        <Card className='border-border/60 bg-card/60'>
+        <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between'>
             <div>
               <CardTitle>Completed Licenses</CardTitle>
@@ -319,7 +327,7 @@ export default async function OverviewPage() {
               return (
                 <div
                   key={order.orderId}
-                  className='rounded-lg border border-border bg-background/60 p-4'
+                  className='rounded-xl border border-border/60 bg-background/70 p-4'
                 >
                   <div className='flex items-center justify-between gap-2'>
                     <div>
@@ -386,7 +394,7 @@ export default async function OverviewPage() {
           </CardContent>
         </Card>
 
-        <Card className='border-border/60 bg-card/60'>
+        <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between'>
             <div>
               <CardTitle>Recent Audit Activity</CardTitle>
@@ -411,7 +419,7 @@ export default async function OverviewPage() {
         </Card>
       </div>
 
-      <Card className='border-border/60 bg-card/60'>
+      <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
         <CardHeader className='flex flex-row items-center justify-between'>
           <div>
             <CardTitle>Training Meter Activity</CardTitle>
@@ -421,67 +429,73 @@ export default async function OverviewPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Batch</TableHead>
-                <TableHead>IP ID</TableHead>
-                <TableHead>Units</TableHead>
-                <TableHead>Constellation Tx</TableHead>
-                <TableHead>Timestamp</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {trainingBatches.length === 0 && (
+          <div className='overflow-x-auto'>
+            <Table className='min-w-full'>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className='text-center text-sm text-muted-foreground'
-                  >
-                    No training batches recorded yet.
-                  </TableCell>
+                  <TableHead className='whitespace-nowrap'>Batch</TableHead>
+                  <TableHead className='whitespace-nowrap'>IP ID</TableHead>
+                  <TableHead className='whitespace-nowrap'>Units</TableHead>
+                  <TableHead className='whitespace-nowrap'>Constellation Tx</TableHead>
+                  <TableHead className='whitespace-nowrap'>Timestamp</TableHead>
                 </TableRow>
-              )}
-              {trainingBatches.slice(0, 6).map(batch => {
-                const batchExplorerUrl =
-                  batch.constellationExplorerUrl &&
-                  batch.constellationExplorerUrl.length > 0
-                    ? batch.constellationExplorerUrl
-                    : batch.constellationTx
-                      ? constellationExplorerUrl(
-                          constellationNetwork,
-                          batch.constellationTx
-                        )
-                      : null
-                return (
-                  <TableRow key={batch.batchId}>
-                    <TableCell className='font-medium'>
-                      {batch.batchId.slice(0, 10)}…
+              </TableHeader>
+              <TableBody>
+                {trainingBatches.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className='text-center text-sm text-muted-foreground'
+                    >
+                      No training batches recorded yet.
                     </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {batch.ipId}
-                    </TableCell>
-                    <TableCell>{batch.units.toLocaleString()}</TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {batchExplorerUrl ? (
-                        <Link
-                          href={batchExplorerUrl}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-primary underline-offset-4 hover:underline'
-                        >
-                          {batch.constellationTx}
-                        </Link>
-                      ) : (
-                        batch.constellationTx || 'pending'
-                      )}
-                    </TableCell>
-                    <TableCell>{formatDate(batch.createdAt)}</TableCell>
                   </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                )}
+                {trainingBatches.slice(0, 6).map(batch => {
+                  const batchExplorerUrl =
+                    batch.constellationExplorerUrl &&
+                    batch.constellationExplorerUrl.length > 0
+                      ? batch.constellationExplorerUrl
+                      : batch.constellationTx
+                        ? constellationExplorerUrl(
+                            constellationNetwork,
+                            batch.constellationTx
+                          )
+                        : null
+                  return (
+                    <TableRow key={batch.batchId}>
+                      <TableCell className='whitespace-nowrap font-medium'>
+                        {batch.batchId.slice(0, 10)}…
+                      </TableCell>
+                      <TableCell className='break-all font-mono text-xs'>
+                        {batch.ipId}
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap'>
+                        {batch.units.toLocaleString()}
+                      </TableCell>
+                      <TableCell className='break-all font-mono text-xs'>
+                        {batchExplorerUrl ? (
+                          <Link
+                            href={batchExplorerUrl}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='text-primary underline-offset-4 hover:underline'
+                          >
+                            {batch.constellationTx}
+                          </Link>
+                        ) : (
+                          batch.constellationTx || 'pending'
+                        )}
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap'>
+                        {formatDate(batch.createdAt)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

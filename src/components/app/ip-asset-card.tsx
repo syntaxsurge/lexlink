@@ -3,6 +3,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { ArrowUpRight } from 'lucide-react'
+
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -43,9 +45,14 @@ export function IpAssetCard({
   const creators = asset.creators ?? []
 
   return (
-    <Card className={cn('flex h-full flex-col border-border/70 bg-card/70 shadow-sm backdrop-blur', className)}>
+    <Card
+      className={cn(
+        'flex h-full flex-col overflow-hidden border-border/70 bg-card/80 shadow-lg shadow-black/5 backdrop-blur',
+        className
+      )}
+    >
       <CardHeader className='space-y-3'>
-        <div className='relative overflow-hidden rounded-lg border border-border/60 bg-muted/30'>
+        <div className='relative overflow-hidden rounded-xl border border-border/60 bg-muted/30'>
           {renderMediaPreview(asset.mediaType, mediaUrl, imageUrl)}
           {asset.aiMetadata ? (
             <Badge className='absolute left-3 top-3 border border-primary/40 bg-primary/20 text-primary-foreground backdrop-blur'>
@@ -62,14 +69,14 @@ export function IpAssetCard({
             </Badge>
           )}
         </div>
-        <CardTitle className='text-xl font-semibold text-foreground'>
+        <CardTitle className='line-clamp-2 text-xl font-semibold text-foreground'>
           {asset.title}
         </CardTitle>
         <p className='line-clamp-3 text-sm leading-relaxed text-muted-foreground'>
           {asset.description}
         </p>
         <div className='flex flex-wrap gap-2'>
-          <Badge variant='outline' className='border-primary/40 text-primary'>
+          <Badge variant='outline' className='border-primary/40 bg-primary/5 text-primary'>
             {asset.commercialUse ? 'Commercial' : 'Personal'} use
           </Badge>
           <Badge variant='outline' className='border-border/60'>
@@ -79,7 +86,7 @@ export function IpAssetCard({
             <Badge
               key={tag}
               variant='outline'
-              className='border-border/40 bg-background/70 text-muted-foreground'
+              className='border-border/60 bg-background/80 text-muted-foreground'
             >
               {tag}
             </Badge>
@@ -89,14 +96,26 @@ export function IpAssetCard({
       <CardContent className='space-y-4'>
         <div className='grid gap-3 rounded-lg border border-border/60 bg-background/70 p-3 text-xs'>
           <InfoRow label='Story IP'>
-            <Link
-              href={ipAssetExplorerUrl(asset.ipId, network)}
-              target='_blank'
-              rel='noreferrer'
-              className='break-all font-mono text-[11px] text-primary underline-offset-4 hover:underline'
-            >
-              {asset.ipId}
-            </Link>
+            <div className='flex flex-col gap-2'>
+              <span className='break-words font-mono text-[11px] text-muted-foreground'>
+                {asset.ipId}
+              </span>
+              <Button
+                size='sm'
+                variant='outline'
+                className='w-fit gap-1 rounded-full px-3 py-1 text-xs'
+                asChild
+              >
+                <Link
+                  href={ipAssetExplorerUrl(asset.ipId, network)}
+                  target='_blank'
+                  rel='noreferrer'
+                >
+                  View on Story Explorer
+                  <ArrowUpRight className='h-3 w-3' />
+                </Link>
+              </Button>
+            </div>
           </InfoRow>
           <InfoRow label='Media type'>
             <span className='font-medium text-foreground'>
@@ -125,7 +144,7 @@ export function IpAssetCard({
         ) : null}
       </CardContent>
       <CardFooter className='mt-auto flex flex-col gap-3 pt-0'>
-        <div className='flex w-full flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/70 px-3 py-2 text-sm'>
+        <div className='flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/80 px-3 py-3 text-sm'>
           <span className='text-muted-foreground'>Commercial terms</span>
           <span className='font-semibold text-foreground'>
             {asset.commercialUse ? 'Commercial licensing enabled' : 'Non-commercial license'}
@@ -134,7 +153,7 @@ export function IpAssetCard({
         {actionSlot ? (
           <div
             className={cn(
-              'flex w-full flex-col gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/10 p-3',
+              'flex w-full flex-col gap-2 rounded-xl border border-dashed border-primary/40 bg-primary/10 p-3',
               highlightActions && 'border-solid bg-primary/15 shadow-sm'
             )}
           >
@@ -162,23 +181,37 @@ function renderMediaPreview(mediaType: string, mediaUrl: string, imageUrl: strin
         src={mediaUrl}
         poster={imageUrl}
         controls
-        className='h-56 w-full rounded-lg object-cover'
         preload='metadata'
+        className='h-56 w-full object-cover'
+        crossOrigin='anonymous'
       />
     )
   }
 
   if (mediaType.startsWith('audio/')) {
     return (
-      <div className='flex h-56 flex-col items-center justify-center gap-4 bg-background/80 p-6'>
+      <div className='flex h-56 flex-col items-center justify-center gap-4 bg-background/85 p-6'>
         <Image
           src={imageUrl}
           alt='Audio cover'
           width={160}
           height={160}
           className='h-36 w-36 rounded-lg object-cover shadow-lg'
+          onError={event => {
+            const target = event.currentTarget as HTMLImageElement
+            if (target.src !== FALLBACK_IMAGE) {
+              target.src = FALLBACK_IMAGE
+            }
+          }}
         />
-        <audio src={mediaUrl} controls className='w-full'>
+        <audio
+          src={mediaUrl}
+          controls
+          preload='none'
+          controlsList='play nodownload'
+          className='w-full rounded-md bg-background/80'
+          crossOrigin='anonymous'
+        >
           Your browser does not support the audio element.
         </audio>
       </div>
@@ -191,7 +224,7 @@ function renderMediaPreview(mediaType: string, mediaUrl: string, imageUrl: strin
       alt={mediaType}
       width={800}
       height={600}
-      className='h-56 w-full rounded-lg object-cover'
+      className='h-56 w-full object-cover'
       unoptimized={imageUrl.startsWith('https://ipfs')}
       onError={event => {
         const target = event.currentTarget as HTMLImageElement
@@ -220,7 +253,7 @@ function resolveAssetUrl(uri: string) {
 
 function CreatorChip({ creator }: { creator: CreatorShare }) {
   return (
-    <div className='flex flex-col gap-1 rounded-lg border border-border/60 bg-muted/40 p-3 text-xs'>
+    <div className='flex flex-col gap-1 rounded-xl border border-border/60 bg-muted/40 p-3 text-xs'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <span className='font-medium text-foreground'>{creator.name}</span>
         <span className='font-mono text-[11px] text-muted-foreground'>
@@ -270,8 +303,13 @@ function AiMetadataDetails({ ai }: { ai: AiMetadataRecord }) {
       <p className='text-[11px] uppercase tracking-wide text-muted-foreground'>
         AI provenance
       </p>
-      <div className='mt-1 text-xs text-foreground'>
-        {ai.model} {ai.provider ? `· ${ai.provider}` : null}
+      <div className='mt-1 flex items-center gap-2 text-xs text-foreground'>
+        {ai.model}
+        {ai.provider ? (
+          <span className='rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground'>
+            {ai.provider}
+          </span>
+        ) : null}
       </div>
       <p className='mt-2 text-[11px] leading-relaxed text-muted-foreground'>
         {ai.enhancedPrompt ?? ai.prompt}
