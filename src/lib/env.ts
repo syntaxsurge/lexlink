@@ -62,6 +62,10 @@ const serverEnvSchema = z.object({
   ICP_HOST: z.string().url(),
   ICP_ESCROW_CANISTER_ID: z.string(),
   ICP_IDENTITY_PEM_PATH: z.string().min(1).default('icp/icp_identity.pem'),
+  CONSTELLATION_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform(value => value === 'true'),
   CONSTELLATION_PRIVATE_KEY: z
     .string()
     .regex(
@@ -76,9 +80,18 @@ const serverEnvSchema = z.object({
       /^DAG[0-9A-Za-z]{20,64}$/,
       'CONSTELLATION_ADDRESS must be a DAG address'
     ),
-  CONSTELLATION_BE_URL: z.string().url(),
-  CONSTELLATION_L0_URL: z.string().url(),
-  CONSTELLATION_L1_URL: z.string().url(),
+  CONSTELLATION_SINK_ADDRESS: z
+    .string()
+    .regex(
+      /^DAG[0-9A-Za-z]{20,64}$/,
+      'CONSTELLATION_SINK_ADDRESS must be a DAG address'
+    ),
+  CONSTELLATION_NETWORK: z
+    .enum(['integrationnet', 'testnet', 'mainnet'])
+    .default('integrationnet'),
+  CONSTELLATION_BE_URL: z.string().url().optional(),
+  CONSTELLATION_L0_URL: z.string().url().optional(),
+  CONSTELLATION_L1_URL: z.string().url().optional(),
   PINATA_JWT: z.string().min(10).optional(),
   PINATA_GATEWAY: z.string().url().default('https://gateway.pinata.cloud'),
   PINATA_API_URL: z.string().url().default('https://api.pinata.cloud'),
@@ -135,8 +148,11 @@ function parseEnv() {
       process.env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID,
     ICP_IDENTITY_PEM_PATH:
       process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
+    CONSTELLATION_ENABLED: process.env.CONSTELLATION_ENABLED,
     CONSTELLATION_PRIVATE_KEY: process.env.CONSTELLATION_PRIVATE_KEY,
     CONSTELLATION_ADDRESS: process.env.CONSTELLATION_ADDRESS,
+    CONSTELLATION_SINK_ADDRESS: process.env.CONSTELLATION_SINK_ADDRESS,
+    CONSTELLATION_NETWORK: process.env.CONSTELLATION_NETWORK,
     CONSTELLATION_BE_URL: process.env.CONSTELLATION_BE_URL,
     CONSTELLATION_L0_URL: process.env.CONSTELLATION_L0_URL,
     CONSTELLATION_L1_URL: process.env.CONSTELLATION_L1_URL,

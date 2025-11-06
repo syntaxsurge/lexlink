@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { autoFinalizeCkbtcOrder } from '@/app/app/actions'
 
+export const runtime = 'nodejs'
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> }
@@ -19,19 +21,22 @@ export async function POST(
     return NextResponse.json(result)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
-    if (
-      error instanceof Error &&
-      (message.toLowerCase().includes('fetch failed') ||
-        message.toLowerCase().includes('network') ||
-        message.toLowerCase().includes('timeout'))
-    ) {
-      return NextResponse.json(
-        {
-          status: 'pending'
-        },
-        { status: 200 }
-      )
+    const lower = message.toLowerCase()
+    const transient =
+      lower.includes('fetch failed') ||
+      lower.includes('network') ||
+      lower.includes('timeout')
+
+    if (!transient) {
+      console.error('autoFinalizeCkbtcOrder failed:', error)
     }
-    return NextResponse.json({ error: message }, { status: 500 })
+
+    return NextResponse.json(
+      {
+        status: transient ? 'pending' : 'error',
+        error: message
+      },
+      { status: 200 }
+    )
   }
 }

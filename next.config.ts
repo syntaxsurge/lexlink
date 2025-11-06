@@ -49,6 +49,11 @@ const nextConfig: NextConfig = {
       }
     ]
   },
+  serverExternalPackages: [
+    '@stardust-collective/dag4',
+    'node-localstorage',
+    'brotli-wasm'
+  ],
   webpack(config) {
     config.resolve = config.resolve ?? {}
     config.resolve.alias = {
@@ -59,6 +64,20 @@ const nextConfig: NextConfig = {
       ),
       'pino-pretty': false
     }
+
+    config.experiments = {
+      ...(config.experiments ?? {}),
+      asyncWebAssembly: true,
+      layers: true
+    }
+
+    config.module = config.module ?? { rules: [] }
+    config.module.rules = config.module.rules ?? []
+    config.module.rules.push({
+      test: /\.wasm$/,
+      type: 'asset/resource'
+    })
+
     return config
   }
 }

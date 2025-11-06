@@ -71,12 +71,12 @@ ICP_HOST="https://icp0.io"                           # or local replica
 ICP_ESCROW_CANISTER_ID="<canister-id>"
 ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
 
-# Constellation IntegrationNet signer
+# Constellation anchoring
+CONSTELLATION_ENABLED="true"
+CONSTELLATION_NETWORK="integrationnet"
 CONSTELLATION_PRIVATE_KEY="0x..."
 CONSTELLATION_ADDRESS="DAG..."
-CONSTELLATION_BE_URL="https://be-integrationnet.constellationnetwork.io"
-CONSTELLATION_L0_URL="https://l0-lb-integrationnet.constellationnetwork.io"
-CONSTELLATION_L1_URL="https://l1-lb-integrationnet.constellationnetwork.io"
+CONSTELLATION_SINK_ADDRESS="DAG..."                 # must differ from CONSTELLATION_ADDRESS
 BTC_NETWORK="testnet"                                 # or "mainnet"
 
 # Verifiable credential issuer
@@ -188,17 +188,19 @@ If `request_deposit_address` rejects with “Requested unknown threshold key”,
   - Identity docs: https://internetcomputer.org/docs/current/developer-docs/getting-started/developer-identity
   - Test canister call (Playground): `dfx canister call --playground btc_escrow request_deposit_address '("order-1")'`
 
-5) Constellation IntegrationNet signer
+5) Constellation anchoring
 - Install Stargazer Wallet (Chrome):
   - https://chromewebstore.google.com/detail/stargazer-wallet/pgiaagfkgcbnmiiolekcfmljdagdhlcm?pli=1
   - Switch to IntegrationNet; copy your DAG address (`CONSTELLATION_ADDRESS`)
   - Export the private key for test use (`CONSTELLATION_PRIVATE_KEY`, 0x-prefixed)
-- Fund the wallet on IntegrationNet:
+- Generate a second wallet or cold address as the evidence sink:
+  - Copy the address into `CONSTELLATION_SINK_ADDRESS`
+  - Keep the sink and signer distinct; dag4 rejects self-sends
+- Control anchoring with:
+  - `CONSTELLATION_ENABLED=true|false`
+  - `CONSTELLATION_NETWORK=integrationnet|testnet|mainnet`
+- Fund the signer wallet on IntegrationNet:
   - Faucet: `GET https://faucet.constellationnetwork.io/integrationnet/faucet/<YOUR_DAG_ADDRESS>`
-- Base URLs (keep defaults):
-  - `CONSTELLATION_BE_URL=https://be-integrationnet.constellationnetwork.io`
-  - `CONSTELLATION_L0_URL=https://l0-lb-integrationnet.constellationnetwork.io`
-  - `CONSTELLATION_L1_URL=https://l1-lb-integrationnet.constellationnetwork.io`
 - `BTC_NETWORK` should remain `testnet` for free testing
 
 Sanity checks
@@ -226,9 +228,15 @@ Sanity checks
 
 - The private key controls the DAG address used for evidence pulses. Fund the
   account on IntegrationNet via the public faucet.
-- Set both `CONSTELLATION_ADDRESS` and `NEXT_PUBLIC_DAG_ADDRESS` to the same
-  IntegrationNet address so the dashboard can render deep links without
-  exposing the signing key.
+- `CONSTELLATION_SINK_ADDRESS` must point at a different wallet (no private key required) to
+  receive the zero-value memo transactions that anchor evidence.
+- Set `CONSTELLATION_ADDRESS` and `NEXT_PUBLIC_DAG_ADDRESS` to the same signing address so
+  the dashboard can render deep links without exposing the private key.
+- Use `CONSTELLATION_ENABLED` to disable ledger writes in lower envs and
+  `CONSTELLATION_NETWORK` to flip between IntegrationNet, testnet, and mainnet.
+- Override the default IntegrationNet endpoints with
+  `CONSTELLATION_BE_URL` / `CONSTELLATION_L0_URL` / `CONSTELLATION_L1_URL` when
+  targeting non-standard hosts.
 - `VC_ISSUER_DID` and `VC_PRIVATE_KEY` sign the verifiable credentials that
   accompany each license passport. Use a dedicated Ed25519 key pair for demos.
 
