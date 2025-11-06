@@ -20,15 +20,9 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import { ipAssetExplorerUrl, type StoryNetwork } from '@/lib/story-links'
 import { cn } from '@/lib/utils'
-
-const IPFS_GATEWAYS = [
-  'https://gateway.pinata.cloud/ipfs/',
-  'https://apac.orbitor.dev/ipfs/',
-  'https://cloudflare-ipfs.com/ipfs/',
-  'https://nftstorage.link/ipfs/'
-] as const
 
 type IpAssetCardProps = {
   asset: IpRecord

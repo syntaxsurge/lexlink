@@ -476,12 +476,7 @@ function ResultStat({
   )
 }
 
-const IPFS_GATEWAYS = [
-  'https://gateway.pinata.cloud/ipfs/',
-  'https://apac.orbitor.dev/ipfs/',
-  'https://cloudflare-ipfs.com/ipfs/',
-  'https://nftstorage.link/ipfs/'
-] as const
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 
 function resolveAssetUrl(uri: string) {
   if (!uri) return ''

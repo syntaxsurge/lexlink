@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 
 type MinimalIpEntry = {
   ipId: string
@@ -200,7 +201,7 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
             <dt className='font-semibold text-muted-foreground'>Evidence bundle</dt>
             <dd className='break-all font-mono text-xs'>
               <Link
-                href={`https://ipfs.io/ipfs/${state.evidenceCid}`}
+                href={`${IPFS_GATEWAYS[0]}${state.evidenceCid}`}
                 target='_blank'
                 rel='noreferrer'
                 className='text-primary underline-offset-4 hover:underline'

@@ -25,6 +25,7 @@ import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import { env } from '@/lib/env'
 
 function formatDate(ms: number) {
@@ -102,7 +103,7 @@ export default async function DisputesPage() {
               const ipTitle = ipIndex.get(dispute.ipId) ?? 'Unknown IP'
               const evidenceUrl = dispute.evidenceUri
                 ? dispute.evidenceUri.startsWith('ipfs://')
-                  ? `https://ipfs.io/ipfs/${dispute.evidenceUri.replace('ipfs://', '')}`
+                  ? `${IPFS_GATEWAYS[0]}${dispute.evidenceUri.replace('ipfs://', '')}`
                   : dispute.evidenceUri
                 : null
 

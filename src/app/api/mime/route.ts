@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { fileTypeFromBuffer } from 'file-type'
 import { request } from 'undici'
 
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
+
 const extensionLookup: Record<string, string> = {
   '.aac': 'audio/aac',
   '.flac': 'audio/flac',
@@ -63,7 +65,7 @@ export async function POST(req: Request) {
 function normalizeUrl(url: string) {
   if (url.startsWith('ipfs://')) {
     const cid = url.slice('ipfs://'.length)
-    return `https://ipfs.io/ipfs/${cid}`
+    return `${IPFS_GATEWAYS[0]}${cid}`
   }
   return url
 }

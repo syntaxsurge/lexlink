@@ -952,12 +952,7 @@ async function downloadAssetFromUrl(url: string) {
   throw new Error(`Unable to download asset ${url}: ${message}`)
 }
 
-const IPFS_GATEWAYS = [
-  'https://ipfs.io/ipfs/',
-  'https://cloudflare-ipfs.com/ipfs/',
-  'https://gateway.pinata.cloud/ipfs/',
-  'https://dweb.link/ipfs/'
-]
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 
 function resolveCandidateAssetUrls(source: string): string[] {
   const candidates = new Set<string>()

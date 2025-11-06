@@ -1,4 +1,5 @@
 import { env } from '@/lib/env'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 
 const PIN_FILE_PATH = '/pinning/pinFileToIPFS'
 const PIN_JSON_PATH = '/pinning/pinJSONToIPFS'
@@ -67,9 +68,13 @@ export function ipfsGatewayUrl(uri: string) {
     return uri
   }
 
-  const gateway = env.PINATA_GATEWAY.replace(/\/$/, '')
   const cidPath = uri.replace('ipfs://', '')
-  return `${gateway}/ipfs/${cidPath}`
+  const defaultGateway = env.PINATA_GATEWAY?.replace(/\/$/, '')
+  if (defaultGateway) {
+    return `${defaultGateway}/ipfs/${cidPath}`
+  }
+
+  return `${IPFS_GATEWAYS[0]}${cidPath}`
 }
 
 function sanitizeName(value: string) {
