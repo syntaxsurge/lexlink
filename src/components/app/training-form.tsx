@@ -30,16 +30,13 @@ interface TrainingFormProps {
 }
 
 export function TrainingForm({ ips }: TrainingFormProps) {
-  const [result, setResult] = useState<
-    | null
-    | {
-        batchId: string
-        constellationTx: string
-        constellationExplorerUrl?: string | null
-        constellationStatus: string
-        evidenceHash: string
-      }
-  >(null)
+  const [result, setResult] = useState<null | {
+    batchId: string
+    constellationTx: string
+    constellationExplorerUrl?: string | null
+    constellationStatus: string
+    evidenceHash: string
+  }>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 

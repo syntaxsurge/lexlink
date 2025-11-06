@@ -20,11 +20,13 @@ export default async function MarketplacePage() {
           License Story Protocol IP with Bitcoin or ckBTC
         </h1>
         <p className='mt-3 text-base text-muted-foreground md:text-lg'>
-          Every listing is minted on Story Protocol, includes creator royalties, and settles automatically once ckBTC or BTC lands in escrow.
+          Every listing is minted on Story Protocol, includes creator royalties,
+          and settles automatically once ckBTC or BTC lands in escrow.
         </p>
         <div className='mt-6 flex flex-wrap items-center justify-center gap-3 text-sm'>
           <p className='text-muted-foreground'>
-            Exploring assets instead? Head back to the gallery for full previews.
+            Exploring assets instead? Head back to the gallery for full
+            previews.
           </p>
           <Link
             href='/gallery'

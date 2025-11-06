@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useMemo, useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Wand2 } from 'lucide-react'
@@ -124,10 +124,14 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
                   LexLink AI Studio
                 </CardTitle>
                 <CardDescription className='text-sm text-muted-foreground'>
-                  Generate Story-ready IP assets from a prompt, including media uploads, metadata, and creator splits.
+                  Generate Story-ready IP assets from a prompt, including media
+                  uploads, metadata, and creator splits.
                 </CardDescription>
               </div>
-              <Badge variant='outline' className='border-primary/40 text-primary'>
+              <Badge
+                variant='outline'
+                className='border-primary/40 text-primary'
+              >
                 Story Protocol · {network === 'mainnet' ? 'Mainnet' : 'Aeneid'}
               </Badge>
             </div>
@@ -216,7 +220,8 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
                       {...form.register('tags')}
                     />
                     <p className='text-xs text-muted-foreground'>
-                      Comma-separated list. Used for discovery in the public gallery.
+                      Comma-separated list. Used for discovery in the public
+                      gallery.
                     </p>
                     {parsedTags && parsedTags.length > 0 && (
                       <div className='mt-2 flex flex-wrap gap-2'>
@@ -312,7 +317,8 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
               How it works
             </CardTitle>
             <CardDescription className='text-sm text-muted-foreground'>
-              Generate media, store metadata, register on Story, and log every creator.
+              Generate media, store metadata, register on Story, and log every
+              creator.
             </CardDescription>
           </CardHeader>
           <CardContent className='space-y-4 text-sm leading-relaxed text-muted-foreground'>
@@ -343,7 +349,8 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
               Recent AI assets
             </h2>
             <p className='text-sm text-muted-foreground'>
-              Registered through the studio with royalties, provenance hashes, and Story identifiers.
+              Registered through the studio with royalties, provenance hashes,
+              and Story identifiers.
             </p>
           </div>
           <Button asChild variant='outline'>
@@ -364,7 +371,8 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
                       Issue a license
                     </p>
                     <p>
-                      Generate a ckBTC or BTC invoice from the Licenses tab to start monetizing this asset instantly.
+                      Generate a ckBTC or BTC invoice from the Licenses tab to
+                      start monetizing this asset instantly.
                     </p>
                     <Button asChild size='sm' variant='outline'>
                       <Link href={`/dashboard/licenses?ip=${asset.ipId}`}>
@@ -380,7 +388,8 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
           <Card className='border-dashed border-border/60 bg-muted/20 py-16 text-center'>
             <CardContent>
               <p className='text-sm text-muted-foreground'>
-                Your AI assets will appear here once they are generated and registered.
+                Your AI assets will appear here once they are generated and
+                registered.
               </p>
             </CardContent>
           </Card>

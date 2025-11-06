@@ -20,11 +20,14 @@ export default async function GalleryPage() {
           Explore Story Protocol IP ready for licensing
         </h1>
         <p className='mt-3 text-base text-muted-foreground md:text-lg'>
-          Browse audio, video, and visual assets registered through LexLink. Every card includes creator attribution, royalty splits, and direct Story identifiers.
+          Browse audio, video, and visual assets registered through LexLink.
+          Every card includes creator attribution, royalty splits, and direct
+          Story identifiers.
         </p>
         <div className='mt-6 flex flex-wrap items-center justify-center gap-3 text-sm'>
           <p className='text-muted-foreground'>
-            Want to settle a license? Switch to the marketplace to view ckBTC-ready listings.
+            Want to settle a license? Switch to the marketplace to view
+            ckBTC-ready listings.
           </p>
           <Link
             href='/marketplace'

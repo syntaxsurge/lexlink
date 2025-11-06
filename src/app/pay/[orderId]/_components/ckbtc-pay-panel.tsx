@@ -6,15 +6,15 @@ import type { Identity } from '@dfinity/agent'
 import { Principal } from '@dfinity/principal'
 import { useSession } from 'next-auth/react'
 
+import { setOrderMintTarget } from '@/app/dashboard/actions'
+import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
+import { useInternetIdentity } from '@/components/auth/internet-identity-provider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useInternetIdentity } from '@/components/auth/internet-identity-provider'
-import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { ledgerActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
-import { setOrderMintTarget } from '@/app/dashboard/actions'
 
 type TransferResult =
   | { status: 'idle' }
@@ -54,9 +54,7 @@ export function CkbtcPayPanel({
   )
   const [decimals, setDecimals] = useState(8)
   const [balance, setBalance] = useState<bigint>(0n)
-  const [mintTo, setMintTo] = useState(
-    invoice.mintTo ?? defaultMintTo ?? ''
-  )
+  const [mintTo, setMintTo] = useState(invoice.mintTo ?? defaultMintTo ?? '')
   const [rememberPreference, setRememberPreference] = useState(true)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -164,7 +162,9 @@ export function CkbtcPayPanel({
         throw new Error('Enter a valid 0x-prefixed EVM wallet before paying.')
       }
       if (sessionStatus !== 'authenticated') {
-        throw new Error('Sign in with Internet Identity before submitting payment.')
+        throw new Error(
+          'Sign in with Internet Identity before submitting payment.'
+        )
       }
 
       let identity = getIdentity()
@@ -250,9 +250,7 @@ export function CkbtcPayPanel({
       setTransferState({
         status: 'error',
         message:
-          err instanceof Error
-            ? err.message
-            : 'Unable to submit ckBTC payment.'
+          err instanceof Error ? err.message : 'Unable to submit ckBTC payment.'
       })
     } finally {
       setIsBusy(false)
@@ -410,13 +408,15 @@ export function CkbtcPayPanel({
             <span className='font-medium uppercase'>{network}</span>
           </div>
           <div className='mt-2 text-xs text-muted-foreground'>
-            Authenticated ckBTC transfers finalize this order and mint your Story license automatically.
+            Authenticated ckBTC transfers finalize this order and mint your
+            Story license automatically.
           </div>
         </div>
 
         {needsSession && (
           <div className='rounded-md border border-border/50 bg-amber-500/10 p-3 text-xs text-amber-600'>
-            Sign in with Internet Identity to bind this order to your principal and saved wallet.
+            Sign in with Internet Identity to bind this order to your principal
+            and saved wallet.
             <a
               href='/signin'
               className='ml-1 text-primary underline-offset-4 hover:underline'
@@ -452,7 +452,8 @@ export function CkbtcPayPanel({
             spellCheck={false}
           />
           <p className='text-xs text-muted-foreground'>
-            We mint the Story license token to this address once payment finalizes.
+            We mint the Story license token to this address once payment
+            finalizes.
           </p>
           {defaultMintTo && !invoice.mintTo && (
             <button
@@ -516,20 +517,24 @@ export function CkbtcPayPanel({
 
         {!isPaymentRouteReady && (
           <div className='rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600'>
-            This invoice is missing ckBTC escrow metadata. Contact the LexLink operator to regenerate the order before paying.
+            This invoice is missing ckBTC escrow metadata. Contact the LexLink
+            operator to regenerate the order before paying.
           </div>
         )}
 
         {transferState.status === 'success' && !isFinalized && (
           <div className='rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-600'>
-            Transfer accepted at ledger block {transferState.blockIndex}. The order will finalize shortly.
+            Transfer accepted at ledger block {transferState.blockIndex}. The
+            order will finalize shortly.
           </div>
         )}
         {isFinalized && (
           <div className='rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-600'>
-            Payment finalized{invoice.ckbtcBlockIndex
+            Payment finalized
+            {invoice.ckbtcBlockIndex
               ? ` at ledger block ${invoice.ckbtcBlockIndex}`
-              : ''}. License tokenization is complete.
+              : ''}
+            . License tokenization is complete.
           </div>
         )}
         {transferState.status === 'error' && (
@@ -552,7 +557,8 @@ export function CkbtcPayPanel({
             >
               testnet-faucet.ckboost.com
             </a>
-            , mint ckTESTBTC to your Internet Identity principal, then refresh your balance above.
+            , mint ckTESTBTC to your Internet Identity principal, then refresh
+            your balance above.
           </div>
         </div>
 

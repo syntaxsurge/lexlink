@@ -59,10 +59,7 @@ const nextConfig: NextConfig = {
       }
     ]
   },
-  serverExternalPackages: [
-    '@stardust-collective/dag4',
-    'node-localstorage'
-  ],
+  serverExternalPackages: ['@stardust-collective/dag4', 'node-localstorage'],
   webpack(config) {
     config.resolve = config.resolve ?? {}
     config.resolve.alias = {

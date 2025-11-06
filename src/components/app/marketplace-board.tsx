@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useMemo, useState } from 'react'
 
 import { useSession } from 'next-auth/react'
 
@@ -32,11 +32,7 @@ export function MarketplaceBoard({ assets, network }: MarketplaceBoardProps) {
         if (!normalizedQuery) {
           return true
         }
-        const haystack = [
-          asset.title,
-          asset.description,
-          ...(asset.tags ?? [])
-        ]
+        const haystack = [asset.title, asset.description, ...(asset.tags ?? [])]
           .join(' ')
           .toLowerCase()
         return haystack.includes(normalizedQuery)
@@ -105,7 +101,9 @@ export function MarketplaceBoard({ assets, network }: MarketplaceBoardProps) {
               actionSlot={
                 <div className='space-y-3 text-xs text-muted-foreground'>
                   <p className='font-semibold text-foreground'>
-                    {isAuthenticated ? 'Launch a licensing workflow' : 'Sign in to license'}
+                    {isAuthenticated
+                      ? 'Launch a licensing workflow'
+                      : 'Sign in to license'}
                   </p>
                   <p>
                     {isAuthenticated

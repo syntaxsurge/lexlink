@@ -67,7 +67,9 @@ export const assignOwner = mutationGeneric({
       record.ownerPrincipal &&
       record.ownerPrincipal !== args.ownerPrincipal
     ) {
-      throw new Error('Training batch already assigned to a different principal')
+      throw new Error(
+        'Training batch already assigned to a different principal'
+      )
     }
 
     await ctx.db.patch(record._id, {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+
 import { fileTypeFromBuffer } from 'file-type'
 import { request } from 'undici'
 

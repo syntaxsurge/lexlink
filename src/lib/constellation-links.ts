@@ -1,7 +1,4 @@
-export type ConstellationNetworkId =
-  | 'integrationnet'
-  | 'testnet'
-  | 'mainnet'
+export type ConstellationNetworkId = 'integrationnet' | 'testnet' | 'mainnet'
 
 const NETWORK_LINKS: Record<
   ConstellationNetworkId,

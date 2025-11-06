@@ -2,14 +2,14 @@
 
 import Link from 'next/link'
 
-import { CkbtcPayPanel } from '@/app/pay/[orderId]/_components/ckbtc-pay-panel'
-import { InvoiceSummary } from '@/app/pay/[orderId]/_components/invoice-summary'
 import { BtcManualInstructions } from '@/app/pay/[orderId]/_components/btc-manual-instructions'
+import { CkbtcPayPanel } from '@/app/pay/[orderId]/_components/ckbtc-pay-panel'
+import { FinalizationTimeline } from '@/app/pay/[orderId]/_components/finalization-timeline'
 import {
   InvoiceStatusProvider,
   type InvoiceSnapshot
 } from '@/app/pay/[orderId]/_components/invoice-status-provider'
-import { FinalizationTimeline } from '@/app/pay/[orderId]/_components/finalization-timeline'
+import { InvoiceSummary } from '@/app/pay/[orderId]/_components/invoice-summary'
 import { MintTargetCard } from '@/app/pay/[orderId]/_components/mint-target-card'
 import { Button } from '@/components/ui/button'
 import type { ConstellationNetworkId } from '@/lib/constellation-links'
@@ -86,8 +86,9 @@ export function InvoicePageClient({
               />
             ) : (
               <div className='rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-600'>
-                ckBTC payment is not available because the ledger configuration is incomplete for this
-                deployment. Contact the operator to enable direct ckBTC settlement.
+                ckBTC payment is not available because the ledger configuration
+                is incomplete for this deployment. Contact the operator to
+                enable direct ckBTC settlement.
               </div>
             )}
             {!showCkbtcPay && (

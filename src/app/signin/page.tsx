@@ -8,6 +8,7 @@ import { ShieldCheck, Timer, WalletCards } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
 import { IcpLoginButton } from '@/components/auth/icp-login-button'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
@@ -15,7 +16,6 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 const highlights: Array<{ icon: LucideIcon; label: string }> = [
   {
@@ -24,11 +24,13 @@ const highlights: Array<{ icon: LucideIcon; label: string }> = [
   },
   {
     icon: WalletCards,
-    label: 'Single principal unlocks IP registration, licensing, and compliance tools.'
+    label:
+      'Single principal unlocks IP registration, licensing, and compliance tools.'
   },
   {
     icon: Timer,
-    label: 'Session stays active for seven days with automatic delegation renewal prompts.'
+    label:
+      'Session stays active for seven days with automatic delegation renewal prompts.'
   }
 ]
 
@@ -43,66 +45,76 @@ export default function SignInPage() {
   }, [status, router])
 
   return (
-    <div className='grid min-h-[70vh] items-center gap-10 md:grid-cols-[1.25fr_1fr]'>
-      <div className='space-y-6'>
-        <Badge variant='outline' className='bg-primary/10 text-primary'>
-          Protected access
-        </Badge>
-        <div className='space-y-4'>
-          <h1 className='text-4xl font-semibold leading-tight md:text-5xl'>
-            Internet Identity powers the LexLink operator console.
-          </h1>
-          <p className='max-w-xl text-base text-muted-foreground md:text-lg'>
-            Sign in with a principal you control to orchestrate Story Protocol
-            registrations, ICP Bitcoin escrow, and Constellation evidence. The
-            session automatically seeds your operator role so you can work right
-            away.
-          </p>
-        </div>
-        <ul className='grid gap-3 text-sm text-muted-foreground sm:grid-cols-2'>
-          {highlights.map(highlight => {
-            const Icon = highlight.icon
-            return (
-              <li
-                key={highlight.label}
-                className='flex items-start gap-2 rounded-lg border border-border/60 bg-card/60 p-3 shadow-sm'
-              >
-                <span className='mt-1 text-primary'>
-                  <Icon className='h-4 w-4' />
-                </span>
-                <span>{highlight.label}</span>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
-      <Card className='border-border/60 bg-card/70 shadow-lg'>
-        <CardHeader>
-          <CardTitle>Sign in with Internet Identity</CardTitle>
-          <CardDescription>
-            You&apos;ll be redirected to the Internet Computer identity flow.
-            When the window closes, we link the delegation to your LexLink
-            profile and refresh the console.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-6'>
-          <div className='rounded-lg border border-dashed border-primary/40 p-4 text-sm'>
-            <p className='font-medium text-primary'>Delegated session</p>
-            <p className='mt-1 text-muted-foreground'>
-              Your principal is stored securely client-side. LexLink only
-              receives a short-lived delegation that the backend validates using
-              the same checks enforced across our AuthContext.
+    <div className='container-edge'>
+      <div className='grid min-h-[calc(100vh-10rem)] items-center gap-12 py-12 lg:grid-cols-[1.3fr_1fr]'>
+        <div className='space-y-8'>
+          <div className='space-y-4'>
+            <Badge
+              variant='outline'
+              className='border-primary/30 bg-primary/10 px-3 py-1 font-medium text-primary'
+            >
+              Protected access
+            </Badge>
+            <h1 className='text-4xl font-bold leading-tight tracking-tight md:text-5xl lg:text-6xl'>
+              Internet Identity powers the LexLink console
+            </h1>
+            <p className='max-w-2xl text-lg leading-relaxed text-muted-foreground'>
+              Sign in with a principal you control to orchestrate Story Protocol
+              registrations, ICP Bitcoin escrow, and Constellation evidence.
+              Your session automatically grants operator permissions.
             </p>
-            <div className='mt-4'>
+          </div>
+
+          <div className='space-y-3'>
+            {highlights.map(highlight => {
+              const Icon = highlight.icon
+              return (
+                <div
+                  key={highlight.label}
+                  className='flex items-start gap-4 rounded-xl border border-border/50 bg-card/50 p-4 backdrop-blur-sm transition-all hover:border-primary/20 hover:bg-card/80'
+                >
+                  <div className='flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+                    <Icon className='h-5 w-5' />
+                  </div>
+                  <p className='pt-1 text-sm leading-relaxed text-foreground'>
+                    {highlight.label}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <Card className='border-border/60 bg-gradient-to-b from-card to-card/50 shadow-xl backdrop-blur-sm'>
+          <CardHeader className='space-y-3'>
+            <CardTitle className='text-2xl'>
+              Sign in with Internet Identity
+            </CardTitle>
+            <CardDescription className='leading-relaxed'>
+              You&apos;ll be redirected to the Internet Computer identity flow.
+              When the window closes, we link the delegation to your LexLink
+              profile.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-6'>
+            <div className='space-y-4 rounded-xl border border-primary/20 bg-primary/5 p-5'>
+              <div className='space-y-2'>
+                <p className='font-semibold text-primary'>Delegated session</p>
+                <p className='text-sm leading-relaxed text-muted-foreground'>
+                  Your principal is stored securely client-side. LexLink only
+                  receives a short-lived delegation that the backend validates.
+                </p>
+              </div>
               <IcpLoginButton />
             </div>
-          </div>
-          <p className='text-xs text-muted-foreground'>
-            Need to rotate or revoke access? Open Settings after sign-in to
-            reset your delegation and generate a fresh session.
-          </p>
-        </CardContent>
-      </Card>
+
+            <p className='text-xs leading-relaxed text-muted-foreground'>
+              Need to rotate or revoke access? Open Settings after sign-in to
+              reset your delegation and generate a fresh session.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

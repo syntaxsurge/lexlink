@@ -15,7 +15,9 @@ export async function makeAgent(host: string, identity?: Identity) {
 
   if (isLocalHost(host)) {
     await agent.fetchRootKey().catch(() => {
-      console.warn('Unable to fetch ICP root key; ensure a local replica is running.')
+      console.warn(
+        'Unable to fetch ICP root key; ensure a local replica is running.'
+      )
     })
   }
 

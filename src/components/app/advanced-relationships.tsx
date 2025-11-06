@@ -29,7 +29,7 @@ const STORY_RELATIONSHIPS = [
   'INTERACTED_WITH',
   'LEADS_INTO',
   'PARALLEL'
- ] as const
+] as const
 
 const AI_RELATIONSHIPS = [
   'TRAINED_ON',
@@ -48,16 +48,16 @@ const AI_RELATIONSHIPS = [
   'INHERITS',
   'APPLIES_TO',
   'COMBINES'
- ] as const
+] as const
 
 export const RELATIONSHIP_GROUPS = [
   { label: 'Story relationships', values: STORY_RELATIONSHIPS },
   { label: 'AI relationships', values: AI_RELATIONSHIPS }
 ] as const
 
-export const RELATIONSHIP_TYPE_VALUES = RELATIONSHIP_GROUPS.flatMap(
-  group => [...group.values]
-) as readonly string[]
+export const RELATIONSHIP_TYPE_VALUES = RELATIONSHIP_GROUPS.flatMap(group => [
+  ...group.values
+]) as readonly string[]
 
 type RelationshipField = {
   parentIpId: string
@@ -90,9 +90,12 @@ export function AdvancedRelationships({
     <div className={cn('space-y-3', className)}>
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div>
-          <p className='text-sm font-medium text-foreground'>Lineage (optional)</p>
+          <p className='text-sm font-medium text-foreground'>
+            Lineage (optional)
+          </p>
           <p className='text-xs text-muted-foreground'>
-            Link this IP Asset to existing parents to surface provenance in Story Explorer.
+            Link this IP Asset to existing parents to surface provenance in
+            Story Explorer.
           </p>
         </div>
         <Button

@@ -1,5 +1,6 @@
-import { dag4 } from '@stardust-collective/dag4'
 import { createHash } from 'node:crypto'
+
+import { dag4 } from '@stardust-collective/dag4'
 
 import { env } from '@/lib/env'
 
@@ -107,7 +108,9 @@ async function waitForFinality(txHash: string) {
   return null
 }
 
-export async function publishEvidence(evidence: unknown): Promise<EvidenceResult> {
+export async function publishEvidence(
+  evidence: unknown
+): Promise<EvidenceResult> {
   if (!env.CONSTELLATION_ENABLED) {
     return { status: 'disabled', reason: 'constellation_disabled' }
   }
@@ -121,7 +124,9 @@ export async function publishEvidence(evidence: unknown): Promise<EvidenceResult
   }
 
   if (sinkAddress === sourceAddress) {
-    console.warn('[Constellation] Skipping: sink address matches source address.')
+    console.warn(
+      '[Constellation] Skipping: sink address matches source address.'
+    )
     return { status: 'skipped', reason: 'sink_equals_source' }
   }
 
@@ -173,9 +178,8 @@ export async function publishEvidence(evidence: unknown): Promise<EvidenceResult
     console.log(
       `[Constellation] Sending memo to ${sinkAddress} (${memoBytes} bytes)...`
     )
-    const lastRef = await dag4.network.getAddressLastAcceptedTransactionRef(
-      derivedSource
-    )
+    const lastRef =
+      await dag4.network.getAddressLastAcceptedTransactionRef(derivedSource)
     const { transaction, hash } =
       await dag4.account.generateSignedTransactionWithHash(
         sinkAddress,
@@ -203,10 +207,13 @@ export async function publishEvidence(evidence: unknown): Promise<EvidenceResult
     console.log(`[Constellation] ✅ Evidence anchored: ${hash}`)
     return { status: 'ok', txHash: hash, explorerUrl }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error ?? 'unknown_error')
+    const message =
+      error instanceof Error ? error.message : String(error ?? 'unknown_error')
     console.error('[Constellation] ❌ Publishing failed:', error)
     if (message.toLowerCase().includes('nonce')) {
-      console.error('[Constellation] Nonce error encountered when anchoring evidence.')
+      console.error(
+        '[Constellation] Nonce error encountered when anchoring evidence.'
+      )
     }
     return { status: 'error', message }
   }

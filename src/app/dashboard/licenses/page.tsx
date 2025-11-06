@@ -1,9 +1,10 @@
+import { Buffer } from 'node:buffer'
+
 import Link from 'next/link'
 
 import {
   loadDashboardData,
-  simulateLicenseFunding,
-  type LicenseRecord
+  simulateLicenseFunding
 } from '@/app/dashboard/actions'
 import { FinalizeLicenseForm } from '@/components/app/finalize-license-form'
 import { LicenseOrderForm } from '@/components/app/license-order-form'
@@ -24,14 +25,13 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { readPaymentMode } from '@/lib/payment-mode'
-import { env } from '@/lib/env'
-import { ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
-import { Buffer } from 'node:buffer'
+import { env } from '@/lib/env'
+import { ipfsGatewayUrl } from '@/lib/ipfs'
+import { readPaymentMode } from '@/lib/payment-mode'
 
 const MAINNET_MEMPOOL = 'https://mempool.space'
 const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
@@ -86,15 +86,12 @@ export default async function LicensesPage() {
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)
   )
-  const finalizedOrders = licenses.filter(
-    order => order.status === 'finalized'
-  )
+  const finalizedOrders = licenses.filter(order => order.status === 'finalized')
   const manualFinalizeOrders = pendingOrders.filter(
     order => isBtcMode(order.paymentMode) && order.status !== 'pending'
   )
   const orderHistory = [...licenses].sort(
-    (a, b) =>
-      (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt)
+    (a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt)
   )
   const ipTitleLookup = new Map(ips.map(ip => [ip.ipId, ip.title]))
 
@@ -138,7 +135,9 @@ export default async function LicensesPage() {
               <FinalizeLicenseForm orders={manualFinalizeOrders} />
             ) : (
               <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground'>
-                All active orders will finalize automatically once ckBTC funds mint into escrow. Manual finalization only appears for native BTC invoices.
+                All active orders will finalize automatically once ckBTC funds
+                mint into escrow. Manual finalization only appears for native
+                BTC invoices.
               </div>
             )}
           </CardContent>
@@ -146,12 +145,13 @@ export default async function LicensesPage() {
       </div>
 
       <Card className='border-border/60 bg-card/60'>
-          <CardHeader>
-            <CardTitle>Pending Payments</CardTitle>
-            <CardDescription>
-              Share payment targets with buyers. ckBTC invoices close themselves once the escrow ledger receives the transfer.
-            </CardDescription>
-          </CardHeader>
+        <CardHeader>
+          <CardTitle>Pending Payments</CardTitle>
+          <CardDescription>
+            Share payment targets with buyers. ckBTC invoices close themselves
+            once the escrow ledger receives the transfer.
+          </CardDescription>
+        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
@@ -246,9 +246,11 @@ export default async function LicensesPage() {
                         /pay/{order.orderId}
                       </Link>
                     </TableCell>
-                   <TableCell>
+                    <TableCell>
                       {(() => {
-                        const { variant, className } = statusStyles(order.status)
+                        const { variant, className } = statusStyles(
+                          order.status
+                        )
                         return (
                           <Badge variant={variant} className={className}>
                             {order.status}
@@ -264,7 +266,11 @@ export default async function LicensesPage() {
                     <TableCell className='flex justify-end gap-2'>
                       {simulateEnabled && isBtcMode(order.paymentMode) && (
                         <form action={simulateAction} className='inline-flex'>
-                          <input type='hidden' name='orderId' value={order.orderId} />
+                          <input
+                            type='hidden'
+                            name='orderId'
+                            value={order.orderId}
+                          />
                           <Button type='submit' variant='ghost' size='sm'>
                             Simulate funding
                           </Button>
@@ -326,15 +332,20 @@ export default async function LicensesPage() {
                       <Badge variant='outline'>{modeLabel}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={statusBadge.variant} className={statusBadge.className}>
+                      <Badge
+                        variant={statusBadge.variant}
+                        className={statusBadge.className}
+                      >
                         {order.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className='font-mono text-xs break-all'>
+                    <TableCell className='break-all font-mono text-xs'>
                       {order.btcAddress}
                     </TableCell>
                     <TableCell className='text-xs text-muted-foreground'>
-                      {new Date(order.updatedAt ?? order.createdAt).toLocaleString()}
+                      {new Date(
+                        order.updatedAt ?? order.createdAt
+                      ).toLocaleString()}
                     </TableCell>
                   </TableRow>
                 )
@@ -492,18 +503,28 @@ export default async function LicensesPage() {
                 className='flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-background/60 p-3 text-sm'
               >
                 <div className='flex-1'>
-                  <p className='font-medium'>Order {order.orderId.slice(0, 10)}…</p>
+                  <p className='font-medium'>
+                    Order {order.orderId.slice(0, 10)}…
+                  </p>
                   <p className='text-xs text-muted-foreground'>
                     License token {order.tokenOnChainId || '—'}
                   </p>
                 </div>
                 <Button asChild size='sm' variant='secondary'>
-                  <a href={archiveHref} download={archiveFileName} target='_blank' rel='noreferrer'>
+                  <a
+                    href={archiveHref}
+                    download={archiveFileName}
+                    target='_blank'
+                    rel='noreferrer'
+                  >
                     Download C2PA
                   </a>
                 </Button>
                 <Button asChild size='sm' variant='secondary'>
-                  <a href={vcHref} download={`lexlink-license-vc-${order.orderId}.json`}>
+                  <a
+                    href={vcHref}
+                    download={`lexlink-license-vc-${order.orderId}.json`}
+                  >
                     Download VC
                   </a>
                 </Button>

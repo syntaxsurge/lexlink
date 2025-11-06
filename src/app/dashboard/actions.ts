@@ -2,9 +2,13 @@
 
 import crypto from 'node:crypto'
 
-import { DisputeTargetTag, convertCIDtoHashIPFS } from '@story-protocol/core-sdk'
+import {
+  DisputeTargetTag,
+  convertCIDtoHashIPFS
+} from '@story-protocol/core-sdk'
 import { getAddress, parseAbi } from 'viem'
 
+import { generateImageFromPrompt } from '@/lib/ai'
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
 import { createLicenseArchive } from '@/lib/c2pa'
 import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
@@ -22,7 +26,6 @@ import {
   confirmPayment,
   fetchAttestation
 } from '@/lib/icp'
-import { generateImageFromPrompt } from '@/lib/ai'
 import { uploadBytes, uploadJson, ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   readPaymentMode,
@@ -495,7 +498,8 @@ function normalizeEvidenceCid(input: string): string {
       if (pathSegments.length > 0) {
         candidate = pathSegments[pathSegments.length - 1]
       } else if (url.hostname.includes('ipfs')) {
-        candidate = url.hostname.split('.').find(part => part.length > 10) ?? candidate
+        candidate =
+          url.hostname.split('.').find(part => part.length > 10) ?? candidate
       }
     } catch {
       const parts = candidate.split('/').filter(Boolean)
@@ -605,10 +609,7 @@ function sanitizeCreators(creators?: CreatorInput[]) {
       contributionPercent: creator.contributionPercent,
       socialMedia: sanitizeCreatorSocialLinks(creator.socialMedia)
     }))
-    .filter(
-      creator =>
-        creator.name.length > 0 && creator.address.length > 0
-    )
+    .filter(creator => creator.name.length > 0 && creator.address.length > 0)
 }
 
 function sanitizeCreatorSocialLinks(
@@ -1950,13 +1951,17 @@ async function finalizeOrder({
     const storyClient = getStoryClient()
 
     // Retry logic for nonce errors (max 3 attempts with exponential backoff)
-    let mintResponse: Awaited<ReturnType<typeof storyClient.license.mintLicenseTokens>> | null = null
+    let mintResponse: Awaited<
+      ReturnType<typeof storyClient.license.mintLicenseTokens>
+    > | null = null
     let lastError: Error | null = null
     const maxRetries = 3
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`[Story] Minting license token (attempt ${attempt}/${maxRetries})...`)
+        console.log(
+          `[Story] Minting license token (attempt ${attempt}/${maxRetries})...`
+        )
         mintResponse = await storyClient.license.mintLicenseTokens({
           licensorIpId: order.ipId as `0x${string}`,
           licenseTermsId: BigInt(order.licenseTermsId),
@@ -1966,14 +1971,17 @@ async function finalizeOrder({
           maxMintingFee: 0,
           maxRevenueShare: 100
         })
-        console.log(`[Story] ✅ License token minted successfully on attempt ${attempt}`)
+        console.log(
+          `[Story] ✅ License token minted successfully on attempt ${attempt}`
+        )
         break
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error))
         const errorMessage = lastError.message.toLowerCase()
         const isNonceError =
           errorMessage.includes('nonce') &&
-          (errorMessage.includes('lower') || errorMessage.includes('already known'))
+          (errorMessage.includes('lower') ||
+            errorMessage.includes('already known'))
 
         if (isNonceError && attempt < maxRetries) {
           const waitTime = Math.pow(2, attempt) * 1000
@@ -1994,7 +2002,9 @@ async function finalizeOrder({
     }
 
     if (!mintResponse?.licenseTokenIds?.length) {
-      throw new Error('Failed to mint license token on Story Protocol - no token IDs returned')
+      throw new Error(
+        'Failed to mint license token on Story Protocol - no token IDs returned'
+      )
     }
 
     const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
@@ -2173,7 +2183,8 @@ async function finalizeOrder({
       minted
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error ?? 'unknown_error')
+    const message =
+      error instanceof Error ? error.message : String(error ?? 'unknown_error')
     try {
       await convex.mutation('licenses:markFinalizationFailed' as any, {
         orderId: order.orderId,
@@ -2236,8 +2247,7 @@ export async function completeLicenseSale({
   }
 
   const targetReceiver =
-    receiver ??
-    ((order.mintTo ?? order.buyer) as `0x${string}` | undefined)
+    receiver ?? ((order.mintTo ?? order.buyer) as `0x${string}` | undefined)
   if (!targetReceiver) {
     throw new Error('Receiver wallet is required to mint license token.')
   }

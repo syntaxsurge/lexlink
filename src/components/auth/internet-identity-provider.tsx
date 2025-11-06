@@ -10,8 +10,8 @@ import {
   type ReactNode
 } from 'react'
 
-import { AuthClient } from '@dfinity/auth-client'
 import type { Identity } from '@dfinity/agent'
+import { AuthClient } from '@dfinity/auth-client'
 import { Principal } from '@dfinity/principal'
 import { useSession } from 'next-auth/react'
 
@@ -145,9 +145,7 @@ export function InternetIdentityProvider({
   const getIdentity = useCallback((): Identity | null => {
     if (!authClient) return null
     const identity = authClient.getIdentity()
-    return identity.getPrincipal().isAnonymous()
-      ? null
-      : (identity as Identity)
+    return identity.getPrincipal().isAnonymous() ? null : (identity as Identity)
   }, [authClient])
 
   const value = useMemo(

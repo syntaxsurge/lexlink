@@ -17,10 +17,15 @@ type MintTargetCardProps = {
   defaultMintTo?: string | null
 }
 
-export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) {
+export function MintTargetCard({
+  orderId,
+  defaultMintTo
+}: MintTargetCardProps) {
   const { data: session, status } = useSession()
   const { invoice, refresh } = useInvoiceStatus()
-  const [mintTo, setMintTo] = useState<string>(invoice.mintTo ?? defaultMintTo ?? '')
+  const [mintTo, setMintTo] = useState<string>(
+    invoice.mintTo ?? defaultMintTo ?? ''
+  )
   const [rememberPreference, setRememberPreference] = useState(true)
   const [saving, startTransition] = useTransition()
 
@@ -30,8 +35,7 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
 
   const normalized = useMemo(() => mintTo.trim(), [mintTo])
   const isValid =
-    normalized.length === 0 ||
-    /^0x[a-fA-F0-9]{40}$/i.test(normalized)
+    normalized.length === 0 || /^0x[a-fA-F0-9]{40}$/i.test(normalized)
 
   const principalLabel = useMemo(() => {
     if (!session?.principal) {
@@ -70,7 +74,8 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
   if (status !== 'authenticated') {
     return (
       <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground'>
-        Sign in with Internet Identity to choose where the Story license token mints.
+        Sign in with Internet Identity to choose where the Story license token
+        mints.
       </div>
     )
   }
@@ -81,12 +86,11 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
         <div>
           <p className='text-sm font-medium'>License wallet</p>
           <p className='text-xs text-muted-foreground'>
-            We mint the Story license token to this address after payment finalizes.
+            We mint the Story license token to this address after payment
+            finalizes.
           </p>
         </div>
-        {invoice.mintTo && (
-          <BadgeCandidate value={invoice.mintTo} />
-        )}
+        {invoice.mintTo && <BadgeCandidate value={invoice.mintTo} />}
       </div>
       <div className='space-y-2'>
         <Label htmlFor='mint-to'>EVM address</Label>
@@ -143,8 +147,8 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
         )}
       </div>
       <p className='text-xs text-muted-foreground'>
-        Principal {principalLabel} must save a wallet before ckBTC auto-finalization
-        can mint your license token.
+        Principal {principalLabel} must save a wallet before ckBTC
+        auto-finalization can mint your license token.
       </p>
     </div>
   )

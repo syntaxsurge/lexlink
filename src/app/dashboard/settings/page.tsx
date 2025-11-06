@@ -1,7 +1,6 @@
 import { getServerSession } from 'next-auth'
 
 import { loadUsers } from '@/app/dashboard/actions'
-import { getDefaultPaymentMode, readPaymentMode } from '@/lib/payment-mode'
 import { PaymentModeToggle } from '@/components/settings/payment-mode-toggle'
 import { UsersTable } from '@/components/settings/users-table'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +12,7 @@ import {
   CardTitle
 } from '@/components/ui/card'
 import { authOptions } from '@/lib/auth'
+import { getDefaultPaymentMode, readPaymentMode } from '@/lib/payment-mode'
 
 export default async function SettingsPage() {
   const session = await getServerSession(authOptions)
@@ -31,7 +31,8 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle>Current Session</CardTitle>
           <CardDescription>
-            Internet Identity principal associated with the active console session.
+            Internet Identity principal associated with the active console
+            session.
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-3 text-sm'>
@@ -60,7 +61,8 @@ export default async function SettingsPage() {
           <CardHeader>
             <CardTitle>Payment Mode</CardTitle>
             <CardDescription>
-              Toggle between consumer-friendly ckBTC settlement and raw Bitcoin infrastructure flow.
+              Toggle between consumer-friendly ckBTC settlement and raw Bitcoin
+              infrastructure flow.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -82,10 +84,7 @@ export default async function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <UsersTable
-              users={users}
-              currentPrincipal={session.principal}
-            />
+            <UsersTable users={users} currentPrincipal={session.principal} />
           </CardContent>
         </Card>
       )}

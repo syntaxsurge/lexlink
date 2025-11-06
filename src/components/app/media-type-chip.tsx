@@ -72,7 +72,9 @@ export function MediaTypeChip({
       {open ? (
         <div className='space-y-3 rounded-md border border-border/60 bg-card/60 p-3'>
           <div className='space-y-1'>
-            <p className='font-semibold text-muted-foreground'>Common formats</p>
+            <p className='font-semibold text-muted-foreground'>
+              Common formats
+            </p>
             <select
               className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
               defaultValue=''
@@ -93,7 +95,9 @@ export function MediaTypeChip({
             </select>
           </div>
           <div className='space-y-1'>
-            <p className='font-semibold text-muted-foreground'>Custom MIME type</p>
+            <p className='font-semibold text-muted-foreground'>
+              Custom MIME type
+            </p>
             <div className='flex gap-2'>
               <Input
                 value={customValue}

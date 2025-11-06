@@ -1,3 +1,4 @@
+import type { CkbtcSnapshot } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -6,8 +7,6 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-
-import type { CkbtcSnapshot } from '@/app/dashboard/actions'
 
 export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
   if (!snapshot.enabled) {
@@ -50,13 +49,15 @@ export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
         <div className='rounded-lg border border-border/50 bg-muted/20 p-3'>
           <p className='text-xs uppercase text-muted-foreground'>Operator</p>
           <p className='text-lg font-semibold'>{snapshot.operator.formatted}</p>
-          <p className='text-xs text-muted-foreground break-all'>
+          <p className='break-all text-xs text-muted-foreground'>
             {snapshot.operator.principal}
           </p>
         </div>
         {snapshot.escrow ? (
           <div className='rounded-lg border border-border/50 bg-muted/20 p-3'>
-            <p className='text-xs uppercase text-muted-foreground'>Escrow · open orders</p>
+            <p className='text-xs uppercase text-muted-foreground'>
+              Escrow · open orders
+            </p>
             <p className='text-lg font-semibold'>
               {snapshot.escrow.formattedOpenBalance}
             </p>
@@ -71,7 +72,7 @@ export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
           </div>
         )}
         {warnings.length > 0 && (
-          <div className='sm:col-span-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-500'>
+          <div className='rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-500 sm:col-span-2'>
             <p className='font-semibold'>Ledger warnings</p>
             <ul className='mt-1 list-disc space-y-1 pl-4'>
               {warnings.map(detail => (
@@ -80,7 +81,7 @@ export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
             </ul>
           </div>
         )}
-        <div className='sm:col-span-2 rounded-lg border border-border/50 bg-muted/10 p-3 text-xs text-muted-foreground'>
+        <div className='rounded-lg border border-border/50 bg-muted/10 p-3 text-xs text-muted-foreground sm:col-span-2'>
           Need ckTESTBTC? Open{' '}
           <a
             className='font-medium text-primary underline-offset-4 hover:underline'
@@ -90,7 +91,8 @@ export function CkbtcBalanceCard({ snapshot }: { snapshot: CkbtcSnapshot }) {
           >
             testnet-faucet.ckboost.com
           </a>
-          , paste your operator principal above, and mint directly to the ledger.
+          , paste your operator principal above, and mint directly to the
+          ledger.
         </div>
       </CardContent>
     </Card>

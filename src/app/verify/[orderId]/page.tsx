@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -11,17 +13,16 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { env } from '@/lib/env'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
+import { env } from '@/lib/env'
 import {
   ipAssetExplorerUrl,
   licenseTokenExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
-import { Buffer } from 'node:buffer'
 
 const MAINNET_MEMPOOL = 'https://mempool.space'
 const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
@@ -95,10 +96,14 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
   const constellationNetwork =
     (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
   const constellationLink =
-    receipt.constellationExplorerUrl && receipt.constellationExplorerUrl.length > 0
+    receipt.constellationExplorerUrl &&
+    receipt.constellationExplorerUrl.length > 0
       ? receipt.constellationExplorerUrl
       : receipt.constellationTx
-        ? constellationExplorerUrl(constellationNetwork, receipt.constellationTx)
+        ? constellationExplorerUrl(
+            constellationNetwork,
+            receipt.constellationTx
+          )
         : null
 
   const btcExplorer = explorerBase(receipt.network)
@@ -163,9 +168,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
         </CardHeader>
         <CardContent className='grid gap-4 md:grid-cols-2'>
           <div>
-            <p className='text-xs uppercase text-muted-foreground'>
-              IP Asset
-            </p>
+            <p className='text-xs uppercase text-muted-foreground'>IP Asset</p>
             <p className='text-sm font-medium'>{receipt.ipTitle}</p>
             <Link
               href={storyLink}
@@ -202,8 +205,8 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
             <p className='text-xs text-muted-foreground'>
               Amount:{' '}
               <span className='font-mono'>
-                {formattedAmount} BTC ({receipt.amountSats?.toLocaleString() ?? '—'}{' '}
-                sats)
+                {formattedAmount} BTC (
+                {receipt.amountSats?.toLocaleString() ?? '—'} sats)
               </span>
             </p>
           </div>
@@ -255,7 +258,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
                 <p className='text-xs uppercase text-muted-foreground'>
                   ckBTC escrow account
                 </p>
-                <p className='font-mono text-xs break-all'>
+                <p className='break-all font-mono text-xs'>
                   {receipt.btcAddress}
                 </p>
                 {typeof receipt.ckbtcMintedSats === 'number' && (
@@ -275,7 +278,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
                 <p className='text-xs uppercase text-muted-foreground'>
                   Bitcoin deposit address
                 </p>
-                <p className='font-mono text-xs break-all'>
+                <p className='break-all font-mono text-xs'>
                   {receipt.btcAddress}
                 </p>
                 {btcAddressLink && (
@@ -324,7 +327,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
               <p className='text-xs uppercase text-muted-foreground'>
                 Attestation hash
               </p>
-              <p className='font-mono text-xs break-all'>
+              <p className='break-all font-mono text-xs'>
                 {receipt.attestationHash ?? 'Unavailable'}
               </p>
             </div>
@@ -332,7 +335,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
               <p className='text-xs uppercase text-muted-foreground'>
                 Asset content hash
               </p>
-              <p className='font-mono text-xs break-all'>
+              <p className='break-all font-mono text-xs'>
                 {receipt.contentHash ?? 'Unavailable'}
               </p>
             </div>
@@ -340,7 +343,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
               <p className='text-xs uppercase text-muted-foreground'>
                 C2PA manifest hash
               </p>
-              <p className='font-mono text-xs break-all'>
+              <p className='break-all font-mono text-xs'>
                 {receipt.c2paHash ?? 'Unavailable'}
               </p>
             </div>
@@ -348,7 +351,7 @@ export default async function VerifyOrderPage({ params }: VerifyPageParams) {
               <p className='text-xs uppercase text-muted-foreground'>
                 Verifiable credential hash
               </p>
-              <p className='font-mono text-xs break-all'>
+              <p className='break-all font-mono text-xs'>
                 {receipt.vcHash ?? 'Unavailable'}
               </p>
             </div>

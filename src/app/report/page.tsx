@@ -26,8 +26,7 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
   }>
 
   const params = searchParams ? await searchParams : undefined
-  const defaultIpId =
-    typeof params?.ipId === 'string' ? params.ipId : undefined
+  const defaultIpId = typeof params?.ipId === 'string' ? params.ipId : undefined
 
   return (
     <div className='mx-auto flex max-w-3xl flex-col gap-6 py-10'>

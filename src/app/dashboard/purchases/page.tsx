@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 import Link from 'next/link'
 
 import {
@@ -21,18 +23,17 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { env } from '@/lib/env'
-import { ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
+import { env } from '@/lib/env'
+import { ipfsGatewayUrl } from '@/lib/ipfs'
 import {
   ipAssetExplorerUrl,
   licenseTokenExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
-import { Buffer } from 'node:buffer'
 
 function short(value: string | null | undefined, length = 10) {
   if (!value) return '—'
@@ -47,7 +48,8 @@ export default async function PurchasesPage() {
     loadBuyerCkbtcBalance()
   ])
 
-  const storyNetwork = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
+  const storyNetwork =
+    (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
   const storyLicenseToken =
     (env.STORY_LICENSE_TOKEN_ADDRESS as `0x${string}` | undefined) ?? null
   const constellationNetwork =
@@ -77,14 +79,19 @@ export default async function PurchasesPage() {
               {profile.defaultMintTo ?? 'Set during checkout'}
             </p>
             <p className='mt-2 text-xs text-muted-foreground'>
-              Update this address the next time you finalize a payment. We use it to prefill future orders.
+              Update this address the next time you finalize a payment. We use
+              it to prefill future orders.
             </p>
           </div>
           <div className='rounded-lg border border-border/60 bg-muted/30 p-4 text-sm md:col-span-2'>
-            <p className='text-xs uppercase text-muted-foreground'>ckBTC Balance</p>
+            <p className='text-xs uppercase text-muted-foreground'>
+              ckBTC Balance
+            </p>
             {balance.enabled ? (
               <div className='mt-1 flex items-baseline gap-3'>
-                <span className='text-2xl font-semibold'>{balance.formatted}</span>
+                <span className='text-2xl font-semibold'>
+                  {balance.formatted}
+                </span>
                 <span className='text-xs text-muted-foreground'>
                   {balance.symbol} (principal {short(balance.principal, 8)})
                 </span>
@@ -128,12 +135,14 @@ export default async function PurchasesPage() {
                     colSpan={8}
                     className='text-center text-sm text-muted-foreground'
                   >
-                    No purchases recorded yet. When you pay an invoice, it will appear here with Story and Constellation links.
+                    No purchases recorded yet. When you pay an invoice, it will
+                    appear here with Story and Constellation links.
                   </TableCell>
                 </TableRow>
               )}
               {purchases.map(order => {
-                const modeLabel = order.paymentMode === 'ckbtc' ? 'ckBTC' : 'BTC'
+                const modeLabel =
+                  order.paymentMode === 'ckbtc' ? 'ckBTC' : 'BTC'
                 const storyLink =
                   storyLicenseToken && order.tokenOnChainId
                     ? licenseTokenExplorerUrl(
@@ -143,10 +152,14 @@ export default async function PurchasesPage() {
                       )
                     : ipAssetExplorerUrl(order.ipId, storyNetwork)
                 const constellationLink =
-                  order.constellationExplorerUrl && order.constellationExplorerUrl.length > 0
+                  order.constellationExplorerUrl &&
+                  order.constellationExplorerUrl.length > 0
                     ? order.constellationExplorerUrl
                     : order.constellationTx?.length
-                      ? constellationExplorerUrl(constellationNetwork, order.constellationTx)
+                      ? constellationExplorerUrl(
+                          constellationNetwork,
+                          order.constellationTx
+                        )
                       : null
                 const c2paLink = order.c2paArchiveUri
                   ? ipfsGatewayUrl(order.c2paArchiveUri)
@@ -163,22 +176,30 @@ export default async function PurchasesPage() {
                 const receiptHref = `/verify/${order.orderId}`
                 const statusBadge =
                   order.status === 'finalized'
-                    ? { variant: 'default' as const, className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' }
+                    ? {
+                        variant: 'default' as const,
+                        className:
+                          'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                      }
                     : order.status === 'failed'
-                      ? { variant: 'outline' as const, className: 'border-rose-400 text-rose-600' }
+                      ? {
+                          variant: 'outline' as const,
+                          className: 'border-rose-400 text-rose-600'
+                        }
                       : order.status === 'finalizing'
-                        ? { variant: 'outline' as const, className: 'border-primary/60 text-primary' }
-                    : order.status === 'pending'
-                      ? { variant: 'outline' as const, className: '' }
-                      : { variant: 'outline' as const, className: '' }
+                        ? {
+                            variant: 'outline' as const,
+                            className: 'border-primary/60 text-primary'
+                          }
+                        : order.status === 'pending'
+                          ? { variant: 'outline' as const, className: '' }
+                          : { variant: 'outline' as const, className: '' }
                 return (
                   <TableRow key={order.orderId}>
                     <TableCell className='font-mono text-xs'>
                       {order.orderId.slice(0, 10)}…
                     </TableCell>
-                    <TableCell className='text-sm'>
-                      {order.ipTitle}
-                    </TableCell>
+                    <TableCell className='text-sm'>{order.ipTitle}</TableCell>
                     <TableCell>
                       <Badge
                         variant={statusBadge.variant}

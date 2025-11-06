@@ -5,16 +5,14 @@ import { useMemo } from 'react'
 
 import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react'
 
+import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { Badge } from '@/components/ui/badge'
-import {
-  useInvoiceStatus
-} from '@/app/pay/[orderId]/_components/invoice-status-provider'
-import { formatTokenAmount } from '@/lib/ic/ckbtc/utils'
 import {
   constellationExplorerUrl,
   constellationTransactionApiUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
+import { formatTokenAmount } from '@/lib/ic/ckbtc/utils'
 import {
   licenseTokenExplorerUrl,
   storyScanBase,
@@ -90,7 +88,11 @@ export function FinalizationTimeline({
     invoice.tokenOnChainId.trim().length > 0
   const normalizedConstellationStatus = (() => {
     const status = invoice.constellationStatus ?? null
-    if (!status && invoice.constellationTx && invoice.constellationTx.length > 0) {
+    if (
+      !status &&
+      invoice.constellationTx &&
+      invoice.constellationTx.length > 0
+    ) {
       return 'ok'
     }
     if (status === 'disabled') {
@@ -103,7 +105,8 @@ export function FinalizationTimeline({
       ? 'complete'
       : normalizedConstellationStatus === 'failed'
         ? 'failed'
-        : normalizedConstellationStatus === 'ok' || normalizedConstellationStatus === 'skipped'
+        : normalizedConstellationStatus === 'ok' ||
+            normalizedConstellationStatus === 'skipped'
           ? 'complete'
           : 'pending'
   const auditLogged =
@@ -141,11 +144,7 @@ export function FinalizationTimeline({
                 .
               </p>
             )}
-          {invoice.fundedAt && (
-            <p>
-              Detected {formatDate(invoice.fundedAt)}.
-            </p>
-          )}
+          {invoice.fundedAt && <p>Detected {formatDate(invoice.fundedAt)}.</p>}
         </div>
       )
     }
@@ -178,11 +177,7 @@ export function FinalizationTimeline({
             .
           </p>
         )}
-        {invoice.fundedAt && (
-          <p>
-            Detected {formatDate(invoice.fundedAt)}.
-          </p>
-        )}
+        {invoice.fundedAt && <p>Detected {formatDate(invoice.fundedAt)}.</p>}
       </div>
     )
   }, [
@@ -538,9 +533,7 @@ export function FinalizationTimeline({
               <div className='flex flex-wrap items-center gap-2'>
                 <p className='font-medium text-foreground'>{step.title}</p>
                 <Badge
-                  variant={
-                    step.status === 'complete' ? 'default' : 'outline'
-                  }
+                  variant={step.status === 'complete' ? 'default' : 'outline'}
                   className={
                     step.status === 'complete'
                       ? 'bg-emerald-500 text-white'

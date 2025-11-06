@@ -3,12 +3,7 @@
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 type PrincipalSummaryProps = {
   principal: string
@@ -49,7 +44,7 @@ export function PrincipalSummary({ principal }: PrincipalSummaryProps) {
         </Button>
       </CardHeader>
       <CardContent>
-        <code className='block break-all rounded bg-muted/40 p-3 text-xs font-mono'>
+        <code className='block break-all rounded bg-muted/40 p-3 font-mono text-xs'>
           {principal}
         </code>
       </CardContent>

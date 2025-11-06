@@ -23,12 +23,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { detectMimeFromUrl } from '@/lib/media-type'
 import {
   ipAccountOnBlockExplorer,
   ipAssetExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
-import { detectMimeFromUrl } from '@/lib/media-type'
 
 const storyNetwork: StoryNetwork =
   process.env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet' ? 'mainnet' : 'aeneid'
@@ -42,7 +42,10 @@ const creatorSchema = z.object({
   wallet: z
     .string({ required_error: 'Creator wallet is required' })
     .trim()
-    .regex(/^0x[a-fA-F0-9]{40}$/, 'Creator wallet must be an 0x-prefixed address'),
+    .regex(
+      /^0x[a-fA-F0-9]{40}$/,
+      'Creator wallet must be an 0x-prefixed address'
+    ),
   role: z
     .string()
     .trim()
@@ -85,7 +88,10 @@ const relationshipSchema = z.object({
   parentIpId: z
     .string({ required_error: 'Parent IP ID is required' })
     .trim()
-    .regex(/^0x[a-fA-F0-9]{40}$/, 'Parent IP ID must be an 0x-prefixed address'),
+    .regex(
+      /^0x[a-fA-F0-9]{40}$/,
+      'Parent IP ID must be an 0x-prefixed address'
+    ),
   type: z.enum(RELATIONSHIP_ENUM_VALUES, {
     errorMap: () => ({ message: 'Select a valid relationship type' })
   })
@@ -100,15 +106,15 @@ const formSchema = z
     createdAt: z.string().min(1, 'Select the creation date'),
     imageUrl: z.string().optional(),
     imageFile: z
-      .custom<FileList | undefined>(
-        value => value === undefined || value instanceof FileList
-      )
+      .custom<
+        FileList | undefined
+      >(value => value === undefined || value instanceof FileList)
       .optional(),
     mediaUrl: z.string().optional(),
     mediaFile: z
-      .custom<FileList | undefined>(
-        value => value === undefined || value instanceof FileList
-      )
+      .custom<
+        FileList | undefined
+      >(value => value === undefined || value instanceof FileList)
       .optional(),
     mediaType: z
       .string()
@@ -222,39 +228,34 @@ const formSchema = z
 type FormValues = z.infer<typeof formSchema>
 
 export function RegisterIpForm() {
-  const [result, setResult] = useState<
-    | null
-    | {
-        ipId: string
-        tokenId: string
-        licenseTermsId: string
-        creators: Array<{
-          name: string
-          address: string
-          role?: string
-          description?: string
-          contributionPercent: number
-          socialMedia?: Array<{
-            platform: string
-            url: string
-          }>
-        }>
-        relationships: Array<{
-          parentIpId: string
-          type: string
-        }>
-        tags: string[]
-        aiMetadata:
-          | {
-              prompt: string
-              enhancedPrompt?: string
-              model: string
-              provider?: string
-              contentHash?: string
-            }
-          | null
-      }
-  >(null)
+  const [result, setResult] = useState<null | {
+    ipId: string
+    tokenId: string
+    licenseTermsId: string
+    creators: Array<{
+      name: string
+      address: string
+      role?: string
+      description?: string
+      contributionPercent: number
+      socialMedia?: Array<{
+        platform: string
+        url: string
+      }>
+    }>
+    relationships: Array<{
+      parentIpId: string
+      type: string
+    }>
+    tags: string[]
+    aiMetadata: {
+      prompt: string
+      enhancedPrompt?: string
+      model: string
+      provider?: string
+      contentHash?: string
+    } | null
+  }>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -427,7 +428,9 @@ export function RegisterIpForm() {
           role: creator.role || undefined,
           description: creator.description || undefined,
           contributionPercent: creator.contributionPercent,
-          socialMedia: creator.socialMedia.length ? creator.socialMedia : undefined
+          socialMedia: creator.socialMedia.length
+            ? creator.socialMedia
+            : undefined
         }))
 
         const relationshipEntries = (values.relationships ?? [])
@@ -513,439 +516,471 @@ export function RegisterIpForm() {
   return (
     <FormProvider {...form}>
       <div className='space-y-6'>
-      <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
-        <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='Title' error={errors.title?.message}>
-            <Input
-              id='title'
-              placeholder='Midnight Marriage'
-              {...register('title')}
-            />
-          </Field>
-          <Field label='Creation timestamp' error={errors.createdAt?.message}>
-            <Input
-              id='createdAt'
-              type='datetime-local'
-              {...register('createdAt')}
-            />
-          </Field>
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className='flex flex-col gap-4'>
+          <div className='grid gap-3 md:grid-cols-2'>
+            <Field label='Title' error={errors.title?.message}>
+              <Input
+                id='title'
+                placeholder='Midnight Marriage'
+                {...register('title')}
+              />
+            </Field>
+            <Field label='Creation timestamp' error={errors.createdAt?.message}>
+              <Input
+                id='createdAt'
+                type='datetime-local'
+                {...register('createdAt')}
+              />
+            </Field>
+          </div>
 
-        <Field label='Description' error={errors.description?.message}>
-          <Textarea
-            id='description'
-            rows={4}
-            placeholder='Describe the work, collaborators, and licensing intent.'
-            {...register('description')}
-          />
-          <Hint>
-            This copy appears in your IP metadata bundle and Story Protocol
-            notes.
-          </Hint>
-        </Field>
-
-        <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='Cover image' error={errors.imageUrl?.message}>
-            <div className='space-y-2'>
-              <Input
-                id='imageFile'
-                type='file'
-                accept='image/*'
-                {...imageFileField}
-                onChange={event => {
-                  imageFileField.onChange(event)
-                  if (event.target.files && event.target.files.length === 0) {
-                    event.target.value = ''
-                  }
-                }}
-              />
-              <Input
-                id='imageUrl'
-                placeholder='https://cdn.example.com/cover.jpg or ipfs://CID'
-                {...register('imageUrl')}
-              />
-              {imageFileName && (
-                <p className='text-xs text-muted-foreground'>
-                  Selected file: {imageFileName}
-                </p>
-              )}
-              <Hint>
-                Upload an image or paste a hosted URL. We store the file on IPFS
-                and record the hash automatically.
-              </Hint>
-            </div>
-          </Field>
-          <Field label='Primary media' error={errors.mediaUrl?.message}>
-            <div className='space-y-2'>
-              <Input
-                id='mediaFile'
-                type='file'
-                accept='audio/*,video/*'
-                {...mediaFileField}
-                onChange={event => {
-                  mediaFileField.onChange(event)
-                  setMediaTypeSource('auto')
-                  if (event.target.files && event.target.files.length === 0) {
-                    event.target.value = ''
-                  }
-                }}
-              />
-              <Input
-                id='mediaUrl'
-                placeholder='https://cdn.example.com/audio.mp3 or ipfs://CID'
-                {...mediaUrlField}
-              />
-              {mediaFileName && (
-                <p className='text-xs text-muted-foreground'>
-                  Selected file: {mediaFileName}
-                </p>
-              )}
-              <Hint>
-                Supply the master audio/video. We fetch it, upload to IPFS, and
-                compute Story-compatible hashes.
-              </Hint>
-              <MediaTypeChip
-                value={mediaTypeValue}
-                detectedValue={detectedMime}
-                pending={isDetectingMime}
-                onChange={handleMimeOverride}
-                onReset={handleMimeReset}
-              />
-              {errors.mediaType?.message && (
-                <p className='text-xs text-destructive'>
-                  {errors.mediaType.message}
-                </p>
-              )}
-            </div>
-          </Field>
-        </div>
-
-        <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='License price (BTC)' error={errors.priceBtc?.message}>
-            <Input
-              id='priceBtc'
-              type='number'
-              min={0.00000001}
-              step={0.00000001}
-              placeholder='0.0025'
-              inputMode='decimal'
-              {...register('priceBtc', { valueAsNumber: true })}
+          <Field label='Description' error={errors.description?.message}>
+            <Textarea
+              id='description'
+              rows={4}
+              placeholder='Describe the work, collaborators, and licensing intent.'
+              {...register('description')}
             />
             <Hint>
-              Buyers pay this amount in BTC. We convert it to satoshis for Story
-              Protocol.
+              This copy appears in your IP metadata bundle and Story Protocol
+              notes.
             </Hint>
           </Field>
-          <Field
-            label='Royalty share (%)'
-            error={errors.royaltyPercent?.message}
-          >
-            <Input
-              id='royaltyPercent'
-              type='number'
-              min={0}
-              max={100}
-              step={0.1}
-              placeholder='10'
-              inputMode='decimal'
-              {...register('royaltyPercent', { valueAsNumber: true })}
-            />
-            <Hint>
-              Percentage of downstream revenue routed back to the licensor.
-            </Hint>
-          </Field>
-        </div>
 
-        <div className='grid gap-3 md:grid-cols-2'>
-          <Field label='Commercial use'>
-            <Controller
-              control={control}
-              name='commercialUse'
-              render={({ field }) => (
-                <label className='flex items-center gap-2 text-sm text-foreground'>
-                  <input
-                    type='checkbox'
-                    className='h-4 w-4 accent-primary'
-                    checked={field.value}
-                    onChange={event => field.onChange(event.target.checked)}
-                    ref={field.ref}
-                  />
-                  <span className='text-muted-foreground'>
-                    Enable commercial licensing and Story attestation.
-                  </span>
-                </label>
-              )}
-            />
-          </Field>
-          <Field label='Derivatives allowed'>
-            <Controller
-              control={control}
-              name='derivativesAllowed'
-              render={({ field }) => (
-                <label className='flex items-center gap-2 text-sm text-foreground'>
-                  <input
-                    type='checkbox'
-                    className='h-4 w-4 accent-primary'
-                    checked={field.value}
-                    onChange={event => field.onChange(event.target.checked)}
-                    ref={field.ref}
-                  />
-                  <span className='text-muted-foreground'>
-                    Allow derivative works under the PIL terms.
-                  </span>
-                </label>
-              )}
-            />
-          </Field>
-        </div>
+          <div className='grid gap-3 md:grid-cols-2'>
+            <Field label='Cover image' error={errors.imageUrl?.message}>
+              <div className='space-y-2'>
+                <Input
+                  id='imageFile'
+                  type='file'
+                  accept='image/*'
+                  {...imageFileField}
+                  onChange={event => {
+                    imageFileField.onChange(event)
+                    if (event.target.files && event.target.files.length === 0) {
+                      event.target.value = ''
+                    }
+                  }}
+                />
+                <Input
+                  id='imageUrl'
+                  placeholder='https://cdn.example.com/cover.jpg or ipfs://CID'
+                  {...register('imageUrl')}
+                />
+                {imageFileName && (
+                  <p className='text-xs text-muted-foreground'>
+                    Selected file: {imageFileName}
+                  </p>
+                )}
+                <Hint>
+                  Upload an image or paste a hosted URL. We store the file on
+                  IPFS and record the hash automatically.
+                </Hint>
+              </div>
+            </Field>
+            <Field label='Primary media' error={errors.mediaUrl?.message}>
+              <div className='space-y-2'>
+                <Input
+                  id='mediaFile'
+                  type='file'
+                  accept='audio/*,video/*'
+                  {...mediaFileField}
+                  onChange={event => {
+                    mediaFileField.onChange(event)
+                    setMediaTypeSource('auto')
+                    if (event.target.files && event.target.files.length === 0) {
+                      event.target.value = ''
+                    }
+                  }}
+                />
+                <Input
+                  id='mediaUrl'
+                  placeholder='https://cdn.example.com/audio.mp3 or ipfs://CID'
+                  {...mediaUrlField}
+                />
+                {mediaFileName && (
+                  <p className='text-xs text-muted-foreground'>
+                    Selected file: {mediaFileName}
+                  </p>
+                )}
+                <Hint>
+                  Supply the master audio/video. We fetch it, upload to IPFS,
+                  and compute Story-compatible hashes.
+                </Hint>
+                <MediaTypeChip
+                  value={mediaTypeValue}
+                  detectedValue={detectedMime}
+                  pending={isDetectingMime}
+                  onChange={handleMimeOverride}
+                  onReset={handleMimeReset}
+                />
+                {errors.mediaType?.message && (
+                  <p className='text-xs text-destructive'>
+                    {errors.mediaType.message}
+                  </p>
+                )}
+              </div>
+            </Field>
+          </div>
 
-        <details className='rounded-lg border border-border bg-muted/40 p-4 text-sm'>
-          <summary className='cursor-pointer text-sm font-semibold text-foreground'>
-            Advanced metadata
-          </summary>
-          <div className='mt-3 space-y-6'>
-            <Field label='Tags (comma separated)' error={errors.tags?.message}>
+          <div className='grid gap-3 md:grid-cols-2'>
+            <Field label='License price (BTC)' error={errors.priceBtc?.message}>
               <Input
-                id='tags'
-                placeholder='electronic, ai-music, nightlife'
-                {...register('tags')}
+                id='priceBtc'
+                type='number'
+                min={0.00000001}
+                step={0.00000001}
+                placeholder='0.0025'
+                inputMode='decimal'
+                {...register('priceBtc', { valueAsNumber: true })}
               />
               <Hint>
-                Tags surface on the public gallery and marketplace. Separate
-                each tag with a comma.
+                Buyers pay this amount in BTC. We convert it to satoshis for
+                Story Protocol.
               </Hint>
             </Field>
-
-            <AdvancedCreators className='text-sm' />
-
-            <AdvancedRelationships className='text-sm' />
-
-            <div className='space-y-2'>
-              <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-                Media type override
-              </p>
-              <p className='text-xs text-muted-foreground'>
-                Use the change control above whenever the auto-detected MIME type needs correction. Leave it untouched to keep the detected value.
-              </p>
-            </div>
-
-            <div className='space-y-3'>
-              <p className='text-xs text-muted-foreground'>
-                Add optional NFT traits. Leave blank to skip.
-              </p>
-              {attributeFields.map((fieldItem, index) => {
-                const traitError =
-                  errors.nftAttributes?.[index]?.traitType?.message
-                const valueError = errors.nftAttributes?.[index]?.value?.message
-                return (
-                  <div
-                    key={fieldItem.id}
-                    className='grid gap-2 md:grid-cols-[1fr_1fr_auto]'
-                  >
-                    <div>
-                      <Input
-                        placeholder='Trait name (e.g., Instrument)'
-                        {...register(`nftAttributes.${index}.traitType` as const)}
-                      />
-                      {traitError && (
-                        <p className='text-xs text-destructive'>{traitError}</p>
-                      )}
-                    </div>
-                    <div>
-                      <Input
-                        placeholder='Trait value (e.g., Piano)'
-                        {...register(`nftAttributes.${index}.value` as const)}
-                      />
-                      {valueError && (
-                        <p className='text-xs text-destructive'>{valueError}</p>
-                      )}
-                    </div>
-                    <Button
-                      type='button'
-                      variant='ghost'
-                      size='sm'
-                      onClick={() => removeAttribute(index)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )
-              })}
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                onClick={() => appendAttribute({ traitType: '', value: '' })}
-              >
-                Add attribute
-              </Button>
-            </div>
-
-            <div className='space-y-2'>
-              <Label className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-                Custom metadata JSON
-              </Label>
-              <Textarea
-                rows={4}
-                placeholder='{ "genre": "Ambient" }'
-                {...register('customMetadata')}
+            <Field
+              label='Royalty share (%)'
+              error={errors.royaltyPercent?.message}
+            >
+              <Input
+                id='royaltyPercent'
+                type='number'
+                min={0}
+                max={100}
+                step={0.1}
+                placeholder='10'
+                inputMode='decimal'
+                {...register('royaltyPercent', { valueAsNumber: true })}
               />
-              {errors.customMetadata?.message && (
-                <p className='text-xs text-destructive'>
-                  {errors.customMetadata.message}
-                </p>
-              )}
-              <p className='text-xs text-muted-foreground'>
-                Optional free-form metadata that merges into the IP manifest. Provide a JSON object only when downstream services expect extra keys.
-              </p>
-            </div>
+              <Hint>
+                Percentage of downstream revenue routed back to the licensor.
+              </Hint>
+            </Field>
           </div>
-        </details>
 
-        <div className='flex items-center gap-3'>
-          <Button type='submit' disabled={isPending}>
-            {isPending ? 'Registering…' : 'Register IP Asset'}
-          </Button>
-          {error && <span className='text-sm text-destructive'>{error}</span>}
-        </div>
-      </form>
+          <div className='grid gap-3 md:grid-cols-2'>
+            <Field label='Commercial use'>
+              <Controller
+                control={control}
+                name='commercialUse'
+                render={({ field }) => (
+                  <label className='flex items-center gap-2 text-sm text-foreground'>
+                    <input
+                      type='checkbox'
+                      className='h-4 w-4 accent-primary'
+                      checked={field.value}
+                      onChange={event => field.onChange(event.target.checked)}
+                      ref={field.ref}
+                    />
+                    <span className='text-muted-foreground'>
+                      Enable commercial licensing and Story attestation.
+                    </span>
+                  </label>
+                )}
+              />
+            </Field>
+            <Field label='Derivatives allowed'>
+              <Controller
+                control={control}
+                name='derivativesAllowed'
+                render={({ field }) => (
+                  <label className='flex items-center gap-2 text-sm text-foreground'>
+                    <input
+                      type='checkbox'
+                      className='h-4 w-4 accent-primary'
+                      checked={field.value}
+                      onChange={event => field.onChange(event.target.checked)}
+                      ref={field.ref}
+                    />
+                    <span className='text-muted-foreground'>
+                      Allow derivative works under the PIL terms.
+                    </span>
+                  </label>
+                )}
+              />
+            </Field>
+          </div>
 
-      {result && (
-        <dl className='grid gap-4 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
-          <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>IP ID</dt>
-            <dd className='break-all font-mono text-xs'>{result.ipId}</dd>
-            <div className='flex flex-wrap gap-2 pt-1'>
-              <ResultLink href={ipAssetExplorerUrl(result.ipId, storyNetwork)}>
-                View in Story IP Explorer
-              </ResultLink>
-              <ResultLink
-                href={ipAccountOnBlockExplorer(result.ipId, storyNetwork)}
-                variant='outline'
+          <details className='rounded-lg border border-border bg-muted/40 p-4 text-sm'>
+            <summary className='cursor-pointer text-sm font-semibold text-foreground'>
+              Advanced metadata
+            </summary>
+            <div className='mt-3 space-y-6'>
+              <Field
+                label='Tags (comma separated)'
+                error={errors.tags?.message}
               >
-                View on StoryScan
-              </ResultLink>
-            </div>
-          </div>
-          <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>
-              SPG Token ID
-            </dt>
-            <dd className='font-mono text-xs'>{result.tokenId}</dd>
-          </div>
-          <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>
-              License Terms ID
-            </dt>
-            <dd className='font-mono text-xs'>{result.licenseTermsId}</dd>
-          </div>
-          {result.creators.length > 0 && (
-            <div className='space-y-2'>
-              <dt className='font-semibold text-muted-foreground'>Creators</dt>
+                <Input
+                  id='tags'
+                  placeholder='electronic, ai-music, nightlife'
+                  {...register('tags')}
+                />
+                <Hint>
+                  Tags surface on the public gallery and marketplace. Separate
+                  each tag with a comma.
+                </Hint>
+              </Field>
+
+              <AdvancedCreators className='text-sm' />
+
+              <AdvancedRelationships className='text-sm' />
+
               <div className='space-y-2'>
-                {result.creators.map((creator, index) => (
-                  <div
-                    key={`${creator.address}-${index}`}
-                    className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'
-                  >
-                    <div className='flex flex-wrap items-center justify-between gap-2'>
-                      <span className='font-medium text-foreground'>{creator.name}</span>
-                      <span className='font-mono text-muted-foreground'>
-                        {creator.contributionPercent}%
-                      </span>
-                    </div>
-                    <div className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
-                      {creator.address}
-                    </div>
-                    {creator.role && (
-                      <div className='mt-1 text-[10px] uppercase tracking-wide text-muted-foreground'>
-                        Role: {creator.role}
+                <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                  Media type override
+                </p>
+                <p className='text-xs text-muted-foreground'>
+                  Use the change control above whenever the auto-detected MIME
+                  type needs correction. Leave it untouched to keep the detected
+                  value.
+                </p>
+              </div>
+
+              <div className='space-y-3'>
+                <p className='text-xs text-muted-foreground'>
+                  Add optional NFT traits. Leave blank to skip.
+                </p>
+                {attributeFields.map((fieldItem, index) => {
+                  const traitError =
+                    errors.nftAttributes?.[index]?.traitType?.message
+                  const valueError =
+                    errors.nftAttributes?.[index]?.value?.message
+                  return (
+                    <div
+                      key={fieldItem.id}
+                      className='grid gap-2 md:grid-cols-[1fr_1fr_auto]'
+                    >
+                      <div>
+                        <Input
+                          placeholder='Trait name (e.g., Instrument)'
+                          {...register(
+                            `nftAttributes.${index}.traitType` as const
+                          )}
+                        />
+                        {traitError && (
+                          <p className='text-xs text-destructive'>
+                            {traitError}
+                          </p>
+                        )}
                       </div>
-                    )}
-                    {creator.description && (
-                      <p className='mt-2 text-[11px] leading-relaxed text-muted-foreground'>
-                        {creator.description}
-                      </p>
-                    )}
-                    {creator.socialMedia && creator.socialMedia.length > 0 && (
-                      <div className='mt-2 flex flex-wrap gap-2'>
-                        {creator.socialMedia.map(link => (
-                          <ResultLink key={link.url} href={link.url} variant='outline'>
-                            {link.platform}
-                          </ResultLink>
-                        ))}
+                      <div>
+                        <Input
+                          placeholder='Trait value (e.g., Piano)'
+                          {...register(`nftAttributes.${index}.value` as const)}
+                        />
+                        {valueError && (
+                          <p className='text-xs text-destructive'>
+                            {valueError}
+                          </p>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      <Button
+                        type='button'
+                        variant='ghost'
+                        size='sm'
+                        onClick={() => removeAttribute(index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  )
+                })}
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={() => appendAttribute({ traitType: '', value: '' })}
+                >
+                  Add attribute
+                </Button>
+              </div>
+
+              <div className='space-y-2'>
+                <Label className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+                  Custom metadata JSON
+                </Label>
+                <Textarea
+                  rows={4}
+                  placeholder='{ "genre": "Ambient" }'
+                  {...register('customMetadata')}
+                />
+                {errors.customMetadata?.message && (
+                  <p className='text-xs text-destructive'>
+                    {errors.customMetadata.message}
+                  </p>
+                )}
+                <p className='text-xs text-muted-foreground'>
+                  Optional free-form metadata that merges into the IP manifest.
+                  Provide a JSON object only when downstream services expect
+                  extra keys.
+                </p>
               </div>
             </div>
-          )}
-          {result.tags.length > 0 && (
-            <div className='space-y-1'>
-              <dt className='font-semibold text-muted-foreground'>Tags</dt>
-              <dd className='flex flex-wrap gap-2'>
-                {result.tags.map(tag => (
-                  <span
-                    key={tag}
-                    className='rounded-md border border-border/60 bg-background/60 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </dd>
+          </details>
+
+          <div className='flex items-center gap-3'>
+            <Button type='submit' disabled={isPending}>
+              {isPending ? 'Registering…' : 'Register IP Asset'}
+            </Button>
+            {error && <span className='text-sm text-destructive'>{error}</span>}
+          </div>
+        </form>
+
+        {result && (
+          <dl className='grid gap-4 rounded-lg border border-border bg-muted/40 p-4 text-sm'>
+            <div className='flex flex-col gap-1'>
+              <dt className='font-semibold text-muted-foreground'>IP ID</dt>
+              <dd className='break-all font-mono text-xs'>{result.ipId}</dd>
+              <div className='flex flex-wrap gap-2 pt-1'>
+                <ResultLink
+                  href={ipAssetExplorerUrl(result.ipId, storyNetwork)}
+                >
+                  View in Story IP Explorer
+                </ResultLink>
+                <ResultLink
+                  href={ipAccountOnBlockExplorer(result.ipId, storyNetwork)}
+                  variant='outline'
+                >
+                  View on StoryScan
+                </ResultLink>
+              </div>
             </div>
-          )}
-          {result.aiMetadata && (
-            <div className='space-y-2'>
-              <dt className='font-semibold text-muted-foreground'>AI Generation</dt>
-              <div className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'>
-                <p className='font-medium text-foreground'>
-                  {result.aiMetadata.model}{' '}
-                  {result.aiMetadata.provider ? `· ${result.aiMetadata.provider}` : ''}
-                </p>
-                <p className='mt-1 text-[11px] text-muted-foreground'>
-                  Prompt:{' '}
-                  <span className='font-medium text-foreground'>
-                    {result.aiMetadata.enhancedPrompt ?? result.aiMetadata.prompt}
-                  </span>
-                </p>
-                {result.aiMetadata.enhancedPrompt && (
+            <div className='flex flex-col gap-1'>
+              <dt className='font-semibold text-muted-foreground'>
+                SPG Token ID
+              </dt>
+              <dd className='font-mono text-xs'>{result.tokenId}</dd>
+            </div>
+            <div className='flex flex-col gap-1'>
+              <dt className='font-semibold text-muted-foreground'>
+                License Terms ID
+              </dt>
+              <dd className='font-mono text-xs'>{result.licenseTermsId}</dd>
+            </div>
+            {result.creators.length > 0 && (
+              <div className='space-y-2'>
+                <dt className='font-semibold text-muted-foreground'>
+                  Creators
+                </dt>
+                <div className='space-y-2'>
+                  {result.creators.map((creator, index) => (
+                    <div
+                      key={`${creator.address}-${index}`}
+                      className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'
+                    >
+                      <div className='flex flex-wrap items-center justify-between gap-2'>
+                        <span className='font-medium text-foreground'>
+                          {creator.name}
+                        </span>
+                        <span className='font-mono text-muted-foreground'>
+                          {creator.contributionPercent}%
+                        </span>
+                      </div>
+                      <div className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
+                        {creator.address}
+                      </div>
+                      {creator.role && (
+                        <div className='mt-1 text-[10px] uppercase tracking-wide text-muted-foreground'>
+                          Role: {creator.role}
+                        </div>
+                      )}
+                      {creator.description && (
+                        <p className='mt-2 text-[11px] leading-relaxed text-muted-foreground'>
+                          {creator.description}
+                        </p>
+                      )}
+                      {creator.socialMedia &&
+                        creator.socialMedia.length > 0 && (
+                          <div className='mt-2 flex flex-wrap gap-2'>
+                            {creator.socialMedia.map(link => (
+                              <ResultLink
+                                key={link.url}
+                                href={link.url}
+                                variant='outline'
+                              >
+                                {link.platform}
+                              </ResultLink>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {result.tags.length > 0 && (
+              <div className='space-y-1'>
+                <dt className='font-semibold text-muted-foreground'>Tags</dt>
+                <dd className='flex flex-wrap gap-2'>
+                  {result.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className='rounded-md border border-border/60 bg-background/60 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground'
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            )}
+            {result.aiMetadata && (
+              <div className='space-y-2'>
+                <dt className='font-semibold text-muted-foreground'>
+                  AI Generation
+                </dt>
+                <div className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'>
+                  <p className='font-medium text-foreground'>
+                    {result.aiMetadata.model}{' '}
+                    {result.aiMetadata.provider
+                      ? `· ${result.aiMetadata.provider}`
+                      : ''}
+                  </p>
                   <p className='mt-1 text-[11px] text-muted-foreground'>
-                    Original prompt:{' '}
+                    Prompt:{' '}
                     <span className='font-medium text-foreground'>
-                      {result.aiMetadata.prompt}
+                      {result.aiMetadata.enhancedPrompt ??
+                        result.aiMetadata.prompt}
                     </span>
                   </p>
-                )}
-                {result.aiMetadata.contentHash && (
-                  <p className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
-                    Content hash: {result.aiMetadata.contentHash}
-                  </p>
-                )}
+                  {result.aiMetadata.enhancedPrompt && (
+                    <p className='mt-1 text-[11px] text-muted-foreground'>
+                      Original prompt:{' '}
+                      <span className='font-medium text-foreground'>
+                        {result.aiMetadata.prompt}
+                      </span>
+                    </p>
+                  )}
+                  {result.aiMetadata.contentHash && (
+                    <p className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
+                      Content hash: {result.aiMetadata.contentHash}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
-          {result.relationships.length > 0 && (
-            <div className='space-y-2'>
-              <dt className='font-semibold text-muted-foreground'>Lineage</dt>
+            )}
+            {result.relationships.length > 0 && (
               <div className='space-y-2'>
-                {result.relationships.map((relationship, index) => (
-                  <div
-                    key={`${relationship.parentIpId}-${index}`}
-                    className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'
-                  >
-                    <div className='font-medium text-foreground'>{relationship.type}</div>
-                    <div className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
-                      {relationship.parentIpId}
+                <dt className='font-semibold text-muted-foreground'>Lineage</dt>
+                <div className='space-y-2'>
+                  {result.relationships.map((relationship, index) => (
+                    <div
+                      key={`${relationship.parentIpId}-${index}`}
+                      className='rounded-md border border-border/60 bg-background/60 p-3 text-xs'
+                    >
+                      <div className='font-medium text-foreground'>
+                        {relationship.type}
+                      </div>
+                      <div className='mt-1 break-all font-mono text-[10px] text-muted-foreground'>
+                        {relationship.parentIpId}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </dl>
-      )}
+            )}
+          </dl>
+        )}
       </div>
     </FormProvider>
   )

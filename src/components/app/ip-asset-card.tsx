@@ -1,9 +1,10 @@
 'use client'
 
-import { ArrowUpRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+
+import { ArrowUpRight } from 'lucide-react'
 
 import type {
   AiMetadataRecord,
@@ -11,12 +12,15 @@ import type {
   IpRecord
 } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  ipAssetExplorerUrl,
-  type StoryNetwork
-} from '@/lib/story-links'
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from '@/components/ui/card'
+import { ipAssetExplorerUrl, type StoryNetwork } from '@/lib/story-links'
 import { cn } from '@/lib/utils'
 
 const IPFS_GATEWAYS = [
@@ -43,8 +47,14 @@ export function IpAssetCard({
   actionSlot,
   highlightActions = false
 }: IpAssetCardProps) {
-  const imageSources = useMemo(() => buildIpfsSources(asset.imageUrl), [asset.imageUrl])
-  const mediaSources = useMemo(() => buildIpfsSources(asset.mediaUrl), [asset.mediaUrl])
+  const imageSources = useMemo(
+    () => buildIpfsSources(asset.imageUrl),
+    [asset.imageUrl]
+  )
+  const mediaSources = useMemo(
+    () => buildIpfsSources(asset.mediaUrl),
+    [asset.mediaUrl]
+  )
   const [imageSourceIndex, setImageSourceIndex] = useState(0)
 
   useEffect(() => {
@@ -52,7 +62,9 @@ export function IpAssetCard({
   }, [asset.imageUrl])
 
   const activeImageUrl =
-    imageSourceIndex >= 0 ? imageSources[imageSourceIndex] ?? asset.imageUrl ?? '' : ''
+    imageSourceIndex >= 0
+      ? (imageSources[imageSourceIndex] ?? asset.imageUrl ?? '')
+      : ''
 
   const handleImageError = () => {
     if (imageSourceIndex < imageSources.length - 1) {
@@ -102,7 +114,10 @@ export function IpAssetCard({
           {asset.description}
         </p>
         <div className='flex flex-wrap gap-2'>
-          <Badge variant='outline' className='border-primary/40 bg-primary/5 text-primary'>
+          <Badge
+            variant='outline'
+            className='border-primary/40 bg-primary/5 text-primary'
+          >
             {asset.commercialUse ? 'Commercial' : 'Personal'} use
           </Badge>
           <Badge variant='outline' className='border-border/60'>
@@ -163,7 +178,10 @@ export function IpAssetCard({
             <h3 className='text-sm font-semibold text-foreground'>Creators</h3>
             <div className='space-y-2'>
               {creators.map(creator => (
-                <CreatorChip key={`${creator.address}-${creator.name}`} creator={creator} />
+                <CreatorChip
+                  key={`${creator.address}-${creator.name}`}
+                  creator={creator}
+                />
               ))}
             </div>
           </div>
@@ -173,7 +191,9 @@ export function IpAssetCard({
         <div className='flex w-full flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/80 px-3 py-3 text-sm'>
           <span className='text-muted-foreground'>Commercial terms</span>
           <span className='font-semibold text-foreground'>
-            {asset.commercialUse ? 'Commercial licensing enabled' : 'Non-commercial license'}
+            {asset.commercialUse
+              ? 'Commercial licensing enabled'
+              : 'Non-commercial license'}
           </span>
         </div>
         {actionSlot ? (
@@ -222,7 +242,9 @@ function renderMediaPreview({
         </div>
       )
     }
-    const sources = [primary, ...fallbacks, imageSrc].filter(Boolean) as string[]
+    const sources = [primary, ...fallbacks, imageSrc].filter(
+      Boolean
+    ) as string[]
     return (
       <video
         key={sources[0]}
@@ -240,7 +262,8 @@ function renderMediaPreview({
   }
 
   if (type.startsWith('audio/')) {
-    const audioSources = mediaSources.length > 0 ? mediaSources : imageSrc ? [imageSrc] : []
+    const audioSources =
+      mediaSources.length > 0 ? mediaSources : imageSrc ? [imageSrc] : []
     return (
       <div className='flex h-56 flex-col items-center justify-center gap-4 bg-background/85 p-6'>
         {imageSrc ? (
@@ -259,14 +282,21 @@ function renderMediaPreview({
           </div>
         )}
         {audioSources.length > 0 ? (
-          <audio controls preload='none' controlsList='play nodownload' className='w-full rounded-md bg-background/80'>
+          <audio
+            controls
+            preload='none'
+            controlsList='play nodownload'
+            className='w-full rounded-md bg-background/80'
+          >
             {audioSources.map(source => (
               <source key={source} src={source} />
             ))}
             Your browser does not support the audio element.
           </audio>
         ) : (
-          <div className='text-xs text-muted-foreground'>Audio preview unavailable</div>
+          <div className='text-xs text-muted-foreground'>
+            Audio preview unavailable
+          </div>
         )}
       </div>
     )

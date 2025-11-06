@@ -10,11 +10,11 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { env } from '@/lib/env'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
+import { env } from '@/lib/env'
 import { ipAssetExplorerUrl, type StoryNetwork } from '@/lib/story-links'
 
 type VerifyTrainingParams = {
@@ -36,7 +36,8 @@ export default async function VerifyTrainingPage({
   const constellationNetwork =
     (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
   const constellationLink =
-    record.constellationExplorerUrl && record.constellationExplorerUrl.length > 0
+    record.constellationExplorerUrl &&
+    record.constellationExplorerUrl.length > 0
       ? record.constellationExplorerUrl
       : record.constellationTx
         ? constellationExplorerUrl(constellationNetwork, record.constellationTx)
@@ -72,9 +73,7 @@ export default async function VerifyTrainingPage({
         </CardHeader>
         <CardContent className='grid gap-4 md:grid-cols-2'>
           <div>
-            <p className='text-xs uppercase text-muted-foreground'>
-              IP Asset
-            </p>
+            <p className='text-xs uppercase text-muted-foreground'>IP Asset</p>
             <p className='text-sm font-medium'>{record.ipTitle}</p>
             <Link
               href={ipAssetExplorerUrl(record.ipId, storyNetwork)}
@@ -97,12 +96,10 @@ export default async function VerifyTrainingPage({
             <p className='text-xs uppercase text-muted-foreground'>
               Evidence hash
             </p>
-            <p className='font-mono text-xs break-all'>{record.evidenceHash}</p>
+            <p className='break-all font-mono text-xs'>{record.evidenceHash}</p>
           </div>
           <div>
-            <p className='text-xs uppercase text-muted-foreground'>
-              Timestamp
-            </p>
+            <p className='text-xs uppercase text-muted-foreground'>Timestamp</p>
             <p className='text-sm text-foreground'>
               {new Date(record.createdAt).toLocaleString()}
             </p>

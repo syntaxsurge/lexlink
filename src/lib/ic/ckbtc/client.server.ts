@@ -2,7 +2,6 @@ import { Actor, type Identity } from '@dfinity/agent'
 
 import { env } from '@/lib/env'
 import { makeAgent } from '@/lib/ic/agent'
-
 import ledgerIdl from '@/lib/ic/ckbtc/idl/ledger.idl'
 
 function requireLedgerCanisterId(): string {
@@ -22,6 +21,6 @@ function resolveHost(): string {
 export async function ledgerActor(identity?: Identity) {
   const canisterId = requireLedgerCanisterId()
   const agent = await makeAgent(resolveHost(), identity)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   return Actor.createActor(ledgerIdl as any, { agent, canisterId }) as any
 }

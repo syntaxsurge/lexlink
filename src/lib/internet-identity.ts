@@ -3,8 +3,7 @@ import { Principal } from '@dfinity/principal'
 
 export type DelegationChainJson = ReturnType<DelegationChain['toJSON']>
 
-export const SESSION_TTL_NS =
-  7n * 24n * 60n * 60n * 1_000_000_000n
+export const SESSION_TTL_NS = 7n * 24n * 60n * 60n * 1_000_000_000n
 
 type VerifyArgs = {
   principal: string

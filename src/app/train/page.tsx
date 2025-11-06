@@ -7,10 +7,7 @@ import {
   type TrainingBatchRecord
 } from '@/app/dashboard/actions'
 import { TrainingForm } from '@/components/app/training-form'
-import {
-  constellationExplorerUrl,
-  type ConstellationNetworkId
-} from '@/lib/constellation-links'
+import { type ConstellationNetworkId } from '@/lib/constellation-links'
 import { env } from '@/lib/env'
 
 const CONSTELLATION_NETWORK =
@@ -104,7 +101,8 @@ export default async function TrainingPage() {
                         Constellation Tx
                       </dt>
                       <dd className='break-all'>
-                        {batch.constellationExplorerUrl && batch.constellationExplorerUrl.length > 0 ? (
+                        {batch.constellationExplorerUrl &&
+                        batch.constellationExplorerUrl.length > 0 ? (
                           <Link
                             href={batch.constellationExplorerUrl}
                             target='_blank'

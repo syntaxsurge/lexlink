@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useMemo, useState } from 'react'
 
 import { useSession } from 'next-auth/react'
 
@@ -106,7 +106,9 @@ export function GalleryExplorer({ assets, network }: GalleryExplorerProps) {
               actionSlot={
                 <div className='space-y-3 text-xs text-muted-foreground'>
                   <p className='font-semibold text-foreground'>
-                    {isAuthenticated ? 'License this asset' : 'Sign in to license'}
+                    {isAuthenticated
+                      ? 'License this asset'
+                      : 'Sign in to license'}
                   </p>
                   <p>
                     {isAuthenticated
@@ -142,7 +144,8 @@ export function GalleryExplorer({ assets, network }: GalleryExplorerProps) {
         <Card className='border-dashed border-border/60 bg-muted/20 py-16 text-center'>
           <CardContent>
             <p className='text-sm text-muted-foreground'>
-              No assets match your filters. Reset the filters or refine your search terms.
+              No assets match your filters. Reset the filters or refine your
+              search terms.
             </p>
           </CardContent>
         </Card>

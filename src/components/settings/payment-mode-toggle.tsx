@@ -15,12 +15,14 @@ const OPTIONS: Array<{
   {
     value: 'ckbtc',
     label: 'ckBTC (Consumer)',
-    description: 'Direct ckBTC ledger transfers with escrow auto-finalization. Ideal for demos and judge walkthroughs.'
+    description:
+      'Direct ckBTC ledger transfers with escrow auto-finalization. Ideal for demos and judge walkthroughs.'
   },
   {
     value: 'btc',
     label: 'Native BTC (Infrastructure)',
-    description: 'Threshold-ECDSA addresses and UTXO polling to showcase raw Bitcoin integration.'
+    description:
+      'Threshold-ECDSA addresses and UTXO polling to showcase raw Bitcoin integration.'
   }
 ]
 
@@ -29,7 +31,10 @@ export interface PaymentModeToggleProps {
   defaultMode: PaymentMode
 }
 
-export function PaymentModeToggle({ currentMode, defaultMode }: PaymentModeToggleProps) {
+export function PaymentModeToggle({
+  currentMode,
+  defaultMode
+}: PaymentModeToggleProps) {
   const [mode, setMode] = useState<PaymentMode>(currentMode)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -43,7 +48,9 @@ export function PaymentModeToggle({ currentMode, defaultMode }: PaymentModeToggl
         setMode(value)
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Unable to update payment mode right now.'
+          err instanceof Error
+            ? err.message
+            : 'Unable to update payment mode right now.'
         )
       }
     })
@@ -65,16 +72,21 @@ export function PaymentModeToggle({ currentMode, defaultMode }: PaymentModeToggl
             >
               <div className='flex items-center gap-2'>
                 <span className='text-sm font-semibold'>{option.label}</span>
-                {defaultMode === option.value && <Badge variant='outline'>Default</Badge>}
+                {defaultMode === option.value && (
+                  <Badge variant='outline'>Default</Badge>
+                )}
                 {active && <Badge>Active</Badge>}
               </div>
-              <p className='text-xs text-muted-foreground'>{option.description}</p>
+              <p className='text-xs text-muted-foreground'>
+                {option.description}
+              </p>
             </Button>
           )
         })}
       </div>
       <p className='text-xs text-muted-foreground'>
-        Mode persists per operator session. Default is set via PAYMENT_MODE={defaultMode}.
+        Mode persists per operator session. Default is set via PAYMENT_MODE=
+        {defaultMode}.
       </p>
       {error && <p className='text-xs text-destructive'>{error}</p>}
     </div>

@@ -15,7 +15,9 @@ export const storyAccount = privateKeyToAccount(
 export const storyChain: Chain = {
   id: env.STORY_CHAIN_ID,
   name:
-    env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet' ? 'Story Mainnet' : 'Story Aeneid',
+    env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet'
+      ? 'Story Mainnet'
+      : 'Story Aeneid',
   nativeCurrency: {
     name: 'Story',
     symbol: 'IP',
@@ -54,12 +56,19 @@ export function getStoryWalletClient() {
 
 function isNonceError(error: unknown) {
   const message =
-    error instanceof Error ? error.message : typeof error === 'string' ? error : ''
+    error instanceof Error
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : ''
   if (!message) {
     return false
   }
   const normalized = message.toLowerCase()
-  return normalized.includes('nonce') && (normalized.includes('lower') || normalized.includes('known'))
+  return (
+    normalized.includes('nonce') &&
+    (normalized.includes('lower') || normalized.includes('known'))
+  )
 }
 
 function patchLicenseNonceHandling(client: StoryClient) {
@@ -83,10 +92,12 @@ function patchLicenseNonceHandling(client: StoryClient) {
       if (!isNonceError(error)) {
         throw error
       }
-      const pendingNonce = await (license.rpcClient as any).getTransactionCount({
-        address: signerAddress,
-        blockTag: 'pending'
-      })
+      const pendingNonce = await (license.rpcClient as any).getTransactionCount(
+        {
+          address: signerAddress,
+          blockTag: 'pending'
+        }
+      )
       return await originalWrite({
         ...args,
         nonce: pendingNonce

@@ -1,10 +1,10 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { AuthClient } from '@dfinity/auth-client'
 import { signIn, useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'

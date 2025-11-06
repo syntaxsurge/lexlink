@@ -2,8 +2,8 @@ import { notFound } from 'next/navigation'
 
 import { loadInvoicePublic, loadBuyerProfile } from '@/app/dashboard/actions'
 import { InvoicePageClient } from '@/app/pay/[orderId]/_components/invoice-page-client'
-import { env } from '@/lib/env'
 import type { ConstellationNetworkId } from '@/lib/constellation-links'
+import { env } from '@/lib/env'
 import type { StoryNetwork } from '@/lib/story-links'
 
 type PayInvoicePageProps = {
@@ -27,7 +27,8 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
   }
 
   const isCkbtc = invoice.paymentMode === 'ckbtc'
-  const escrowPrincipal = env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
+  const escrowPrincipal =
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.ICP_ESCROW_CANISTER_ID
   const ledgerConfigured = Boolean(
     env.CKBTC_LEDGER_CANISTER_ID || env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID
   )
@@ -54,7 +55,9 @@ export default async function PayInvoicePage({ params }: PayInvoicePageProps) {
       fallbackNetwork={invoice.network ?? env.BTC_NETWORK}
       storyNetwork={env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork}
       storyLicenseAddress={env.STORY_LICENSE_TEMPLATE_ADDRESS as `0x${string}`}
-      storyLicenseTokenAddress={env.STORY_LICENSE_TOKEN_ADDRESS as `0x${string}`}
+      storyLicenseTokenAddress={
+        env.STORY_LICENSE_TOKEN_ADDRESS as `0x${string}`
+      }
       storyChainId={env.STORY_CHAIN_ID}
       constellationNetwork={env.CONSTELLATION_NETWORK as ConstellationNetworkId}
       constellationEnabled={env.CONSTELLATION_ENABLED}

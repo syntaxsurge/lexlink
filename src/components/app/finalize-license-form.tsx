@@ -1,15 +1,18 @@
 'use client'
 
-import Link from 'next/link'
 import { Buffer } from 'buffer'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { completeLicenseSale, type LicenseRecord } from '@/app/dashboard/actions'
+import {
+  completeLicenseSale,
+  type LicenseRecord
+} from '@/app/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -65,7 +68,10 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
 
   useEffect(() => {
     if (selectedOrder) {
-      form.setValue('receiver', selectedOrder.mintTo ?? selectedOrder.buyer ?? '')
+      form.setValue(
+        'receiver',
+        selectedOrder.mintTo ?? selectedOrder.buyer ?? ''
+      )
     }
   }, [selectedOrder, form])
 
@@ -147,7 +153,9 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
           </div>
         ) : (
           <div className='rounded-lg border border-border/60 bg-muted/20 p-3 text-xs text-muted-foreground'>
-            ckBTC orders finalize once the escrow ledger balance reaches the amount due. Leave the transaction hash blank unless you want to record a manual reference.
+            ckBTC orders finalize once the escrow ledger balance reaches the
+            amount due. Leave the transaction hash blank unless you want to
+            record a manual reference.
           </div>
         )}
         <div className='space-y-2'>
@@ -235,7 +243,9 @@ export function FinalizeLicenseForm({ orders }: { orders: LicenseRecord[] }) {
           </div>
           {result.paymentMode === 'ckbtc' && (
             <div className='flex flex-col gap-1'>
-              <dt className='font-semibold text-muted-foreground'>Minted Amount</dt>
+              <dt className='font-semibold text-muted-foreground'>
+                Minted Amount
+              </dt>
               <dd className='font-mono text-xs'>
                 {result.ckbtcMintedSats
                   ? `${result.ckbtcMintedSats.toLocaleString()} sats`

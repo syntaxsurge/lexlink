@@ -25,8 +25,10 @@ export default function RootLayout({
     <html lang='en' suppressHydrationWarning>
       <body className={inter.className}>
         <Providers>
-          <SiteHeader />
-          <main className='container-edge py-6'>{children}</main>
+          <div className='relative flex min-h-screen flex-col'>
+            <SiteHeader />
+            <main className='flex-1'>{children}</main>
+          </div>
         </Providers>
       </body>
     </html>

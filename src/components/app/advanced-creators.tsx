@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+
 import { useFieldArray, useFormContext } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
@@ -44,8 +45,8 @@ export function AdvancedCreators({
     ? (allErrors as Array<Record<string, { message?: string }>>)
     : []
   const aggregateError = !Array.isArray(allErrors)
-    ? (allErrors?.message as string | undefined) ??
-      (allErrors?.root?.message as string | undefined)
+    ? ((allErrors?.message as string | undefined) ??
+      (allErrors?.root?.message as string | undefined))
     : undefined
 
   useEffect(() => {
@@ -70,7 +71,8 @@ export function AdvancedCreators({
         <div>
           <p className='text-sm font-medium text-foreground'>Creators</p>
           <p className='text-xs text-muted-foreground'>
-            Provide the on-chain contributors for this IP Asset. Percentages must total 100.
+            Provide the on-chain contributors for this IP Asset. Percentages
+            must total 100.
           </p>
         </div>
         <Button
@@ -102,7 +104,7 @@ export function AdvancedCreators({
               key={field.id}
               className='grid gap-3 rounded-lg border border-border/60 bg-card/60 p-3 md:grid-cols-12'
             >
-              <div className='md:col-span-3 space-y-1'>
+              <div className='space-y-1 md:col-span-3'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Name
                 </Label>
@@ -114,7 +116,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.name.message} />
                 )}
               </div>
-              <div className='md:col-span-4 space-y-1'>
+              <div className='space-y-1 md:col-span-4'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Wallet (0x address)
                 </Label>
@@ -126,7 +128,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.wallet.message} />
                 )}
               </div>
-              <div className='md:col-span-3 space-y-1'>
+              <div className='space-y-1 md:col-span-3'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Role
                 </Label>
@@ -138,7 +140,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.role.message} />
                 )}
               </div>
-              <div className='md:col-span-2 space-y-1'>
+              <div className='space-y-1 md:col-span-2'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Contribution %
                 </Label>
@@ -155,7 +157,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.pct.message} />
                 )}
               </div>
-              <div className='md:col-span-12 space-y-1'>
+              <div className='space-y-1 md:col-span-12'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Creator description
                 </Label>
@@ -168,7 +170,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.description.message} />
                 )}
               </div>
-              <div className='md:col-span-3 space-y-1'>
+              <div className='space-y-1 md:col-span-3'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Social platform
                 </Label>
@@ -180,7 +182,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.socialPlatform.message} />
                 )}
               </div>
-              <div className='md:col-span-5 space-y-1'>
+              <div className='space-y-1 md:col-span-5'>
                 <Label className='text-xs uppercase text-muted-foreground'>
                   Social URL
                 </Label>
@@ -192,7 +194,7 @@ export function AdvancedCreators({
                   <ErrorText message={fieldErrors.socialUrl.message} />
                 )}
               </div>
-              <div className='md:col-span-12 flex justify-end'>
+              <div className='flex justify-end md:col-span-12'>
                 <Button
                   type='button'
                   size='sm'

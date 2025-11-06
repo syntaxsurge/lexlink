@@ -147,7 +147,10 @@ const serverEnvSchema = z.object({
   VC_ISSUER_DID: z.string().min(4),
   VC_PRIVATE_KEY: z
     .string()
-    .regex(/^0x[0-9a-fA-F]{64}$/, 'VC_PRIVATE_KEY must be a 32-byte hex string'),
+    .regex(
+      /^0x[0-9a-fA-F]{64}$/,
+      'VC_PRIVATE_KEY must be a 32-byte hex string'
+    ),
   CONSTELLATION_METAGRAPH_ENABLED: z
     .enum(['true', 'false'])
     .default('false')
@@ -156,17 +159,17 @@ const serverEnvSchema = z.object({
   CONSTELLATION_METAGRAPH_L0_URL: z.string().url().optional(),
   CONSTELLATION_METAGRAPH_PRIVATE_KEY: z
     .string()
-    .regex(/^0x[0-9a-fA-F]{64}$/, 'CONSTELLATION_METAGRAPH_PRIVATE_KEY must be hex')
+    .regex(
+      /^0x[0-9a-fA-F]{64}$/,
+      'CONSTELLATION_METAGRAPH_PRIVATE_KEY must be hex'
+    )
     .optional(),
   OPENAI_API_KEY: z.string().min(10),
   OPENAI_API_BASE: z.string().url().default('https://api.openai.com/v1'),
   OPENAI_IMAGE_MODEL: z.string().default('dall-e-3'),
   OPENAI_IMAGE_SIZE: z.string().default('1024x1024'),
   OPENAI_IMAGE_QUALITY: z.enum(['standard', 'hd']).default('standard'),
-  AI_CREATOR_NAME: z
-    .string()
-    .min(2)
-    .default('LexLink AI Studio'),
+  AI_CREATOR_NAME: z.string().min(2).default('LexLink AI Studio'),
   AI_CREATOR_ADDRESS: z
     .string()
     .regex(/^0x[0-9a-fA-F]{40}$/, 'AI_CREATOR_ADDRESS must be a hex address'),
@@ -216,8 +219,7 @@ function parseEnv() {
       process.env.STORY_ARBITRATION_POLICY_ADDRESS,
     STORY_DISPUTE_BOND_TOKEN_ADDRESS:
       process.env.STORY_DISPUTE_BOND_TOKEN_ADDRESS,
-    STORY_DISPUTE_DEFAULT_LIVENESS:
-      process.env.STORY_DISPUTE_DEFAULT_LIVENESS,
+    STORY_DISPUTE_DEFAULT_LIVENESS: process.env.STORY_DISPUTE_DEFAULT_LIVENESS,
     ICP_HOST: process.env.ICP_HOST ?? process.env.NEXT_PUBLIC_ICP_HOST,
     ICP_ESCROW_CANISTER_ID:
       process.env.ICP_ESCROW_CANISTER_ID ??
@@ -250,7 +252,8 @@ function parseEnv() {
     MEMPOOL_API_BASE: process.env.MEMPOOL_API_BASE,
     VC_ISSUER_DID: process.env.VC_ISSUER_DID,
     VC_PRIVATE_KEY: process.env.VC_PRIVATE_KEY,
-    CONSTELLATION_METAGRAPH_ENABLED: process.env.CONSTELLATION_METAGRAPH_ENABLED,
+    CONSTELLATION_METAGRAPH_ENABLED:
+      process.env.CONSTELLATION_METAGRAPH_ENABLED,
     CONSTELLATION_METAGRAPH_DATA_L1_URL:
       process.env.CONSTELLATION_METAGRAPH_DATA_L1_URL,
     CONSTELLATION_METAGRAPH_L0_URL: process.env.CONSTELLATION_METAGRAPH_L0_URL,
@@ -335,8 +338,7 @@ const resolvedConstellationL0Url =
   serverEnv.CONSTELLATION_L0_URL ?? constellationDefaults.l0Url
 const resolvedConstellationL1Url =
   serverEnv.CONSTELLATION_L1_URL ?? constellationDefaults.l1Url
-const resolvedConstellationMemoMax =
-  serverEnv.CONSTELLATION_MEMO_MAX ?? 512
+const resolvedConstellationMemoMax = serverEnv.CONSTELLATION_MEMO_MAX ?? 512
 const resolvedConstellationTxAmount =
   serverEnv.CONSTELLATION_TX_AMOUNT_DAG ?? undefined
 

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Coins,
   FileBadge2,
-  ShieldCheck,
   Sparkles
 } from 'lucide-react'
 
@@ -70,9 +69,9 @@ const painPoints = [
       'LexLink tracks licensed training batches and publishes Constellation-backed receipts at /verify/training.'
   },
   {
-    problem: 'Licensing flows still depend on emails, PDFs, and manual invoices.',
-    sourceLabel:
-      'U.S. Copyright Office · Music Marketplace Study (2015)',
+    problem:
+      'Licensing flows still depend on emails, PDFs, and manual invoices.',
+    sourceLabel: 'U.S. Copyright Office · Music Marketplace Study (2015)',
     sourceUrl:
       'https://copyright.gov/docs/musiclicensingstudy/copyright-and-the-music-marketplace.pdf',
     lexlink:
@@ -135,132 +134,183 @@ const referenceLinks = [
 
 export default function HomePage() {
   return (
-    <div className='flex flex-col gap-16'>
-      <section className='overflow-hidden rounded-3xl border border-border/60 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-10 text-white shadow-xl md:p-16'>
-        <div className='mx-auto flex max-w-4xl flex-col items-center gap-6 text-center'>
-          <Badge variant='outline' className='border-white/30 bg-white/10 text-white'>
-            Instant, provable licensing
-          </Badge>
-          <h1 className='text-4xl font-semibold tracking-tight md:text-6xl'>
-            Pay with Bitcoin. Get a license, evidence bundle, and training ledger proof—automatically.
-          </h1>
-          <p className='text-lg text-slate-300 md:text-xl'>
-            LexLink blends Story Protocol, ckBTC escrow, Constellation evidence, and Internet Identity into a single checkout so creative and AI teams can transact without paperwork.
-          </p>
-          <div className='flex flex-wrap items-center justify-center gap-3'>
-            <Button
-              size='lg'
-              asChild
-              className='bg-white text-slate-900 hover:bg-slate-200'
+    <div className='container-edge'>
+      <div className='flex flex-col gap-24 py-12'>
+        <section className='relative overflow-hidden rounded-3xl border border-border/40 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-12 text-white shadow-2xl md:p-20'>
+          <div className='bg-grid-white/5 absolute inset-0' />
+          <div className='relative mx-auto flex max-w-5xl flex-col items-center gap-8 text-center'>
+            <Badge
+              variant='outline'
+              className='border-white/30 bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm'
             >
-              <Link href='/dashboard'>Launch the console</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className='grid gap-6 md:grid-cols-3'>
-        {valueProps.map(value => {
-          const Icon = value.icon
-          return (
-            <Card
-              key={value.title}
-              className='h-full border-border/60 bg-card/70 shadow-sm transition hover:-translate-y-1 hover:shadow-lg'
-            >
-              <CardHeader className='flex flex-row items-center gap-3'>
-                <div className='rounded-full border border-primary/40 bg-primary/10 p-2 text-primary'>
-                  <Icon className='h-5 w-5' />
-                </div>
-                <CardTitle className='text-lg font-semibold'>
-                  {value.title}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{value.description}</CardDescription>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </section>
-
-      <section className='space-y-6 rounded-3xl border border-border/60 bg-muted/20 p-8'>
-        <div className='space-y-2'>
-          <h2 className='text-2xl font-semibold'>Real problems we address</h2>
-          <p className='text-sm text-muted-foreground'>
-            Use these callouts on your landing page or pitch deck—the source links back every statement.
-          </p>
-        </div>
-        <div className='grid gap-4 md:grid-cols-2'>
-          {painPoints.map(item => (
-            <Card key={item.problem} className='border-border/60 bg-card/60 shadow-sm'>
-              <CardHeader>
-                <CardTitle className='text-base'>{item.problem}</CardTitle>
-                <CardDescription>
-                  <Link
-                    href={item.sourceUrl}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='text-primary underline-offset-4 hover:underline'
-                  >
-                    Source: {item.sourceLabel}
-                  </Link>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className='text-sm text-foreground'>{item.lexlink}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className='grid gap-6 rounded-3xl border border-border/60 bg-muted/20 p-8 md:grid-cols-[1.05fr_1fr]'>
-        <div className='space-y-5'>
-          <h2 className='text-2xl font-semibold'>How LexLink works</h2>
-          <p className='text-sm text-muted-foreground'>
-            Each step orchestrates Story Protocol, ICP Bitcoin tooling, and Constellation from a single Next.js console.
-          </p>
-          <ul className='space-y-4'>
-            {howItWorks.map(step => (
-              <li
-                key={step.title}
-                className='rounded-xl border border-dashed border-border/60 bg-background/80 p-4'
-              >
-                <p className='text-sm font-medium flex items-center gap-2'>
-                  <ShieldCheck className='h-4 w-4 text-primary' />
-                  {step.title}
-                </p>
-                <p className='mt-1 text-sm text-muted-foreground'>
-                  {step.detail}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <Card className='border-border/60 bg-card/60 shadow-md'>
-          <CardHeader>
-            <CardTitle>Standards & documentation</CardTitle>
-            <CardDescription>
-              Stay aligned with the ecosystems LexLink automates against.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className='grid gap-3'>
-            {referenceLinks.map(link => (
+              Instant, provable licensing
+            </Badge>
+            <h1 className='text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl'>
+              Pay with Bitcoin.
+              <br />
+              <span className='bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent'>
+                Get licensed instantly.
+              </span>
+            </h1>
+            <p className='max-w-3xl text-lg leading-relaxed text-slate-300 md:text-xl'>
+              LexLink blends Story Protocol, ckBTC escrow, Constellation
+              evidence, and Internet Identity into a single checkout so creative
+              and AI teams can transact without paperwork.
+            </p>
+            <div className='flex flex-wrap items-center justify-center gap-4 pt-4'>
               <Button
-                key={link.label}
+                size='lg'
+                asChild
+                className='h-12 bg-white px-8 text-base font-medium text-slate-900 shadow-lg transition-all hover:scale-105 hover:bg-slate-100'
+              >
+                <Link href='/dashboard'>Launch the console</Link>
+              </Button>
+              <Button
+                size='lg'
                 variant='outline'
                 asChild
-                className='justify-between'
+                className='h-12 border-white/30 bg-white/10 px-8 text-base font-medium text-white backdrop-blur-sm hover:bg-white/20'
               >
-                <Link href={link.href} target='_blank' rel='noreferrer'>
-                  {link.label}
-                  <ArrowRight className='h-4 w-4' />
-                </Link>
+                <Link href='/gallery'>Browse gallery</Link>
               </Button>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div className='mb-10 text-center'>
+            <h2 className='mb-3 text-3xl font-bold md:text-4xl'>
+              Why teams choose LexLink
+            </h2>
+            <p className='mx-auto max-w-2xl text-muted-foreground'>
+              Build trust with automated compliance and instant settlements
+            </p>
+          </div>
+          <div className='grid gap-6 md:grid-cols-3'>
+            {valueProps.map(value => {
+              const Icon = value.icon
+              return (
+                <Card
+                  key={value.title}
+                  className='group h-full border-border/60 bg-gradient-to-b from-card to-card/50 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg'
+                >
+                  <CardHeader>
+                    <div className='mb-4 inline-flex rounded-xl border border-primary/20 bg-primary/10 p-3 text-primary transition-all group-hover:scale-110 group-hover:border-primary/30 group-hover:bg-primary/20'>
+                      <Icon className='h-6 w-6' />
+                    </div>
+                    <CardTitle className='text-xl'>{value.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className='leading-relaxed'>
+                      {value.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className='rounded-3xl border border-border/40 bg-muted/30 p-10 backdrop-blur-sm md:p-12'>
+          <div className='mb-10 space-y-3 text-center'>
+            <h2 className='text-3xl font-bold md:text-4xl'>
+              Industry challenges we solve
+            </h2>
+            <p className='mx-auto max-w-2xl text-muted-foreground'>
+              Every claim is backed by authoritative sources. Use these for your
+              pitch deck or compliance documentation.
+            </p>
+          </div>
+          <div className='grid gap-6 md:grid-cols-2'>
+            {painPoints.map(item => (
+              <Card
+                key={item.problem}
+                className='border-border/60 bg-background/80 shadow-sm backdrop-blur-sm transition-all hover:shadow-md'
+              >
+                <CardHeader className='space-y-3'>
+                  <CardTitle className='text-lg leading-snug'>
+                    {item.problem}
+                  </CardTitle>
+                  <CardDescription>
+                    <Link
+                      href={item.sourceUrl}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='inline-flex items-center gap-1 text-sm font-medium text-primary underline-offset-4 hover:underline'
+                    >
+                      <span>Source: {item.sourceLabel}</span>
+                      <ArrowRight className='h-3 w-3' />
+                    </Link>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className='text-sm leading-relaxed text-muted-foreground'>
+                    {item.lexlink}
+                  </p>
+                </CardContent>
+              </Card>
             ))}
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+        </section>
+
+        <section className='grid gap-8 lg:grid-cols-[1.2fr_1fr]'>
+          <div className='space-y-6'>
+            <div className='space-y-3'>
+              <h2 className='text-3xl font-bold md:text-4xl'>How it works</h2>
+              <p className='text-muted-foreground'>
+                Each step orchestrates Story Protocol, ICP Bitcoin tooling, and
+                Constellation from a single Next.js console.
+              </p>
+            </div>
+            <div className='space-y-4'>
+              {howItWorks.map((step, index) => (
+                <div
+                  key={step.title}
+                  className='group relative rounded-2xl border border-border/60 bg-card/50 p-5 shadow-sm transition-all hover:border-primary/20 hover:bg-card/80 hover:shadow-md'
+                >
+                  <div className='mb-2 flex items-center gap-3'>
+                    <div className='flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary ring-2 ring-primary/20'>
+                      {index + 1}
+                    </div>
+                    <p className='font-semibold text-foreground'>
+                      {step.title}
+                    </p>
+                  </div>
+                  <p className='text-sm leading-relaxed text-muted-foreground'>
+                    {step.detail}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Card className='h-fit border-border/60 bg-gradient-to-b from-card to-card/50 shadow-md'>
+            <CardHeader>
+              <CardTitle className='text-2xl'>
+                Standards & documentation
+              </CardTitle>
+              <CardDescription className='leading-relaxed'>
+                Stay aligned with the ecosystems LexLink automates against.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-2'>
+              {referenceLinks.map(link => (
+                <Button
+                  key={link.label}
+                  variant='outline'
+                  asChild
+                  className='h-auto w-full justify-between py-3 text-left transition-all hover:bg-accent/50'
+                >
+                  <Link href={link.href} target='_blank' rel='noreferrer'>
+                    <span className='text-sm'>{link.label}</span>
+                    <ArrowRight className='h-4 w-4 flex-shrink-0' />
+                  </Link>
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
+      </div>
     </div>
   )
 }

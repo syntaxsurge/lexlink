@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 
 import { completeLicenseSaleSystem } from '@/app/dashboard/actions'
-import { env } from '@/lib/env'
 import { getConvexClient } from '@/lib/convex'
+import { env } from '@/lib/env'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -67,7 +67,8 @@ async function fetchFundingStatus(
 
     const confirmed: boolean = Boolean(tx.status?.confirmed)
     const blockHeight: number | undefined = tx.status?.block_height
-    const confirmations = confirmed && blockHeight ? tipHeight - blockHeight + 1 : 0
+    const confirmations =
+      confirmed && blockHeight ? tipHeight - blockHeight + 1 : 0
 
     return {
       totalReceived,
@@ -109,7 +110,8 @@ export async function GET() {
         continue
       }
 
-      const paymentMode: 'ckbtc' | 'btc' = order.paymentMode === 'ckbtc' ? 'ckbtc' : 'btc'
+      const paymentMode: 'ckbtc' | 'btc' =
+        order.paymentMode === 'ckbtc' ? 'ckbtc' : 'btc'
 
       if (paymentMode === 'ckbtc') {
         const receiverAddress = order.mintTo ?? order.buyer
@@ -137,11 +139,16 @@ export async function GET() {
         continue
       }
 
-      const network: Network = order.network === 'mainnet' ? 'mainnet' : 'testnet'
+      const network: Network =
+        order.network === 'mainnet' ? 'mainnet' : 'testnet'
       const funding = await fetchFundingStatus(order.btcAddress, network)
 
       if (funding.totalReceived < amount) {
-        logs.push({ orderId: order.orderId, status: order.status, note: 'awaiting funds' })
+        logs.push({
+          orderId: order.orderId,
+          status: order.status,
+          note: 'awaiting funds'
+        })
         continue
       }
 

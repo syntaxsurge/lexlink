@@ -50,7 +50,9 @@ export function DisputeRowActions({
         const response = await resolveDisputeAction(disputeId)
         setResult(response.txHash ?? null)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to resolve dispute')
+        setError(
+          err instanceof Error ? err.message : 'Failed to resolve dispute'
+        )
       }
     })
   }
@@ -104,11 +106,7 @@ export function DisputeRowActions({
           tx: {result.slice(0, 10)}…
         </span>
       )}
-      {error && (
-        <span className='text-[11px] text-destructive'>
-          {error}
-        </span>
-      )}
+      {error && <span className='text-[11px] text-destructive'>{error}</span>}
     </div>
   )
 }

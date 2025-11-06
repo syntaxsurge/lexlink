@@ -8,6 +8,9 @@ import {
   type DisputeRecord,
   type LicenseRecord
 } from '@/app/dashboard/actions'
+import { CkbtcBalanceCard } from '@/components/app/ckbtc-balance-card'
+import { OperatorTopUpPanel } from '@/components/app/operator-topup-panel'
+import { PrincipalSummary } from '@/components/app/principal-summary'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,19 +28,16 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import { env } from '@/lib/env'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
+import { env } from '@/lib/env'
 import {
   ipAccountOnBlockExplorer,
   ipAssetExplorerUrl,
   type StoryNetwork
 } from '@/lib/story-links'
-import { CkbtcBalanceCard } from '@/components/app/ckbtc-balance-card'
-import { OperatorTopUpPanel } from '@/components/app/operator-topup-panel'
-import { PrincipalSummary } from '@/components/app/principal-summary'
 
 function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
@@ -62,7 +62,9 @@ function MetricCard({
         <CardDescription className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
           {title}
         </CardDescription>
-        <CardTitle className='truncate text-3xl font-semibold'>{value}</CardTitle>
+        <CardTitle className='truncate text-3xl font-semibold'>
+          {value}
+        </CardTitle>
         <p className='text-xs text-muted-foreground/80'>{hint}</p>
       </CardHeader>
     </Card>
@@ -71,7 +73,7 @@ function MetricCard({
 
 function EventItem({ event }: { event: AuditEventRecord }) {
   return (
-    <div className='rounded-2xl border border-border/60 bg-card/70 p-4 shadow-sm text-sm'>
+    <div className='rounded-2xl border border-border/60 bg-card/70 p-4 text-sm shadow-sm'>
       <div className='flex items-center justify-between gap-3'>
         <div className='flex items-center gap-2'>
           <Badge variant='outline' className='rounded-full px-3 py-1 text-xs'>
@@ -103,8 +105,11 @@ export default async function OverviewPage() {
     { principal, ips, licenses, disputes, trainingBatches },
     auditTrail,
     ckbtcSnapshot
-  ] =
-    await Promise.all([loadDashboardData(), loadAuditTrail(8), loadCkbtcSnapshot()])
+  ] = await Promise.all([
+    loadDashboardData(),
+    loadAuditTrail(8),
+    loadCkbtcSnapshot()
+  ])
 
   const pendingOrders = licenses.filter((license: LicenseRecord) =>
     ['pending', 'funded', 'confirmed'].includes(license.status)
@@ -164,8 +169,8 @@ export default async function OverviewPage() {
             <div>
               <CardTitle>Pending License Payments</CardTitle>
               <CardDescription>
-                Orders waiting for ckBTC minting or Bitcoin confirmations. Click through to the
-                Licenses page for full controls.
+                Orders waiting for ckBTC minting or Bitcoin confirmations. Click
+                through to the Licenses page for full controls.
               </CardDescription>
             </div>
             <Button asChild variant='outline' size='sm'>
@@ -203,10 +208,17 @@ export default async function OverviewPage() {
                         {order.ipId.slice(0, 10)}…
                       </TableCell>
                       <TableCell className='whitespace-nowrap font-mono text-xs'>
-                        {(order.mintTo ?? order.buyer ?? 'pending').slice(0, 10)}…
+                        {(order.mintTo ?? order.buyer ?? 'pending').slice(
+                          0,
+                          10
+                        )}
+                        …
                       </TableCell>
                       <TableCell className='whitespace-nowrap'>
-                        <Badge variant='outline' className='rounded-full px-2 py-0.5 text-xs capitalize'>
+                        <Badge
+                          variant='outline'
+                          className='rounded-full px-2 py-0.5 text-xs capitalize'
+                        >
                           {order.status}
                         </Badge>
                       </TableCell>
@@ -256,19 +268,27 @@ export default async function OverviewPage() {
                     <span className='font-medium'>
                       {dispute.disputeId.slice(0, 10)}…
                     </span>
-                    <Badge className='rounded-full px-2 py-0.5 capitalize'>{dispute.status}</Badge>
+                    <Badge className='rounded-full px-2 py-0.5 capitalize'>
+                      {dispute.status}
+                    </Badge>
                   </div>
                   <dl className='mt-3 grid gap-3 text-xs'>
                     <div className='space-y-1'>
                       <dt className='text-muted-foreground'>IP ID</dt>
-                      <dd className='break-words font-mono text-[11px]'>{dispute.ipId}</dd>
+                      <dd className='break-words font-mono text-[11px]'>
+                        {dispute.ipId}
+                      </dd>
                     </div>
                     <div className='space-y-1'>
                       <dt className='text-muted-foreground'>Evidence CID</dt>
-                      <dd className='break-all font-mono text-[11px]'>{dispute.evidenceCid}</dd>
+                      <dd className='break-all font-mono text-[11px]'>
+                        {dispute.evidenceCid}
+                      </dd>
                     </div>
                     <div className='space-y-1'>
-                      <dt className='text-muted-foreground'>Constellation Tx</dt>
+                      <dt className='text-muted-foreground'>
+                        Constellation Tx
+                      </dt>
                       <dd className='break-all font-mono text-[11px]'>
                         {disputeExplorerUrl ? (
                           <Link
@@ -366,7 +386,9 @@ export default async function OverviewPage() {
                       <dd className='font-mono'>{order.btcTxId}</dd>
                     </div>
                     <div>
-                      <dt className='text-muted-foreground'>Constellation Tx</dt>
+                      <dt className='text-muted-foreground'>
+                        Constellation Tx
+                      </dt>
                       <dd className='font-mono'>
                         {orderExplorerUrl ? (
                           <Link
@@ -390,7 +412,6 @@ export default async function OverviewPage() {
                 </div>
               )
             })}
-
           </CardContent>
         </Card>
 
@@ -436,7 +457,9 @@ export default async function OverviewPage() {
                   <TableHead className='whitespace-nowrap'>Batch</TableHead>
                   <TableHead className='whitespace-nowrap'>IP ID</TableHead>
                   <TableHead className='whitespace-nowrap'>Units</TableHead>
-                  <TableHead className='whitespace-nowrap'>Constellation Tx</TableHead>
+                  <TableHead className='whitespace-nowrap'>
+                    Constellation Tx
+                  </TableHead>
                   <TableHead className='whitespace-nowrap'>Timestamp</TableHead>
                 </TableRow>
               </TableHeader>

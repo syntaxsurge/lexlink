@@ -1,5 +1,5 @@
 // Minimal ICRC-1 ledger IDL tailored for ckBTC interactions
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 export const idlFactory = ({ IDL }: any) => {
   const Subaccount = IDL.Vec(IDL.Nat8)
   const Account = IDL.Record({

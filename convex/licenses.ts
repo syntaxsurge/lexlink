@@ -318,8 +318,10 @@ export const markCompleted = mutationGeneric({
       btcTxId: args.btcTxId,
       attestationHash: args.attestationHash,
       constellationTx: args.constellationTx,
-      constellationExplorerUrl: args.constellationExplorerUrl ?? license.constellationExplorerUrl,
-      constellationAnchoredAt: args.constellationAnchoredAt ?? license.constellationAnchoredAt,
+      constellationExplorerUrl:
+        args.constellationExplorerUrl ?? license.constellationExplorerUrl,
+      constellationAnchoredAt:
+        args.constellationAnchoredAt ?? license.constellationAnchoredAt,
       tokenOnChainId: args.tokenOnChainId,
       contentHash: args.contentHash,
       c2paHash: args.c2paHash,
@@ -407,7 +409,9 @@ export const listRecent = queryGeneric({
   },
   handler: async (ctx, args) => {
     const items = await ctx.db.query('licenses').collect()
-    const sorted = items.sort((a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt))
+    const sorted = items.sort(
+      (a, b) => (b.updatedAt ?? b.createdAt) - (a.updatedAt ?? a.createdAt)
+    )
     return sorted.slice(0, Math.max(0, args.limit))
   }
 })

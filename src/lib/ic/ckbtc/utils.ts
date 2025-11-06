@@ -5,7 +5,10 @@ export type LedgerAccount = {
   subaccount: [] | [number[]]
 }
 
-export function toLedgerAccount(owner: Principal, sub?: Uint8Array): LedgerAccount {
+export function toLedgerAccount(
+  owner: Principal,
+  sub?: Uint8Array
+): LedgerAccount {
   return {
     owner,
     subaccount: sub ? [Array.from(sub)] : []

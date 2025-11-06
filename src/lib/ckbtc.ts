@@ -6,7 +6,10 @@ import crypto from 'node:crypto'
  * Mirrors the Motoko escrow canister logic (SHA-256 over UTF-8 bytes).
  */
 export function deriveOrderSubaccount(orderId: string): Uint8Array {
-  return crypto.createHash('sha256').update(Buffer.from(orderId, 'utf8')).digest()
+  return crypto
+    .createHash('sha256')
+    .update(Buffer.from(orderId, 'utf8'))
+    .digest()
 }
 
 export function formatSubaccountHex(bytes: Uint8Array): string {

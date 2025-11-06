@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react'
 
-import { Badge } from '@/components/ui/badge'
 import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
+import { Badge } from '@/components/ui/badge'
 
 function formatBtc(sats?: number) {
   if (!sats || sats <= 0) return '—'
@@ -15,7 +15,11 @@ function formatDate(value?: number) {
   return new Date(value).toLocaleString()
 }
 
-export function InvoiceSummary({ fallbackNetwork }: { fallbackNetwork: string }) {
+export function InvoiceSummary({
+  fallbackNetwork
+}: {
+  fallbackNetwork: string
+}) {
   const { invoice, isRefreshing } = useInvoiceStatus()
 
   const statusLabel = useMemo(() => {
@@ -26,9 +30,13 @@ export function InvoiceSummary({ fallbackNetwork }: { fallbackNetwork: string })
   return (
     <section className='grid gap-4 rounded-xl border border-border bg-card/60 p-6 text-sm md:grid-cols-2'>
       <div className='space-y-1'>
-        <h2 className='text-sm font-semibold text-muted-foreground'>IP Asset</h2>
+        <h2 className='text-sm font-semibold text-muted-foreground'>
+          IP Asset
+        </h2>
         <p className='font-medium text-foreground'>{invoice.ipTitle}</p>
-        <p className='font-mono text-xs text-muted-foreground'>{invoice.ipId}</p>
+        <p className='font-mono text-xs text-muted-foreground'>
+          {invoice.ipId}
+        </p>
       </div>
       <div className='space-y-1'>
         <h2 className='text-sm font-semibold text-muted-foreground'>Amount</h2>

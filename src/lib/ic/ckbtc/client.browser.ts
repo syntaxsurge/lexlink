@@ -1,9 +1,8 @@
-"use client"
+'use client'
 
 import { Actor, type Identity } from '@dfinity/agent'
 
 import { makeAgent } from '@/lib/ic/agent'
-
 import ledgerIdl from '@/lib/ic/ckbtc/idl/ledger.idl'
 
 const HOST = process.env.NEXT_PUBLIC_ICP_CKBTC_HOST ?? 'https://icp-api.io'
@@ -21,13 +20,10 @@ const CKBTC_CANISTER_DEFAULTS = {
   }
 } as const
 
-const DEPRECATED_TESTNET_LEDGER_IDS = new Set([
-  'mxzaz-hqaaa-aaaar-qaada-cai'
-])
+const DEPRECATED_TESTNET_LEDGER_IDS = new Set(['mxzaz-hqaaa-aaaar-qaada-cai'])
 
 const ckbtcDefaults =
-  CKBTC_CANISTER_DEFAULTS[NETWORK] ??
-  CKBTC_CANISTER_DEFAULTS['ckbtc-testnet']
+  CKBTC_CANISTER_DEFAULTS[NETWORK] ?? CKBTC_CANISTER_DEFAULTS['ckbtc-testnet']
 
 function resolveLedgerId(candidate: string | undefined): string {
   if (candidate) {
@@ -58,6 +54,6 @@ function invariantLedger(id: string | undefined): string {
 export async function ledgerActor(identity?: Identity) {
   const canisterId = invariantLedger(LEDGER_ID)
   const agent = await makeAgent(HOST, identity)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   return Actor.createActor(ledgerIdl as any, { agent, canisterId }) as any
 }
