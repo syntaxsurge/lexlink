@@ -4,13 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import type { Identity } from '@dfinity/agent'
 import { Principal } from '@dfinity/principal'
+import { useSession } from 'next-auth/react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useInternetIdentity } from '@/components/auth/internet-identity-provider'
 import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { ledgerActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
+import { setOrderMintTarget } from '@/app/dashboard/actions'
 
 type TransferResult =
   | { status: 'idle' }
@@ -18,13 +22,17 @@ type TransferResult =
   | { status: 'pending' }
   | { status: 'error'; message: string }
 
-export function CkbtcPayPanel({
-  escrowPrincipal,
-  network
-}: {
+type CkbtcPayPanelProps = {
   escrowPrincipal: string
   network: 'ckbtc-mainnet' | 'ckbtc-testnet'
-}) {
+  defaultMintTo?: string | null
+}
+
+export function CkbtcPayPanel({
+  escrowPrincipal,
+  network,
+  defaultMintTo
+}: CkbtcPayPanelProps) {
   const {
     invoice,
     pollFinalization,
@@ -39,9 +47,17 @@ export function CkbtcPayPanel({
     refresh: refreshIdentity,
     getIdentity
   } = useInternetIdentity()
-  const [symbol, setSymbol] = useState(network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC')
+  const { status: sessionStatus } = useSession()
+
+  const [symbol, setSymbol] = useState(
+    network === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC'
+  )
   const [decimals, setDecimals] = useState(8)
   const [balance, setBalance] = useState<bigint>(0n)
+  const [mintTo, setMintTo] = useState(
+    invoice.mintTo ?? defaultMintTo ?? ''
+  )
+  const [rememberPreference, setRememberPreference] = useState(true)
   const [feedback, setFeedback] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [transferState, setTransferState] = useState<TransferResult>({
@@ -50,6 +66,11 @@ export function CkbtcPayPanel({
   const [isBusy, setIsBusy] = useState(false)
 
   const ckbtcSubaccountHex = invoice.ckbtcSubaccount ?? null
+
+  useEffect(() => {
+    setMintTo(invoice.mintTo ?? defaultMintTo ?? '')
+  }, [invoice.mintTo, defaultMintTo])
+
   const price = useMemo(() => {
     try {
       return BigInt(invoice.amountSats ?? 0)
@@ -62,6 +83,7 @@ export function CkbtcPayPanel({
     () => Principal.fromText(escrowPrincipal),
     [escrowPrincipal]
   )
+
   const escrowSubaccount = useMemo(() => {
     if (!ckbtcSubaccountHex) {
       return null
@@ -131,6 +153,14 @@ export function CkbtcPayPanel({
       setFeedback(null)
       setTransferState({ status: 'pending' })
 
+      const normalizedMintTo = mintTo.trim()
+      if (!/^0x[a-fA-F0-9]{40}$/i.test(normalizedMintTo)) {
+        throw new Error('Enter a valid 0x-prefixed EVM wallet before paying.')
+      }
+      if (sessionStatus !== 'authenticated') {
+        throw new Error('Sign in with Internet Identity before submitting payment.')
+      }
+
       let identity = getIdentity()
       if (!identity) {
         await connect()
@@ -144,6 +174,16 @@ export function CkbtcPayPanel({
       if (!escrowSubaccount) {
         throw new Error('Order is missing escrow subaccount metadata.')
       }
+
+      await setOrderMintTarget({
+        orderId: invoice.orderId,
+        mintTo: normalizedMintTo,
+        rememberPreference
+      })
+
+      await refreshInvoice().catch(() => {
+        // Non-blocking invoice refresh; proceeds even if background fetch fails.
+      })
 
       const ledger = await ledgerActor(identity as Identity)
       const result = await ledger.icrc1_transfer({
@@ -163,7 +203,7 @@ export function CkbtcPayPanel({
         setTransferState({ status: 'success', blockIndex })
         await refreshBalances()
         await pollFinalization().catch(() => {
-          // Fall back to background worker polling if immediate finalization fails.
+          // Finalization polling failures fall back to background refresh.
         })
         await refreshInvoice().catch(() => {
           // Non-blocking refresh.
@@ -200,43 +240,54 @@ export function CkbtcPayPanel({
     escrowOwner,
     price,
     escrowSubaccount,
+    mintTo,
+    rememberPreference,
     refreshBalances,
     pollFinalization,
-    refreshInvoice
+    refreshInvoice,
+    invoice.orderId,
+    sessionStatus
   ])
 
   const formattedBalance = formatTokenAmount(balance, decimals)
   const formattedPrice = formatTokenAmount(price, decimals)
   const isFinalized = invoice.status === 'finalized'
   const isPaymentRouteReady = Boolean(ckbtcSubaccountHex)
-  const hasMintTarget = Boolean(invoice.mintTo)
   const isSettling =
     transferState.status === 'success' ||
     transferState.status === 'pending' ||
     isFinalizing ||
     invoice.status === 'funded' ||
     invoice.status === 'confirmed'
+
+  const normalizedMint = mintTo.trim()
+  const isMintValid =
+    normalizedMint.length > 0 && /^0x[a-fA-F0-9]{40}$/i.test(normalizedMint)
+  const hasSavedMint = Boolean(invoice.mintTo)
+  const needsSession = sessionStatus !== 'authenticated'
+
   const canPay =
     principal !== null &&
+    !needsSession &&
     balance >= price &&
     price > 0n &&
     invoice.status === 'pending' &&
     isPaymentRouteReady &&
-    hasMintTarget
-  const showConnect = !principal && invoice.status === 'pending'
-  const payButtonLabel = isBusy
-    ? 'Submitting…'
-    : !ready || isAuthenticating
-      ? 'Loading…'
-      : isFinalized
-        ? 'Payment completed'
-        : isSettling
-          ? 'Awaiting finalization…'
-          : !hasMintTarget
-            ? 'Save wallet first'
-            : canPay
-              ? 'Pay now'
-              : 'Insufficient balance'
+    isMintValid &&
+    !isSettling
+
+  const showConnect = principal === null && invoice.status === 'pending'
+
+  const payButtonLabel = (() => {
+    if (isBusy) return 'Submitting…'
+    if (!ready || isAuthenticating) return 'Loading…'
+    if (isFinalized) return 'Payment completed'
+    if (isSettling) return 'Awaiting finalization…'
+    if (needsSession) return 'Sign in to continue'
+    if (!isMintValid) return 'Enter wallet'
+    if (balance < price) return 'Insufficient balance'
+    return 'Pay now'
+  })()
 
   return (
     <Card className='border-border/60 bg-card/70'>
@@ -250,9 +301,22 @@ export function CkbtcPayPanel({
             <span className='font-medium uppercase'>{network}</span>
           </div>
           <div className='mt-2 text-xs text-muted-foreground'>
-            Direct ckBTC payment credits the LexLink escrow account instantly.
+            Authenticated ckBTC transfers finalize this order and mint your Story license automatically.
           </div>
         </div>
+
+        {needsSession && (
+          <div className='rounded-md border border-border/50 bg-amber-500/10 p-3 text-xs text-amber-600'>
+            Sign in with Internet Identity to bind this order to your principal and saved wallet.
+            <a
+              href='/signin'
+              className='ml-1 text-primary underline-offset-4 hover:underline'
+            >
+              Open sign in
+            </a>
+            .
+          </div>
+        )}
 
         <div className='grid gap-3 sm:grid-cols-2'>
           <div className='rounded-md border border-border/60 bg-background p-3'>
@@ -269,11 +333,50 @@ export function CkbtcPayPanel({
           </div>
         </div>
 
-        {!hasMintTarget && (
-          <div className='rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600'>
-            Save the license wallet above before submitting a ckBTC payment.
+        <div className='space-y-2'>
+          <Label htmlFor='mint-to'>License receiver (EVM wallet)</Label>
+          <Input
+            id='mint-to'
+            value={mintTo}
+            onChange={event => setMintTo(event.target.value)}
+            placeholder='0x…'
+            spellCheck={false}
+          />
+          <p className='text-xs text-muted-foreground'>
+            We mint the Story license token to this address once payment finalizes.
+          </p>
+          {defaultMintTo && !invoice.mintTo && (
+            <button
+              type='button'
+              className='text-xs text-primary underline-offset-4 hover:underline'
+              onClick={() => setMintTo(defaultMintTo)}
+            >
+              Use saved wallet {short(defaultMintTo)}
+            </button>
+          )}
+          {!isMintValid && mintTo.trim().length > 0 && (
+            <p className='text-xs text-destructive'>
+              Wallet must be a 0x-prefixed EVM address.
+            </p>
+          )}
+          <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+            <input
+              id='remember-wallet'
+              type='checkbox'
+              className='h-4 w-4 rounded border border-border bg-background text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+              checked={rememberPreference}
+              onChange={event => setRememberPreference(event.target.checked)}
+            />
+            <Label htmlFor='remember-wallet' className='cursor-pointer'>
+              Remember this wallet for future purchases
+            </Label>
           </div>
-        )}
+          {hasSavedMint && (
+            <p className='text-xs text-muted-foreground'>
+              Saved wallet: {short(invoice.mintTo as string)}
+            </p>
+          )}
+        </div>
 
         <div className='flex flex-wrap gap-2'>
           {showConnect ? (
@@ -286,7 +389,7 @@ export function CkbtcPayPanel({
           ) : (
             <Button
               onClick={handlePay}
-              disabled={!ready || !canPay || isBusy || isAuthenticating}
+              disabled={!ready || isAuthenticating || isBusy || !canPay}
             >
               {payButtonLabel}
             </Button>
@@ -301,6 +404,7 @@ export function CkbtcPayPanel({
             Refresh balance
           </Button>
         </div>
+
         {!isPaymentRouteReady && (
           <div className='rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600'>
             This invoice is missing ckBTC escrow metadata. Contact the LexLink operator to regenerate the order before paying.
@@ -339,7 +443,7 @@ export function CkbtcPayPanel({
             >
               testnet-faucet.ckboost.com
             </a>
-            , paste your Internet Identity principal, and mint ckTESTBTC directly to your wallet. Refresh your balance once the transfer appears.
+            , mint ckTESTBTC to your Internet Identity principal, then refresh your balance above.
           </div>
         </div>
 
@@ -356,4 +460,10 @@ export function CkbtcPayPanel({
       </CardContent>
     </Card>
   )
+}
+
+function short(value: string, length = 10) {
+  if (!value) return ''
+  if (value.length <= length) return value
+  return `${value.slice(0, length)}…`
 }

@@ -2,7 +2,6 @@
 
 import { CkbtcPayPanel } from '@/app/pay/[orderId]/_components/ckbtc-pay-panel'
 import { InvoiceSummary } from '@/app/pay/[orderId]/_components/invoice-summary'
-import { CkbtcManualInstructions } from '@/app/pay/[orderId]/_components/ckbtc-manual-instructions'
 import { BtcManualInstructions } from '@/app/pay/[orderId]/_components/btc-manual-instructions'
 import {
   InvoiceStatusProvider,
@@ -57,17 +56,12 @@ export function InvoicePageClient({
           </h1>
           <p className='text-muted-foreground'>
             {isCkbtc
-              ? 'Pay with ckTESTBTC using your Internet Identity or follow the manual ckBTC instructions below.'
+              ? 'Pay with ckTESTBTC using your Internet Identity—save your license wallet and submit the ledger transfer in one step.'
               : 'Send Bitcoin to the escrow address to finalize the license automatically.'}
           </p>
         </header>
 
         <InvoiceSummary fallbackNetwork={fallbackNetwork} />
-
-        <MintTargetCard
-          orderId={initialInvoice.orderId}
-          defaultMintTo={defaultMintTo}
-        />
 
         {isCkbtc ? (
           <>
@@ -75,6 +69,7 @@ export function InvoicePageClient({
               <CkbtcPayPanel
                 escrowPrincipal={escrowPrincipal}
                 network={ckbtcNetwork}
+                defaultMintTo={defaultMintTo}
               />
             ) : (
               <div className='rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-600'>
@@ -82,11 +77,13 @@ export function InvoicePageClient({
                 deployment. Contact the operator to enable direct ckBTC settlement.
               </div>
             )}
-            {escrowPrincipal ? (
-              <CkbtcManualInstructions escrowPrincipal={escrowPrincipal} />
-            ) : null}
+            {!showCkbtcPay && (
+              <MintTargetCard
+                orderId={initialInvoice.orderId}
+                defaultMintTo={defaultMintTo}
+              />
+            )}
             <FinalizationTimeline
-              escrowPrincipal={escrowPrincipal}
               ckbtcNetwork={ckbtcNetwork}
               storyNetwork={storyNetwork}
               storyLicenseAddress={storyLicenseAddress}
@@ -96,12 +93,17 @@ export function InvoicePageClient({
             />
           </>
         ) : (
-          <BtcManualInstructions />
+          <>
+            <MintTargetCard
+              orderId={initialInvoice.orderId}
+              defaultMintTo={defaultMintTo}
+            />
+            <BtcManualInstructions />
+          </>
         )}
         {!isCkbtc && (
           <FinalizationTimeline
             ckbtcNetwork={ckbtcNetwork}
-            escrowPrincipal={escrowPrincipal}
             storyNetwork={storyNetwork}
             storyLicenseAddress={storyLicenseAddress}
             storyChainId={storyChainId}

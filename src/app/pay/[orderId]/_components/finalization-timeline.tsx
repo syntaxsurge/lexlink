@@ -22,7 +22,6 @@ import {
 } from '@/lib/story-links'
 
 type FinalizationTimelineProps = {
-  escrowPrincipal?: string | null
   ckbtcNetwork: 'ckbtc-mainnet' | 'ckbtc-testnet'
   storyNetwork: StoryNetwork
   storyLicenseAddress: `0x${string}`
@@ -67,7 +66,6 @@ function resolveStatusIcon(status: StepStatus) {
 }
 
 export function FinalizationTimeline({
-  escrowPrincipal,
   ckbtcNetwork,
   storyNetwork,
   storyLicenseAddress,
@@ -109,8 +107,7 @@ export function FinalizationTimeline({
             </p>
           ) : (
             <p>
-              Waiting for the ckBTC ledger to detect the transfer into this
-              order&apos;s escrow subaccount.
+              Waiting for the ckBTC ledger to detect the authenticated transfer.
             </p>
           )}
           {typeof invoice.ckbtcBlockIndex === 'number' &&
@@ -123,31 +120,6 @@ export function FinalizationTimeline({
                 .
               </p>
             )}
-          <p>
-            ICRC-1 account{' '}
-            <span className='break-all font-mono text-foreground'>
-              {invoice.btcAddress}
-            </span>
-            .
-          </p>
-          {invoice.ckbtcSubaccount && (
-            <p>
-              Subaccount (hex){' '}
-              <span className='break-all font-mono text-foreground'>
-                {invoice.ckbtcSubaccount}
-              </span>
-              .
-            </p>
-          )}
-          {escrowPrincipal && (
-            <p>
-              Ledger owner{' '}
-              <span className='break-all font-mono text-foreground'>
-                {escrowPrincipal}
-              </span>
-              .
-            </p>
-          )}
           {invoice.fundedAt && (
             <p>
               Detected {formatDate(invoice.fundedAt)}.
@@ -194,12 +166,10 @@ export function FinalizationTimeline({
     )
   }, [
     ckbtcSymbol,
-    escrowPrincipal,
     invoice.btcAddress,
     invoice.btcTxId,
     invoice.ckbtcBlockIndex,
     invoice.ckbtcMintedSats,
-    invoice.ckbtcSubaccount,
     invoice.fundedAt,
     isCkbtc
   ])
