@@ -86,14 +86,13 @@ export function SiteHeader() {
                   (link.href !== '/' && pathname.startsWith(link.href))
                 return (
                   <NavigationMenuItem key={link.href}>
-                    <Link href={link.href} legacyBehavior passHref>
-                      <NavigationMenuLink
-                        className={navigationMenuTriggerStyle()}
-                        active={isActive}
-                      >
-                        {link.label}
-                      </NavigationMenuLink>
-                    </Link>
+                    <NavigationMenuLink
+                      href={link.href}
+                      className={navigationMenuTriggerStyle()}
+                      active={isActive}
+                    >
+                      {link.label}
+                    </NavigationMenuLink>
                   </NavigationMenuItem>
                 )
               })}

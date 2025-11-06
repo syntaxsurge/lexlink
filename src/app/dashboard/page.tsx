@@ -129,16 +129,16 @@ function EventItem({ event }: { event: AuditEventRecord }) {
                   <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                     Action
                   </span>
-                  <p className='mt-1'>
+                  <div className='mt-1'>
                     <Badge variant='outline'>{event.action}</Badge>
-                  </p>
+                  </div>
                 </div>
                 {event.resourceId && (
                   <div>
                     <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       Resource ID
                     </span>
-                    <p className='mt-1 break-all font-mono text-xs'>{event.resourceId}</p>
+                    <div className='mt-1 break-all font-mono text-xs'>{event.resourceId}</div>
                   </div>
                 )}
                 {event.actorAddress && (
@@ -146,7 +146,7 @@ function EventItem({ event }: { event: AuditEventRecord }) {
                     <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       Actor Address
                     </span>
-                    <p className='mt-1 break-all font-mono text-xs'>{event.actorAddress}</p>
+                    <div className='mt-1 break-all font-mono text-xs'>{event.actorAddress}</div>
                   </div>
                 )}
                 {event.actorPrincipal && (
@@ -154,14 +154,14 @@ function EventItem({ event }: { event: AuditEventRecord }) {
                     <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       Actor Principal
                     </span>
-                    <p className='mt-1 break-all font-mono text-xs'>{event.actorPrincipal}</p>
+                    <div className='mt-1 break-all font-mono text-xs'>{event.actorPrincipal}</div>
                   </div>
                 )}
                 <div>
                   <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                     Timestamp
                   </span>
-                  <p className='mt-1 text-xs'>{formatDate(event.createdAt)}</p>
+                  <div className='mt-1 text-xs'>{formatDate(event.createdAt)}</div>
                 </div>
               </div>
               <div>
