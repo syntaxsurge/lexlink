@@ -94,6 +94,12 @@ export default async function IpRegistryPage() {
                       Generate a ckBTC or BTC invoice from Licenses → Create order to start selling this asset with the configured royalties.
                     </p>
                     <Link
+                      href={`/report?ipId=${ip.ipId}`}
+                      className='inline-flex items-center text-primary underline-offset-4 hover:underline'
+                    >
+                      Share public report link →
+                    </Link>
+                    <Link
                       href={`/dashboard/licenses?ip=${ip.ipId}`}
                       className='inline-flex items-center text-primary underline-offset-4 hover:underline'
                     >

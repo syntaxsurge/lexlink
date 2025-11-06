@@ -3,6 +3,7 @@ import Link from 'next/link'
 import {
   ArrowRight,
   CheckCircle2,
+  Coins,
   FileBadge2,
   ShieldCheck,
   Sparkles
@@ -20,12 +21,6 @@ import {
 
 const valueProps = [
   {
-    title: 'Click-to-license checkout',
-    description:
-      'One link captures the buyer’s wallet, handles ckBTC or BTC payment, and mints the Story license token automatically.',
-    icon: Sparkles
-  },
-  {
     title: 'Provenance-grade receipts',
     description:
       'Each sale publishes a C2PA bundle, verifiable credential, and Constellation hash that anyone can verify at /verify.',
@@ -36,6 +31,18 @@ const valueProps = [
     description:
       'LexLink inspects upstream PIL terms before registering derivatives, preventing licensing chains that can’t be enforced.',
     icon: CheckCircle2
+  },
+  {
+    title: 'Click-to-license checkout',
+    description:
+      'One link captures the buyer’s wallet, handles ckBTC or BTC payment, and mints the Story license token automatically.',
+    icon: Sparkles
+  },
+  {
+    title: 'Revenue levers baked in',
+    description:
+      'Configure minting fees, royalty splits, and UMA dispute bonds in one console so every sale and upheld claim routes value back to creators.',
+    icon: Coins
   }
 ]
 
@@ -76,7 +83,7 @@ const painPoints = [
     sourceLabel: 'UMA Optimistic Oracle documentation',
     sourceUrl: 'https://docs.uma.xyz/developers/optimistic-oracle',
     lexlink:
-      'Operators escalate contested uses directly from the dashboard; UMA handles liveness and Constellation stores the evidence payload.'
+      'Reporters flag assets from /report, operators triage the disputes inbox, and UMA enforces liveness while Constellation stores the evidence payload.'
   }
 ]
 
@@ -95,6 +102,11 @@ const howItWorks = [
     title: 'Collect the proof',
     detail:
       'LexLink mints the Story license token, archives the evidence, anchors Constellation hashes, and exposes downloadable receipts under /verify.'
+  },
+  {
+    title: 'Protect your catalog',
+    detail:
+      'Share the public /report link so the community flags issues; review disputes in the dashboard, simulate UMA decisions on testnet, and unblock assets after resolution.'
   }
 ]
 

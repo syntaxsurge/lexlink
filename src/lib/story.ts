@@ -1,23 +1,55 @@
 import { StoryClient, WIP_TOKEN_ADDRESS } from '@story-protocol/core-sdk'
-import { http } from 'viem'
+import { createWalletClient, http } from 'viem'
+import type { Chain, WalletClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 import { env } from '@/lib/env'
 
 let cachedClient: StoryClient | null = null
+let cachedWallet: WalletClient | null = null
+
+export const storyAccount = privateKeyToAccount(
+  env.STORY_PRIVATE_KEY as `0x${string}`
+)
+
+export const storyChain: Chain = {
+  id: env.STORY_CHAIN_ID,
+  name:
+    env.NEXT_PUBLIC_STORY_NETWORK === 'mainnet' ? 'Story Mainnet' : 'Story Aeneid',
+  nativeCurrency: {
+    name: 'Story',
+    symbol: 'IP',
+    decimals: 18
+  },
+  rpcUrls: {
+    default: {
+      http: [env.STORY_RPC_URL]
+    }
+  }
+}
 
 export function getStoryClient() {
   if (!cachedClient) {
-    const account = privateKeyToAccount(env.STORY_PRIVATE_KEY as `0x${string}`)
     cachedClient = StoryClient.newClient({
       chainId: 'aeneid',
       transport: http(env.STORY_RPC_URL),
-      account
+      account: storyAccount
     })
   }
 
   patchLicenseNonceHandling(cachedClient)
   return cachedClient
+}
+
+export function getStoryWalletClient() {
+  if (!cachedWallet) {
+    cachedWallet = createWalletClient({
+      account: storyAccount,
+      chain: storyChain,
+      transport: http(env.STORY_RPC_URL)
+    })
+  }
+  return cachedWallet
 }
 
 function isNonceError(error: unknown) {

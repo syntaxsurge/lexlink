@@ -3,7 +3,7 @@
 import crypto from 'node:crypto'
 
 import { DisputeTargetTag } from '@story-protocol/core-sdk'
-import { getAddress } from 'viem'
+import { getAddress, parseAbi } from 'viem'
 
 import { requireRole, requireSession, type SessionActor } from '@/lib/authz'
 import { createLicenseArchive } from '@/lib/c2pa'
@@ -32,6 +32,9 @@ import {
 } from '@/lib/payment-mode'
 import {
   getStoryClient,
+  getStoryWalletClient,
+  storyAccount,
+  storyChain,
   getDefaultLicenseTerms,
   getDefaultLicensingConfig
 } from '@/lib/story'
@@ -118,6 +121,7 @@ export type DisputeRecord = {
   bond: number
   createdAt: number
   ownerPrincipal?: string
+  reporterPrincipal: string
 }
 
 export type TrainingBatchRecord = {
@@ -200,6 +204,13 @@ type SerializedFile = {
   size: number
   data: string
 }
+
+const DISPUTE_MODULE_ABI = parseAbi([
+  'function setDisputeJudgement(uint256 disputeId, bool decision, bytes data)',
+  'function resolveDispute(uint256 disputeId, bytes data)'
+])
+
+const EMPTY_BYTES = '0x' as `0x${string}`
 
 type AssetInput =
   | { kind: 'file'; file: SerializedFile }
@@ -365,24 +376,26 @@ async function ensureDisputeOwner({
     return ipOwner
   }
 
-  const owner = await fetchOwnerPrincipalFromEvent({
-    convex,
-    resourceId: dispute.disputeId,
-    action: 'dispute.raised'
-  })
+  const ipRecord = (await convex.query('ipAssets:getById' as any, {
+    ipId: dispute.ipId
+  })) as (IpRecord & { ownerPrincipal?: string }) | null
 
-  if (owner) {
-    await convex.mutation('disputes:assignOwner' as any, {
-      disputeId: dispute.disputeId,
-      ownerPrincipal: owner
-    })
-    dispute.ownerPrincipal = owner
-    if (!ipOwners.has(dispute.ipId)) {
-      ipOwners.set(dispute.ipId, owner)
+  if (ipRecord) {
+    const owner = await ensureIpOwner(ipRecord, convex)
+    if (owner) {
+      await convex.mutation('disputes:assignOwner' as any, {
+        disputeId: dispute.disputeId,
+        ownerPrincipal: owner
+      })
+      dispute.ownerPrincipal = owner
+      if (!ipOwners.has(dispute.ipId)) {
+        ipOwners.set(dispute.ipId, owner)
+      }
+      return owner
     }
   }
 
-  return owner
+  return undefined
 }
 
 async function ensureTrainingOwner({
@@ -450,6 +463,48 @@ async function assertActorOwnsIp({
     })
     ip.ownerPrincipal = actor.principal
   }
+}
+
+function parseDisputeId(value: string): bigint {
+  if (!value || value.startsWith('pending')) {
+    throw new Error(
+      'Dispute ID not yet available on-chain. Refresh after the raise transaction finalizes.'
+    )
+  }
+  try {
+    return BigInt(value)
+  } catch (error) {
+    throw new Error('Invalid disputeId – expected a numeric identifier.')
+  }
+}
+
+async function writeDisputeJudgementTx(
+  disputeId: bigint,
+  uphold: boolean
+): Promise<`0x${string}`> {
+  const wallet = getStoryWalletClient()
+  return wallet.writeContract({
+    address: env.STORY_DISPUTE_MODULE_ADDRESS as `0x${string}`,
+    abi: DISPUTE_MODULE_ABI,
+    functionName: 'setDisputeJudgement',
+    args: [disputeId, uphold, EMPTY_BYTES],
+    chain: storyChain,
+    account: storyAccount
+  })
+}
+
+async function writeDisputeResolveTx(
+  disputeId: bigint
+): Promise<`0x${string}`> {
+  const wallet = getStoryWalletClient()
+  return wallet.writeContract({
+    address: env.STORY_DISPUTE_MODULE_ADDRESS as `0x${string}`,
+    abi: DISPUTE_MODULE_ABI,
+    functionName: 'resolveDispute',
+    args: [disputeId, EMPTY_BYTES],
+    chain: storyChain,
+    account: storyAccount
+  })
 }
 
 async function assertActorOwnsLicense({
@@ -2241,23 +2296,26 @@ export type RaiseDisputePayload = {
 }
 
 export async function raiseDispute(payload: RaiseDisputePayload) {
-  const actor = await requireRole(['operator', 'creator'])
+  const actor = await requireSession()
   const convex = getConvexClient()
   const ip = (await convex.query('ipAssets:getById' as any, {
     ipId: payload.ipId
   })) as IpRecord | null
 
-  if (!ip) {
-    throw new Error('IP asset not found')
-  }
-
-  await assertActorOwnsIp({ ip, actor, convex })
-
   const storyClient = getStoryClient()
+  const defaultLiveness =
+    env.STORY_DISPUTE_DEFAULT_LIVENESS > 0
+      ? env.STORY_DISPUTE_DEFAULT_LIVENESS
+      : 60 * 60 * 24 * 3
   const livenessSeconds =
     payload.livenessSeconds && payload.livenessSeconds > 0
       ? payload.livenessSeconds
-      : 60 * 60 * 24 * 3
+      : defaultLiveness
+
+  let ownerPrincipal: string | undefined
+  if (ip) {
+    ownerPrincipal = await ensureIpOwner(ip, convex)
+  }
 
   const response = await storyClient.dispute.raiseDispute({
     targetIpId: payload.ipId as `0x${string}`,
@@ -2279,6 +2337,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     evidenceCid: payload.evidenceCid,
     livenessSeconds,
     bond: payload.bond ?? 0,
+    reporterPrincipal: actor.principal,
     txHash,
     timestamp: Date.now()
   }
@@ -2295,7 +2354,7 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
   const constellationExplorerUrl =
     disputeEvidence.status === 'ok' ? disputeEvidence.explorerUrl : ''
 
-  await convex.mutation('disputes:insert' as any, {
+  const disputeRecord: Record<string, unknown> = {
     disputeId,
     ipId: payload.ipId,
     targetTag: payload.targetTag,
@@ -2307,12 +2366,18 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     status: 'raised',
     livenessSeconds,
     bond: payload.bond ?? 0,
-    ownerPrincipal: ip.ownerPrincipal ?? actor.principal
-  })
+    reporterPrincipal: actor.principal
+  }
+
+  if (ownerPrincipal) {
+    disputeRecord.ownerPrincipal = ownerPrincipal
+  }
+
+  await convex.mutation('disputes:insert' as any, disputeRecord)
 
   await recordEvent({
     actor,
-    action: 'dispute.raised',
+    action: 'dispute.reported',
     payload: {
       disputeId,
       ipId: payload.ipId,
@@ -2332,6 +2397,99 @@ export async function raiseDispute(payload: RaiseDisputePayload) {
     constellationTx,
     constellationExplorerUrl
   }
+}
+
+export async function setDisputeJudgement({
+  disputeId,
+  uphold
+}: {
+  disputeId: string
+  uphold: boolean
+}) {
+  const actor = await requireRole(['operator', 'creator'])
+  const convex = getConvexClient()
+
+  const dispute = (await convex.query('disputes:getById' as any, {
+    disputeId
+  })) as (DisputeRecord & { _id: string }) | null
+
+  if (!dispute) {
+    throw new Error('Dispute not found')
+  }
+
+  const ownerPrincipal = await ensureDisputeOwner({
+    dispute,
+    convex,
+    ipOwners: new Map<string, string>()
+  })
+
+  if (!ownerPrincipal || ownerPrincipal !== actor.principal) {
+    throw new Error('Only the asset owner can set judgement on this dispute.')
+  }
+
+  const numericId = parseDisputeId(dispute.disputeId)
+  const txHash = await writeDisputeJudgementTx(numericId, uphold)
+
+  await convex.mutation('disputes:setStatus' as any, {
+    disputeId: dispute.disputeId,
+    status: uphold ? 'upheld' : 'rejected'
+  })
+
+  await recordEvent({
+    actor,
+    action: 'dispute.judged',
+    payload: {
+      disputeId: dispute.disputeId,
+      uphold,
+      txHash
+    },
+    resourceId: dispute.disputeId
+  })
+
+  return { txHash }
+}
+
+export async function resolveDisputeAction(disputeId: string) {
+  const actor = await requireRole(['operator', 'creator'])
+  const convex = getConvexClient()
+
+  const dispute = (await convex.query('disputes:getById' as any, {
+    disputeId
+  })) as (DisputeRecord & { _id: string }) | null
+
+  if (!dispute) {
+    throw new Error('Dispute not found')
+  }
+
+  const ownerPrincipal = await ensureDisputeOwner({
+    dispute,
+    convex,
+    ipOwners: new Map<string, string>()
+  })
+
+  if (!ownerPrincipal || ownerPrincipal !== actor.principal) {
+    throw new Error('Only the asset owner can resolve this dispute.')
+  }
+
+  const numericId = parseDisputeId(dispute.disputeId)
+  const txHash = await writeDisputeResolveTx(numericId)
+
+  await convex.mutation('disputes:setStatus' as any, {
+    disputeId: dispute.disputeId,
+    status: 'resolved'
+  })
+
+  await recordEvent({
+    actor,
+    action: 'dispute.resolved',
+    payload: {
+      disputeId: dispute.disputeId,
+      txHash
+    },
+    resourceId: dispute.disputeId
+  })
+
+  return { txHash }
 }
 
 export async function loadDashboardData() {

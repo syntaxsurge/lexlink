@@ -114,11 +114,13 @@ export default defineSchema({
     livenessSeconds: v.number(),
     bond: v.number(),
     createdAt: v.number(),
-    ownerPrincipal: v.optional(v.string())
+    ownerPrincipal: v.optional(v.string()),
+    reporterPrincipal: v.string()
   })
     .index('by_disputeId', ['disputeId'])
     .index('by_ipId', ['ipId'])
-    .index('by_ownerPrincipal', ['ownerPrincipal']),
+    .index('by_ownerPrincipal', ['ownerPrincipal'])
+    .index('by_reporterPrincipal', ['reporterPrincipal']),
   trainingBatches: defineTable({
     batchId: v.string(),
     ipId: v.string(),

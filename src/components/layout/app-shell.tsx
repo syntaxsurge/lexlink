@@ -32,7 +32,7 @@ const routes = [
   { href: '/dashboard/ip', label: 'IP Registry', icon: BookOpen },
   { href: '/dashboard/ai', label: 'AI Studio', icon: Sparkles },
   { href: '/dashboard/licenses', label: 'Licenses', icon: ScrollText },
-  { href: '/dashboard/disputes', label: 'Disputes', icon: Scale },
+  { href: '/dashboard/disputes', label: 'Disputes Inbox', icon: Scale },
   { href: '/dashboard/compliance', label: 'Compliance', icon: BarChart3 },
   { href: '/dashboard/settings', label: 'Settings', icon: Settings }
 ]
@@ -156,6 +156,9 @@ export function AppShell({ children }: AppShellProps) {
             </p>
           </div>
           <div className='hidden items-center gap-2 md:flex'>
+            <Button variant='outline' size='sm' asChild>
+              <Link href='/report'>Report IP</Link>
+            </Button>
             <Button variant='outline' size='sm' asChild>
               <Link href='/dashboard/settings'>Session settings</Link>
             </Button>

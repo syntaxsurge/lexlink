@@ -15,6 +15,9 @@ LexLink is a production-ready, cross-protocol legaltech stack:
   Constellation proof along with a signed Ed25519 verifiable credential.
 - **AI Training Meter** records metered micro-payments, anchors each batch to
   IntegrationNet, and automatically increases the license compliance score.
+- **UMA-backed dispute intake** exposes a public report form, mirrors evidence
+  in Convex, and routes owners through a disputes inbox with UMA judgement
+  simulation for testnets and on-chain resolution tracking.
 - **Convex** stores operational mirrors (IP catalogue, license orders, evidence
   hashes, C2PA bundles, VC documents, and training batches) to power the
   dashboard.
@@ -23,6 +26,12 @@ LexLink is a production-ready, cross-protocol legaltech stack:
 
 This repository contains the full end-to-end implementation for Days 2 and 3 of
 the build plan, ready to deploy without placeholders.
+
+Revenue accrues in three places: Story PIL minting fees collected per license,
+royalty shares encoded in `royaltyBps` for downstream derivative sales, and
+optional dispute bonds when UMA arbitration upholds infringement claims. The
+dashboard surfaces these levers so operators can quantify licensing income and
+compliance costs in real time.
 
 ## 1. Prerequisites
 
@@ -65,6 +74,10 @@ STORY_SPG_NFT_ADDRESS="0x..."                        # SPG NFT contract
 STORY_LICENSE_TEMPLATE_ADDRESS="0x..."               # PIL license template
 STORY_PRIVATE_KEY="0x..."                            # 32-byte hex private key
 STORY_PIL_URI="https://example.com/pil.json"
+STORY_DISPUTE_MODULE_ADDRESS="0x..."                 # DisputeModule contract for the active Story network
+STORY_ARBITRATION_POLICY_ADDRESS="0x..."             # UMA arbitration policy contract
+STORY_DISPUTE_BOND_TOKEN_ADDRESS="0x0000000000000000000000000000000000000000"
+STORY_DISPUTE_DEFAULT_LIVENESS="259200"
 
 # ICP Bitcoin escrow canister
 ICP_HOST="https://icp0.io"                           # or local replica
@@ -170,6 +183,16 @@ If `request_deposit_address` rejects with “Requested unknown threshold key”,
   - Use your hosted legal page: `https://<your-vercel-app>/legal/pil`
   - Local dev: `http://localhost:3000/legal/pil`
   - PIL overview: https://docs.story.foundation/concepts/programmable-ip-license/overview
+- `STORY_DISPUTE_MODULE_ADDRESS`
+  - Aeneid DisputeModule: `0x9b7A9c70AFF961C799110954fc06F3093aeb94C5`
+  - Verify: https://aeneid.storyscan.io/address/0x9b7A9c70AFF961C799110954fc06F3093aeb94C5
+- `STORY_ARBITRATION_POLICY_ADDRESS`
+  - Aeneid UMA policy: `0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936`
+  - Verify: https://aeneid.storyscan.io/address/0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936
+- `STORY_DISPUTE_BOND_TOKEN_ADDRESS`
+  - Use the zero address on testnets to bypass bond funding; supply the WIP token address on mainnet.
+- `STORY_DISPUTE_DEFAULT_LIVENESS`
+  - Seconds before UMA finalizes a dispute (default 259200 ≈ 3 days).
 
 4) ICP Bitcoin escrow canister
 - Install IC SDK (dfx):

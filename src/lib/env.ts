@@ -70,6 +70,30 @@ const serverEnvSchema = z.object({
       'STORY_PRIVATE_KEY must be a 32-byte hex string'
     ),
   STORY_PIL_URI: z.string().url(),
+  STORY_DISPUTE_MODULE_ADDRESS: z
+    .string()
+    .regex(
+      /^0x[0-9a-fA-F]{40}$/,
+      'STORY_DISPUTE_MODULE_ADDRESS must be a hex address'
+    ),
+  STORY_ARBITRATION_POLICY_ADDRESS: z
+    .string()
+    .regex(
+      /^0x[0-9a-fA-F]{40}$/,
+      'STORY_ARBITRATION_POLICY_ADDRESS must be a hex address'
+    ),
+  STORY_DISPUTE_BOND_TOKEN_ADDRESS: z
+    .string()
+    .regex(
+      /^0x[0-9a-fA-F]{40}$/,
+      'STORY_DISPUTE_BOND_TOKEN_ADDRESS must be a hex address'
+    )
+    .default('0x0000000000000000000000000000000000000000'),
+  STORY_DISPUTE_DEFAULT_LIVENESS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(259200),
   ICP_HOST: z.string().url(),
   ICP_ESCROW_CANISTER_ID: z.string(),
   ICP_IDENTITY_PEM_PATH: z.string().min(1).default('icp/icp_identity.pem'),
@@ -187,6 +211,13 @@ function parseEnv() {
     STORY_LICENSE_TEMPLATE_ADDRESS: process.env.STORY_LICENSE_TEMPLATE_ADDRESS,
     STORY_PRIVATE_KEY: process.env.STORY_PRIVATE_KEY,
     STORY_PIL_URI: process.env.STORY_PIL_URI,
+    STORY_DISPUTE_MODULE_ADDRESS: process.env.STORY_DISPUTE_MODULE_ADDRESS,
+    STORY_ARBITRATION_POLICY_ADDRESS:
+      process.env.STORY_ARBITRATION_POLICY_ADDRESS,
+    STORY_DISPUTE_BOND_TOKEN_ADDRESS:
+      process.env.STORY_DISPUTE_BOND_TOKEN_ADDRESS,
+    STORY_DISPUTE_DEFAULT_LIVENESS:
+      process.env.STORY_DISPUTE_DEFAULT_LIVENESS,
     ICP_HOST: process.env.ICP_HOST ?? process.env.NEXT_PUBLIC_ICP_HOST,
     ICP_ESCROW_CANISTER_ID:
       process.env.ICP_ESCROW_CANISTER_ID ??

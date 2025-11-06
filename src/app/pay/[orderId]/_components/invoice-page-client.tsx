@@ -1,5 +1,7 @@
 'use client'
 
+import Link from 'next/link'
+
 import { CkbtcPayPanel } from '@/app/pay/[orderId]/_components/ckbtc-pay-panel'
 import { InvoiceSummary } from '@/app/pay/[orderId]/_components/invoice-summary'
 import { BtcManualInstructions } from '@/app/pay/[orderId]/_components/btc-manual-instructions'
@@ -9,6 +11,7 @@ import {
 } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { FinalizationTimeline } from '@/app/pay/[orderId]/_components/finalization-timeline'
 import { MintTargetCard } from '@/app/pay/[orderId]/_components/mint-target-card'
+import { Button } from '@/components/ui/button'
 import type { ConstellationNetworkId } from '@/lib/constellation-links'
 import type { StoryNetwork } from '@/lib/story-links'
 
@@ -64,6 +67,14 @@ export function InvoicePageClient({
         </header>
 
         <InvoiceSummary fallbackNetwork={fallbackNetwork} />
+
+        <div className='flex justify-center'>
+          <Button variant='outline' size='sm' asChild>
+            <Link href={`/report?ipId=${initialInvoice.ipId}`}>
+              Report IP misuse
+            </Link>
+          </Button>
+        </div>
 
         {isCkbtc ? (
           <>

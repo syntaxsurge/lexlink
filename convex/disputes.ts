@@ -9,6 +9,18 @@ export const list = queryGeneric({
   }
 })
 
+export const getById = queryGeneric({
+  args: {
+    disputeId: v.string()
+  },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query('disputes')
+      .withIndex('by_disputeId', q => q.eq('disputeId', args.disputeId))
+      .unique()
+  }
+})
+
 export const insert = mutationGeneric({
   args: {
     disputeId: v.string(),
@@ -22,7 +34,8 @@ export const insert = mutationGeneric({
     status: v.string(),
     livenessSeconds: v.number(),
     bond: v.number(),
-    ownerPrincipal: v.string()
+    ownerPrincipal: v.optional(v.string()),
+    reporterPrincipal: v.string()
   },
   handler: async (ctx, args) => {
     await ctx.db.insert('disputes', {

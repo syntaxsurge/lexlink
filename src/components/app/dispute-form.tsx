@@ -8,18 +8,17 @@ import { DisputeTargetTag } from '@story-protocol/core-sdk'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import {
-  raiseDispute,
-  type IpRecord,
-  type RaiseDisputePayload
-} from '@/app/dashboard/actions'
+import { raiseDispute, type RaiseDisputePayload } from '@/app/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 
 const schema = z.object({
-  ipId: z.string().min(1, 'Select an IP asset'),
+  ipId: z
+    .string()
+    .min(1, 'Provide the IP asset identifier')
+    .regex(/^0x[0-9a-fA-F]{40}$/, 'IP IDs are 0x-prefixed addresses'),
   targetTag: z.nativeEnum(DisputeTargetTag),
   evidenceCid: z.string().min(10, 'Provide the IPFS CID or URL for evidence'),
   livenessSeconds: z
@@ -36,11 +35,17 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-export interface DisputeFormProps {
-  ips: IpRecord[]
+type MinimalIpEntry = {
+  ipId: string
+  title?: string
 }
 
-export function DisputeForm({ ips }: DisputeFormProps) {
+export interface DisputeFormProps {
+  ips?: MinimalIpEntry[]
+  defaultIpId?: string
+}
+
+export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
   const [result, setResult] = useState<null | {
     disputeId: string
     txHash: string
@@ -52,7 +57,10 @@ export function DisputeForm({ ips }: DisputeFormProps) {
   const [isPending, startTransition] = useTransition()
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema)
+    resolver: zodResolver(schema),
+    defaultValues: {
+      ipId: defaultIpId ?? ''
+    }
   })
 
   const onSubmit = (values: FormValues) => {
@@ -85,23 +93,27 @@ export function DisputeForm({ ips }: DisputeFormProps) {
         className='flex flex-col gap-4'
       >
         <div className='space-y-2'>
-          <Label htmlFor='ipId'>Disputed IP Asset</Label>
-          <select
+          <Label htmlFor='ipId'>IP asset (ipId)</Label>
+          <Input
             id='ipId'
-            className='h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
+            placeholder='0x…'
+            list={ips.length > 0 ? 'known-ip-assets' : undefined}
+            autoComplete='off'
             {...form.register('ipId')}
-          >
-            <option value=''>— select —</option>
-            {ips.map(ip => (
-              <option key={ip.ipId} value={ip.ipId}>
-                {ip.title} · {ip.ipId.slice(0, 6)}…
-              </option>
-            ))}
-          </select>
+          />
           {form.formState.errors.ipId && (
             <p className='text-sm text-destructive'>
               {form.formState.errors.ipId.message}
             </p>
+          )}
+          {ips.length > 0 && (
+            <datalist id='known-ip-assets'>
+              {ips.map(ip => (
+                <option key={ip.ipId} value={ip.ipId}>
+                  {ip.title ?? ip.ipId}
+                </option>
+              ))}
+            </datalist>
           )}
         </div>
         <div className='space-y-2'>
@@ -157,7 +169,7 @@ export function DisputeForm({ ips }: DisputeFormProps) {
           </div>
         </div>
         <div className='flex items-center gap-3'>
-          <Button type='submit' disabled={isPending || !ips.length}>
+          <Button type='submit' disabled={isPending}>
             {isPending ? 'Submitting…' : 'Raise Dispute'}
           </Button>
           {error && <span className='text-sm text-destructive'>{error}</span>}
