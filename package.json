@@ -12,10 +12,10 @@
     "format": "prettier --write .",
     "lint:all": "pnpm run lint:fix && pnpm run lint && pnpm run format",
     "typecheck": "tsc --noEmit",
-    "convex:dev": "npx convex dev",
+    "convex:dev": "node ./scripts/convex-dev.cjs",
     "convex:deploy": "npx convex deploy -y",
     "convex:redeploy": "pnpm convex:deploy && pnpm convex:dev",
-    "convex:reset": "pnpm convex:deploy && npx convex run admin.js:reset '{\"confirm\":\"DROP_ALL\"}'",
+    "convex:reset": "dotenv -e .env -e .env.local -- tsx scripts/reset-convex.ts",
     "spg:create": "tsx scripts/create_spg_collection.ts"
   },
   "dependencies": {
@@ -89,6 +89,7 @@
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-unused-imports": "^4.2.0",
+    "dotenv-cli": "^11.0.0",
     "postcss": "^8.4.47",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.4",
