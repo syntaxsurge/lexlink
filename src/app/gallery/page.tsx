@@ -7,6 +7,8 @@ import { env } from '@/lib/env'
 const network =
   (env.NEXT_PUBLIC_STORY_NETWORK as 'aeneid' | 'mainnet') ?? 'aeneid'
 
+export const dynamic = 'force-dynamic'
+
 export default async function GalleryPage() {
   const assets = await loadPublicCatalog()
 
