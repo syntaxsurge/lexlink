@@ -131,9 +131,9 @@ export function SiteHeader() {
                       <p className='text-sm font-medium'>
                         {principalLabel ?? 'Account'}
                       </p>
-                      {session?.principal && (
-                        <p className='font-mono text-xs text-muted-foreground'>
-                          {session.principal}
+                      {session?.role && (
+                        <p className='text-xs uppercase tracking-wide text-muted-foreground'>
+                          {session.role}
                         </p>
                       )}
                     </div>
@@ -181,9 +181,9 @@ export function SiteHeader() {
                       <span className='text-sm font-medium'>
                         {principalLabel ?? 'Account'}
                       </span>
-                      {session?.principal && (
-                        <span className='font-mono text-xs text-muted-foreground'>
-                          {session.principal}
+                      {session?.role && (
+                        <span className='text-xs uppercase tracking-wide text-muted-foreground'>
+                          {session.role}
                         </span>
                       )}
                     </div>

@@ -2,12 +2,15 @@ import { Buffer } from 'node:buffer'
 
 import Link from 'next/link'
 
+import { Download, ExternalLink } from 'lucide-react'
+
 import {
   loadBuyerCkbtcBalance,
   loadBuyerProfile,
   loadBuyerPurchases
 } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -23,6 +26,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { TextDialog, ViewDetailsDialog } from '@/components/ui/text-dialog'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
@@ -61,48 +65,20 @@ export default async function PurchasesPage() {
         <CardHeader>
           <CardTitle>Buyer Profile</CardTitle>
           <CardDescription>
-            Storefront defaults for Internet Identity sessions.
+            Your default license wallet and payment information for this session.
           </CardDescription>
         </CardHeader>
-        <CardContent className='grid gap-4 md:grid-cols-2'>
+        <CardContent className='grid gap-4'>
           <div className='rounded-lg border border-border/60 bg-muted/30 p-4 text-sm'>
-            <p className='text-xs uppercase text-muted-foreground'>
-              Internet Identity Principal
-            </p>
-            <p className='font-mono text-xs'>{profile.principal}</p>
-          </div>
-          <div className='rounded-lg border border-border/60 bg-muted/30 p-4 text-sm'>
-            <p className='text-xs uppercase text-muted-foreground'>
+            <p className='text-xs uppercase tracking-wide text-muted-foreground'>
               Default License Wallet
             </p>
-            <p className='font-mono text-xs'>
-              {profile.defaultMintTo ?? 'Set during checkout'}
+            <p className='mt-2 break-all font-mono text-xs'>
+              {profile.defaultMintTo ?? 'Not set — will be captured during checkout'}
             </p>
-            <p className='mt-2 text-xs text-muted-foreground'>
-              Update this address the next time you finalize a payment. We use
-              it to prefill future orders.
+            <p className='mt-3 text-xs leading-relaxed text-muted-foreground'>
+              This address will be prefilled for future orders. Update it during your next payment.
             </p>
-          </div>
-          <div className='rounded-lg border border-border/60 bg-muted/30 p-4 text-sm md:col-span-2'>
-            <p className='text-xs uppercase text-muted-foreground'>
-              ckBTC Balance
-            </p>
-            {balance.enabled ? (
-              <div className='mt-1 flex items-baseline gap-3'>
-                <span className='text-2xl font-semibold'>
-                  {balance.formatted}
-                </span>
-                <span className='text-xs text-muted-foreground'>
-                  {balance.symbol} (principal {short(balance.principal, 8)})
-                </span>
-              </div>
-            ) : (
-              <p className='text-sm text-muted-foreground'>
-                {balance.reason === 'ledger_unconfigured'
-                  ? 'ckBTC ledger is not configured for this environment.'
-                  : balance.reason}
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>
@@ -115,170 +91,188 @@ export default async function PurchasesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>License Wallet</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Story License</TableHead>
-                <TableHead>Constellation</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {purchases.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className='text-center text-sm text-muted-foreground'
-                  >
-                    No purchases recorded yet. When you pay an invoice, it will
-                    appear here with Story and Constellation links.
-                  </TableCell>
-                </TableRow>
-              )}
-              {purchases.map(order => {
-                const modeLabel =
-                  order.paymentMode === 'ckbtc' ? 'ckBTC' : 'BTC'
-                const storyLink =
-                  storyLicenseToken && order.tokenOnChainId
-                    ? licenseTokenExplorerUrl(
-                        storyLicenseToken,
-                        order.tokenOnChainId,
-                        storyNetwork
+          <div className='space-y-4'>
+            {purchases.length === 0 && (
+              <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center'>
+                <p className='text-sm text-muted-foreground'>
+                  No purchases recorded yet. When you pay an invoice, it will appear here with Story and Constellation links.
+                </p>
+              </div>
+            )}
+            {purchases.map(order => {
+              const modeLabel = order.paymentMode === 'ckbtc' ? 'ckBTC' : 'BTC'
+              const storyLink =
+                storyLicenseToken && order.tokenOnChainId
+                  ? licenseTokenExplorerUrl(
+                      storyLicenseToken,
+                      order.tokenOnChainId,
+                      storyNetwork
+                    )
+                  : ipAssetExplorerUrl(order.ipId, storyNetwork)
+              const constellationLink =
+                order.constellationExplorerUrl &&
+                order.constellationExplorerUrl.length > 0
+                  ? order.constellationExplorerUrl
+                  : order.constellationTx?.length
+                    ? constellationExplorerUrl(
+                        constellationNetwork,
+                        order.constellationTx
                       )
-                    : ipAssetExplorerUrl(order.ipId, storyNetwork)
-                const constellationLink =
-                  order.constellationExplorerUrl &&
-                  order.constellationExplorerUrl.length > 0
-                    ? order.constellationExplorerUrl
-                    : order.constellationTx?.length
-                      ? constellationExplorerUrl(
-                          constellationNetwork,
-                          order.constellationTx
-                        )
-                      : null
-                const c2paLink = order.c2paArchiveUri
-                  ? ipfsGatewayUrl(order.c2paArchiveUri)
-                  : null
-                const c2paFileName =
-                  order.c2paArchiveFileName ??
-                  `lexlink-license-${order.orderId}.zip`
-                const vcHref = order.vcDocument
-                  ? `data:application/json;base64,${Buffer.from(
-                      order.vcDocument,
-                      'utf-8'
-                    ).toString('base64')}`
-                  : null
-                const receiptHref = `/verify/${order.orderId}`
-                const statusBadge =
-                  order.status === 'finalized'
+                    : null
+              const c2paLink = order.c2paArchiveUri
+                ? ipfsGatewayUrl(order.c2paArchiveUri)
+                : null
+              const c2paFileName =
+                order.c2paArchiveFileName ??
+                `lexlink-license-${order.orderId}.zip`
+              const vcHref = order.vcDocument
+                ? `data:application/json;base64,${Buffer.from(
+                    order.vcDocument,
+                    'utf-8'
+                  ).toString('base64')}`
+                : null
+              const receiptHref = `/verify/${order.orderId}`
+              const statusBadge =
+                order.status === 'finalized'
+                  ? {
+                      variant: 'default' as const,
+                      className:
+                        'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                    }
+                  : order.status === 'failed'
                     ? {
-                        variant: 'default' as const,
-                        className:
-                          'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                        variant: 'outline' as const,
+                        className: 'border-rose-400 text-rose-600'
                       }
-                    : order.status === 'failed'
+                    : order.status === 'finalizing'
                       ? {
                           variant: 'outline' as const,
-                          className: 'border-rose-400 text-rose-600'
+                          className: 'border-primary/60 text-primary'
                         }
-                      : order.status === 'finalizing'
-                        ? {
-                            variant: 'outline' as const,
-                            className: 'border-primary/60 text-primary'
-                          }
-                        : order.status === 'pending'
-                          ? { variant: 'outline' as const, className: '' }
-                          : { variant: 'outline' as const, className: '' }
-                return (
-                  <TableRow key={order.orderId}>
-                    <TableCell className='font-mono text-xs'>
-                      {order.orderId.slice(0, 10)}…
-                    </TableCell>
-                    <TableCell className='text-sm'>{order.ipTitle}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={statusBadge.variant}
-                        className={statusBadge.className}
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.mintTo ? short(order.mintTo, 12) : 'Pending'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant='outline'>{modeLabel}</Badge>
-                    </TableCell>
-                    <TableCell className='text-xs'>
-                      <Link
-                        href={storyLink}
-                        target='_blank'
-                        rel='noreferrer'
-                        className='text-primary underline-offset-4 hover:underline'
-                      >
-                        {order.tokenOnChainId
-                          ? `Token ${order.tokenOnChainId}`
-                          : 'View IP'}
-                      </Link>
-                    </TableCell>
-                    <TableCell className='text-xs'>
-                      {constellationLink ? (
-                        <Link
-                          href={constellationLink}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-primary underline-offset-4 hover:underline'
+                      : order.status === 'pending'
+                        ? { variant: 'outline' as const, className: '' }
+                        : { variant: 'outline' as const, className: '' }
+
+              return (
+                <div
+                  key={order.orderId}
+                  className='rounded-xl border border-border/60 bg-background/80 p-5 shadow-sm transition-all hover:shadow-md'
+                >
+                  <div className='flex flex-wrap items-start justify-between gap-4'>
+                    <div className='flex-1 space-y-3'>
+                      <div className='flex flex-wrap items-center gap-2'>
+                        <h3 className='text-base font-semibold'>{order.ipTitle}</h3>
+                        <Badge
+                          variant={statusBadge.variant}
+                          className={statusBadge.className}
                         >
-                          {short(order.constellationTx ?? null, 12)}
+                          {order.status}
+                        </Badge>
+                        <Badge variant='outline' className='text-xs'>{modeLabel}</Badge>
+                      </div>
+
+                      <dl className='grid gap-2 text-sm'>
+                        <div className='flex items-start gap-2'>
+                          <dt className='min-w-[100px] text-muted-foreground'>Order ID:</dt>
+                          <dd className='flex-1'>
+                            <TextDialog
+                              title='Order ID'
+                              content={order.orderId}
+                              truncateLength={16}
+                            />
+                          </dd>
+                        </div>
+
+                        {order.mintTo && (
+                          <div className='flex items-start gap-2'>
+                            <dt className='min-w-[100px] text-muted-foreground'>License Wallet:</dt>
+                            <dd className='flex-1'>
+                              <TextDialog
+                                title='License Wallet Address'
+                                content={order.mintTo}
+                                truncateLength={20}
+                              />
+                            </dd>
+                          </div>
+                        )}
+
+                        {order.tokenOnChainId && (
+                          <div className='flex items-start gap-2'>
+                            <dt className='min-w-[100px] text-muted-foreground'>License Token:</dt>
+                            <dd className='flex-1'>
+                              <Link
+                                href={storyLink}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline'
+                              >
+                                Token {order.tokenOnChainId}
+                                <ExternalLink className='h-3 w-3' />
+                              </Link>
+                            </dd>
+                          </div>
+                        )}
+
+                        {constellationLink && order.constellationTx && (
+                          <div className='flex items-start gap-2'>
+                            <dt className='min-w-[100px] text-muted-foreground'>Constellation:</dt>
+                            <dd className='flex-1'>
+                              <Link
+                                href={constellationLink}
+                                target='_blank'
+                                rel='noreferrer'
+                                className='inline-flex items-center gap-1 break-all font-mono text-xs text-primary underline-offset-4 hover:underline'
+                              >
+                                {short(order.constellationTx, 20)}
+                                <ExternalLink className='h-3 w-3' />
+                              </Link>
+                            </dd>
+                          </div>
+                        )}
+                      </dl>
+                    </div>
+
+                    <div className='flex flex-col gap-2'>
+                      <Button asChild size='sm' variant='outline'>
+                        <Link href={receiptHref}>
+                          View Receipt
                         </Link>
-                      ) : (
-                        <span className='text-muted-foreground'>—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className='space-y-1 text-xs'>
-                      <Link
-                        href={receiptHref}
-                        className='block text-primary underline-offset-4 hover:underline'
-                      >
-                        View receipt
-                      </Link>
+                      </Button>
+
                       {order.status !== 'finalized' && (
-                        <Link
-                          href={`/pay/${order.orderId}`}
-                          className='block text-primary underline-offset-4 hover:underline'
-                        >
-                          Review invoice
-                        </Link>
+                        <Button asChild size='sm' variant='outline'>
+                          <Link href={`/pay/${order.orderId}`}>
+                            Review Invoice
+                          </Link>
+                        </Button>
                       )}
+
                       {c2paLink && (
-                        <a
-                          href={c2paLink}
-                          download={c2paFileName}
-                          className='block text-primary underline-offset-4 hover:underline'
-                        >
-                          Download C2PA
-                        </a>
+                        <Button asChild size='sm' variant='secondary'>
+                          <a href={c2paLink} download={c2paFileName}>
+                            <Download className='mr-2 h-4 w-4' />
+                            C2PA
+                          </a>
+                        </Button>
                       )}
+
                       {vcHref && (
-                        <a
-                          href={vcHref}
-                          download={`lexlink-license-vc-${order.orderId}.json`}
-                          className='block text-primary underline-offset-4 hover:underline'
-                        >
-                          Download VC
-                        </a>
+                        <Button asChild size='sm' variant='secondary'>
+                          <a
+                            href={vcHref}
+                            download={`lexlink-license-vc-${order.orderId}.json`}
+                          >
+                            <Download className='mr-2 h-4 w-4' />
+                            VC
+                          </a>
+                        </Button>
                       )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
     </div>

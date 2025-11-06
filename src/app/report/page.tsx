@@ -50,6 +50,8 @@ export default async function ReportPage({ searchParams }: ReportPageProps) {
             </span>{' '}
             is upheld, downstream modules block new licensing, royalty claims,
             and derivative registrations until a resolution clears the tag.
+            Evidence uploads are limited to 5&nbsp;MB each; larger assets should
+            be summarised via compressed archives or hosted URLs.
           </div>
         </CardContent>
       </Card>

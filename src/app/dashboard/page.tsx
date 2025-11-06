@@ -165,149 +165,118 @@ export default async function OverviewPage() {
 
       <div className='grid gap-6 lg:grid-cols-2'>
         <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
-          <CardHeader className='flex flex-row items-center justify-between'>
-            <div>
-              <CardTitle>Pending License Payments</CardTitle>
-              <CardDescription>
-                Orders waiting for ckBTC minting or Bitcoin confirmations. Click
-                through to the Licenses page for full controls.
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3'>
+            <div className='space-y-1'>
+              <CardTitle className='text-lg'>Pending License Payments</CardTitle>
+              <CardDescription className='text-sm'>
+                Orders awaiting settlement
               </CardDescription>
             </div>
-            <Button asChild variant='outline' size='sm'>
-              <Link href='/dashboard/licenses'>Manage orders</Link>
+            <Button asChild variant='outline' size='sm' className='flex-shrink-0'>
+              <Link href='/dashboard/licenses'>Manage</Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <div className='overflow-x-auto'>
-              <Table className='min-w-full'>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className='whitespace-nowrap'>Order</TableHead>
-                    <TableHead className='whitespace-nowrap'>IP</TableHead>
-                    <TableHead className='whitespace-nowrap'>Buyer</TableHead>
-                    <TableHead className='whitespace-nowrap'>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingOrders.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className='text-center text-sm text-muted-foreground'
-                      >
-                        No pending invoices — great job!
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {pendingOrders.map(order => (
-                    <TableRow key={order.orderId}>
-                      <TableCell className='whitespace-nowrap font-medium'>
-                        {order.orderId.slice(0, 8)}…
-                      </TableCell>
-                      <TableCell className='whitespace-nowrap font-mono text-xs'>
-                        {order.ipId.slice(0, 10)}…
-                      </TableCell>
-                      <TableCell className='whitespace-nowrap font-mono text-xs'>
-                        {(order.mintTo ?? order.buyer ?? 'pending').slice(
-                          0,
-                          10
-                        )}
-                        …
-                      </TableCell>
-                      <TableCell className='whitespace-nowrap'>
-                        <Badge
-                          variant='outline'
-                          className='rounded-full px-2 py-0.5 text-xs capitalize'
-                        >
-                          {order.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className='space-y-2'>
+              {pendingOrders.length === 0 && (
+                <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-6 text-center'>
+                  <p className='text-sm text-muted-foreground'>
+                    No pending invoices — great job!
+                  </p>
+                </div>
+              )}
+              {pendingOrders.slice(0, 5).map(order => (
+                <div
+                  key={order.orderId}
+                  className='flex items-center justify-between rounded-lg border border-border/60 bg-background/70 px-3 py-2.5 text-sm transition-colors hover:bg-accent/50'
+                >
+                  <div className='flex min-w-0 flex-1 items-center gap-3'>
+                    <span className='truncate font-mono text-xs'>
+                      {order.orderId.slice(0, 10)}…
+                    </span>
+                    <Badge
+                      variant='outline'
+                      className='flex-shrink-0 rounded-full px-2 py-0.5 text-xs capitalize'
+                    >
+                      {order.status}
+                    </Badge>
+                  </div>
+                  <Button asChild variant='ghost' size='sm' className='h-7 text-xs'>
+                    <Link href='/dashboard/licenses'>View</Link>
+                  </Button>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
         <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
-          <CardHeader className='flex flex-row items-center justify-between'>
-            <div>
-              <CardTitle>Disputes Monitor</CardTitle>
-              <CardDescription>
-                Active UMA-backed disputes on Story.
+          <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3'>
+            <div className='space-y-1'>
+              <CardTitle className='text-lg'>Disputes Monitor</CardTitle>
+              <CardDescription className='text-sm'>
+                Active UMA disputes
               </CardDescription>
             </div>
-            <Button asChild variant='outline' size='sm'>
-              <Link href='/dashboard/disputes'>Review disputes</Link>
+            <Button asChild variant='outline' size='sm' className='flex-shrink-0'>
+              <Link href='/dashboard/disputes'>Review</Link>
             </Button>
           </CardHeader>
-          <CardContent className='space-y-4'>
-            {disputes.length === 0 && (
-              <p className='text-sm text-muted-foreground'>
-                No disputes at the moment.
-              </p>
-            )}
-            {disputes.slice(0, 4).map((dispute: DisputeRecord) => {
-              const disputeExplorerUrl =
-                dispute.constellationExplorerUrl &&
-                dispute.constellationExplorerUrl.length > 0
-                  ? dispute.constellationExplorerUrl
-                  : dispute.constellationTx
-                    ? constellationExplorerUrl(
-                        constellationNetwork,
-                        dispute.constellationTx
-                      )
-                    : null
-              return (
-                <div
-                  key={dispute.disputeId}
-                  className='rounded-xl border border-border/60 bg-background/70 p-4'
-                >
-                  <div className='flex items-center justify-between gap-2'>
-                    <span className='font-medium'>
-                      {dispute.disputeId.slice(0, 10)}…
-                    </span>
-                    <Badge className='rounded-full px-2 py-0.5 capitalize'>
-                      {dispute.status}
-                    </Badge>
-                  </div>
-                  <dl className='mt-3 grid gap-3 text-xs'>
-                    <div className='space-y-1'>
-                      <dt className='text-muted-foreground'>IP ID</dt>
-                      <dd className='break-words font-mono text-[11px]'>
-                        {dispute.ipId}
-                      </dd>
-                    </div>
-                    <div className='space-y-1'>
-                      <dt className='text-muted-foreground'>Evidence CID</dt>
-                      <dd className='break-all font-mono text-[11px]'>
-                        {dispute.evidenceCid}
-                      </dd>
-                    </div>
-                    <div className='space-y-1'>
-                      <dt className='text-muted-foreground'>
-                        Constellation Tx
-                      </dt>
-                      <dd className='break-all font-mono text-[11px]'>
-                        {disputeExplorerUrl ? (
-                          <Link
-                            href={disputeExplorerUrl}
-                            target='_blank'
-                            rel='noreferrer'
-                            className='text-primary underline-offset-4 hover:underline'
-                          >
-                            {dispute.constellationTx}
-                          </Link>
-                        ) : (
-                          dispute.constellationTx || 'pending'
-                        )}
-                      </dd>
-                    </div>
-                  </dl>
+          <CardContent>
+            <div className='space-y-3'>
+              {disputes.length === 0 && (
+                <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-6 text-center'>
+                  <p className='text-sm text-muted-foreground'>
+                    No disputes at the moment.
+                  </p>
                 </div>
-              )
-            })}
+              )}
+              {disputes.slice(0, 3).map((dispute: DisputeRecord) => {
+                const disputeExplorerUrl =
+                  dispute.constellationExplorerUrl &&
+                  dispute.constellationExplorerUrl.length > 0
+                    ? dispute.constellationExplorerUrl
+                    : dispute.constellationTx
+                      ? constellationExplorerUrl(
+                          constellationNetwork,
+                          dispute.constellationTx
+                        )
+                      : null
+                return (
+                  <div
+                    key={dispute.disputeId}
+                    className='rounded-lg border border-border/60 bg-background/70 p-3 transition-colors hover:bg-accent/50'
+                  >
+                    <div className='flex items-center justify-between gap-2 mb-2'>
+                      <span className='truncate font-mono text-xs font-medium'>
+                        {dispute.disputeId.slice(0, 12)}…
+                      </span>
+                      <Badge variant='outline' className='flex-shrink-0 rounded-full px-2 py-0.5 text-xs capitalize'>
+                        {dispute.status}
+                      </Badge>
+                    </div>
+                    <div className='space-y-1.5 text-xs'>
+                      <div>
+                        <span className='text-muted-foreground'>IP: </span>
+                        <span className='break-all font-mono text-[11px]'>
+                          {dispute.ipId.slice(0, 20)}…
+                        </span>
+                      </div>
+                      {disputeExplorerUrl && dispute.constellationTx && (
+                        <Link
+                          href={disputeExplorerUrl}
+                          target='_blank'
+                          rel='noreferrer'
+                          className='inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline'
+                        >
+                          View on Constellation
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
       </div>

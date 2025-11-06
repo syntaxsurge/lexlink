@@ -2,6 +2,8 @@ import { Buffer } from 'node:buffer'
 
 import Link from 'next/link'
 
+import { Download, ExternalLink, Share2 } from 'lucide-react'
+
 import {
   loadDashboardData,
   simulateLicenseFunding
@@ -25,6 +27,8 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TextDialog } from '@/components/ui/text-dialog'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
@@ -148,122 +152,149 @@ export default async function LicensesPage() {
         <CardHeader>
           <CardTitle>Pending Payments</CardTitle>
           <CardDescription>
-            Share payment targets with buyers. ckBTC invoices close themselves
-            once the escrow ledger receives the transfer.
+            Share payment targets with buyers. ckBTC invoices finalize automatically once the escrow ledger receives the transfer.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>License Wallet</TableHead>
-                <TableHead>Amount (BTC)</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Payment Destination</TableHead>
-                <TableHead>Share</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className='text-right'>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pendingOrders.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={9}
-                    className='text-center text-sm text-muted-foreground'
-                  >
-                    No invoices waiting on Bitcoin settlement.
-                  </TableCell>
-                </TableRow>
-              )}
-              {pendingOrders.map(order => {
-                const base = explorerBase(order.network)
-                const isBtcPayment = isBtcMode(order.paymentMode)
-                const addressUrl = isBtcPayment
-                  ? `${base}/address/${order.btcAddress}`
+          <div className='space-y-4'>
+            {pendingOrders.length === 0 && (
+              <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center'>
+                <p className='text-sm text-muted-foreground'>
+                  No invoices waiting on Bitcoin settlement.
+                </p>
+              </div>
+            )}
+            {pendingOrders.map(order => {
+              const base = explorerBase(order.network)
+              const isBtcPayment = isBtcMode(order.paymentMode)
+              const addressUrl = isBtcPayment
+                ? `${base}/address/${order.btcAddress}`
+                : undefined
+              const txUrl =
+                isBtcPayment && order.btcTxId
+                  ? `${base}/tx/${order.btcTxId}`
                   : undefined
-                const txUrl =
-                  isBtcPayment && order.btcTxId
-                    ? `${base}/tx/${order.btcTxId}`
-                    : undefined
-                const modeLabel = isBtcPayment ? 'BTC' : 'ckBTC'
-                const mintTarget = order.mintTo ?? order.buyer ?? null
-                return (
-                  <TableRow key={order.orderId}>
-                    <TableCell className='font-mono text-xs'>
-                      {order.orderId.slice(0, 10)}…
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.ipId.slice(0, 10)}…
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {mintTarget ? `${mintTarget.slice(0, 10)}…` : 'Pending'}
-                    </TableCell>
-                    <TableCell>{formatBtc(order.amountSats)}</TableCell>
-                    <TableCell>
-                      <Badge variant='outline'>{modeLabel}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className='flex flex-col'>
-                        <span className='break-all font-mono text-xs'>
-                          {order.btcAddress}
-                        </span>
-                        {isBtcPayment && addressUrl ? (
-                          <Link
-                            href={addressUrl}
-                            target='_blank'
-                            rel='noreferrer'
-                            className='text-xs text-primary underline-offset-4 hover:underline'
-                          >
-                            View address
-                          </Link>
-                        ) : (
-                          <span className='text-xs text-muted-foreground'>
-                            Escrow owner: {ckbtcEscrowPrincipal || '—'}
-                          </span>
-                        )}
-                        {txUrl && (
-                          <Link
-                            href={txUrl}
-                            target='_blank'
-                            rel='noreferrer'
-                            className='text-xs text-primary underline-offset-4 hover:underline'
-                          >
-                            View transaction
-                          </Link>
+              const modeLabel = isBtcPayment ? 'BTC' : 'ckBTC'
+              const mintTarget = order.mintTo ?? order.buyer ?? null
+              const ipTitle = ipTitleLookup.get(order.ipId) ?? order.ipId
+              const { variant, className } = statusStyles(order.status)
+
+              return (
+                <div
+                  key={order.orderId}
+                  className='rounded-xl border border-border/60 bg-background/80 p-5 shadow-sm transition-all hover:shadow-md'
+                >
+                  <div className='flex flex-wrap items-start justify-between gap-4'>
+                    <div className='flex-1 space-y-3'>
+                      <div className='flex flex-wrap items-center gap-2'>
+                        <h3 className='text-sm font-semibold'>{ipTitle}</h3>
+                        <Badge variant={variant} className={className}>
+                          {order.status}
+                        </Badge>
+                        <Badge variant='outline' className='text-xs'>
+                          {modeLabel}
+                        </Badge>
+                        {typeof order.confirmations === 'number' && (
+                          <Badge variant='outline' className='text-xs'>
+                            {order.confirmations} conf
+                          </Badge>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={`/pay/${order.orderId}`}
-                        className='text-xs text-primary underline-offset-4 hover:underline'
-                        target='_blank'
-                        rel='noreferrer'
-                      >
-                        /pay/{order.orderId}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      {(() => {
-                        const { variant, className } = statusStyles(
-                          order.status
-                        )
-                        return (
-                          <Badge variant={variant} className={className}>
-                            {order.status}
-                          </Badge>
-                        )
-                      })()}
-                      {typeof order.confirmations === 'number' && (
-                        <span className='ml-2 text-xs text-muted-foreground'>
-                          {order.confirmations} conf
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className='flex justify-end gap-2'>
+
+                      <dl className='grid gap-2 text-sm'>
+                        <div className='flex items-start gap-2'>
+                          <dt className='min-w-[120px] text-muted-foreground'>
+                            Order ID:
+                          </dt>
+                          <dd className='flex-1'>
+                            <TextDialog
+                              title='Order ID'
+                              content={order.orderId}
+                              truncateLength={16}
+                            />
+                          </dd>
+                        </div>
+
+                        <div className='flex items-start gap-2'>
+                          <dt className='min-w-[120px] text-muted-foreground'>
+                            Amount:
+                          </dt>
+                          <dd className='flex-1 font-mono text-xs'>
+                            {formatBtc(order.amountSats)} BTC
+                          </dd>
+                        </div>
+
+                        {mintTarget && (
+                          <div className='flex items-start gap-2'>
+                            <dt className='min-w-[120px] text-muted-foreground'>
+                              License Wallet:
+                            </dt>
+                            <dd className='flex-1'>
+                              <TextDialog
+                                title='License Wallet Address'
+                                content={mintTarget}
+                                truncateLength={20}
+                              />
+                            </dd>
+                          </div>
+                        )}
+
+                        <div className='flex items-start gap-2'>
+                          <dt className='min-w-[120px] text-muted-foreground'>
+                            Payment Address:
+                          </dt>
+                          <dd className='flex-1'>
+                            <div className='space-y-1'>
+                              <TextDialog
+                                title='Payment Address'
+                                content={order.btcAddress}
+                                truncateLength={24}
+                              />
+                              {isBtcPayment && addressUrl && (
+                                <Link
+                                  href={addressUrl}
+                                  target='_blank'
+                                  rel='noreferrer'
+                                  className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+                                >
+                                  View on explorer
+                                  <ExternalLink className='h-3 w-3' />
+                                </Link>
+                              )}
+                              {!isBtcPayment && (
+                                <p className='text-xs text-muted-foreground'>
+                                  Escrow: {ckbtcEscrowPrincipal || '—'}
+                                </p>
+                              )}
+                              {txUrl && (
+                                <Link
+                                  href={txUrl}
+                                  target='_blank'
+                                  rel='noreferrer'
+                                  className='inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+                                >
+                                  View transaction
+                                  <ExternalLink className='h-3 w-3' />
+                                </Link>
+                              )}
+                            </div>
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+
+                    <div className='flex flex-col gap-2'>
+                      <Button asChild size='sm' variant='outline'>
+                        <Link
+                          href={`/pay/${order.orderId}`}
+                          target='_blank'
+                          rel='noreferrer'
+                        >
+                          <Share2 className='mr-2 h-4 w-4' />
+                          Share Invoice
+                        </Link>
+                      </Button>
+
                       {simulateEnabled && isBtcMode(order.paymentMode) && (
                         <form action={simulateAction} className='inline-flex'>
                           <input
@@ -276,12 +307,12 @@ export default async function LicensesPage() {
                           </Button>
                         </form>
                       )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -293,65 +324,81 @@ export default async function LicensesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>IP Asset</TableHead>
-                <TableHead>Amount (BTC)</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Deposit Address</TableHead>
-                <TableHead>Updated</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {orderHistory.length === 0 && (
+          <div className='overflow-x-auto'>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={7}
-                    className='text-center text-sm text-muted-foreground'
-                  >
-                    No invoices recorded yet.
-                  </TableCell>
+                  <TableHead className='min-w-[120px]'>Order</TableHead>
+                  <TableHead className='min-w-[150px]'>IP Asset</TableHead>
+                  <TableHead className='min-w-[100px]'>Amount</TableHead>
+                  <TableHead>Mode</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className='min-w-[200px]'>Address</TableHead>
+                  <TableHead className='min-w-[150px]'>Updated</TableHead>
                 </TableRow>
-              )}
-              {orderHistory.map(order => {
-                const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
-                const statusBadge = statusStyles(order.status)
-                const ipTitle =
-                  ipTitleLookup.get(order.ipId) ?? order.ipId.slice(0, 10) + '…'
-                return (
-                  <TableRow key={`history-${order.orderId}`}>
-                    <TableCell className='font-mono text-xs'>
-                      {order.orderId.slice(0, 8)}…
-                    </TableCell>
-                    <TableCell className='text-sm'>{ipTitle}</TableCell>
-                    <TableCell>{formatBtc(order.amountSats)}</TableCell>
-                    <TableCell>
-                      <Badge variant='outline'>{modeLabel}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={statusBadge.variant}
-                        className={statusBadge.className}
-                      >
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className='break-all font-mono text-xs'>
-                      {order.btcAddress}
-                    </TableCell>
-                    <TableCell className='text-xs text-muted-foreground'>
-                      {new Date(
-                        order.updatedAt ?? order.createdAt
-                      ).toLocaleString()}
+              </TableHeader>
+              <TableBody>
+                {orderHistory.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className='text-center text-sm text-muted-foreground'
+                    >
+                      No invoices recorded yet.
                     </TableCell>
                   </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                )}
+                {orderHistory.map(order => {
+                  const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
+                  const statusBadge = statusStyles(order.status)
+                  const ipTitle =
+                    ipTitleLookup.get(order.ipId) ?? 'Unknown IP'
+                  return (
+                    <TableRow key={`history-${order.orderId}`}>
+                      <TableCell>
+                        <TextDialog
+                          title='Order ID'
+                          content={order.orderId}
+                          truncateLength={10}
+                        />
+                      </TableCell>
+                      <TableCell className='max-w-[200px]'>
+                        <p className='truncate text-sm' title={ipTitle}>
+                          {ipTitle}
+                        </p>
+                      </TableCell>
+                      <TableCell className='font-mono text-xs'>
+                        {formatBtc(order.amountSats)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant='outline' className='text-xs'>{modeLabel}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={statusBadge.variant}
+                          className={statusBadge.className}
+                        >
+                          {order.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <TextDialog
+                          title='Payment Address'
+                          content={order.btcAddress}
+                          truncateLength={16}
+                        />
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap text-xs text-muted-foreground'>
+                        {new Date(
+                          order.updatedAt ?? order.createdAt
+                        ).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -359,115 +406,134 @@ export default async function LicensesPage() {
         <CardHeader>
           <CardTitle>Finalized Licenses</CardTitle>
           <CardDescription>
-            Story license tokens, C2PA bundles, and verifiable credentials for
-            completed sales.
+            Story license tokens, C2PA bundles, and verifiable credentials for completed sales.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>IP</TableHead>
-                <TableHead>License Wallet</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>License Token</TableHead>
-                <TableHead>Bitcoin Tx</TableHead>
-                <TableHead>Minted (sats)</TableHead>
-                <TableHead>Constellation Tx</TableHead>
-                <TableHead>Compliance</TableHead>
-                <TableHead>Updated</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {finalizedOrders.length === 0 && (
+          <div className='overflow-x-auto'>
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell
-                    colSpan={10}
-                    className='text-center text-sm text-muted-foreground'
-                  >
-                    No finalized licenses yet.
-                  </TableCell>
+                  <TableHead className='min-w-[120px]'>Order</TableHead>
+                  <TableHead className='min-w-[120px]'>IP</TableHead>
+                  <TableHead className='min-w-[150px]'>Wallet</TableHead>
+                  <TableHead>Mode</TableHead>
+                  <TableHead className='min-w-[100px]'>Token</TableHead>
+                  <TableHead className='min-w-[150px]'>BTC Tx</TableHead>
+                  <TableHead className='min-w-[150px]'>Constellation</TableHead>
+                  <TableHead>Score</TableHead>
+                  <TableHead className='min-w-[150px]'>Updated</TableHead>
                 </TableRow>
-              )}
-              {finalizedOrders.map(order => {
-                const base = explorerBase(order.network)
-                const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
-                const mintTarget = order.mintTo ?? order.buyer ?? null
-                const constellationLink =
-                  order.constellationExplorerUrl &&
-                  order.constellationExplorerUrl.length > 0
-                    ? order.constellationExplorerUrl
-                    : order.constellationTx
-                      ? constellationExplorerUrl(
-                          CONSTELLATION_NETWORK,
-                          order.constellationTx
-                        )
-                      : null
-
-                return (
-                  <TableRow key={order.orderId}>
-                    <TableCell className='font-mono text-xs'>
-                      {order.orderId.slice(0, 10)}…
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.ipId.slice(0, 10)}…
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {mintTarget ? `${mintTarget.slice(0, 10)}…` : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant='outline'>{modeLabel}</Badge>
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.tokenOnChainId || '—'}
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {order.btcTxId ? (
-                        <Link
-                          href={`${base}/tx/${order.btcTxId}`}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-primary underline-offset-4 hover:underline'
-                        >
-                          {order.btcTxId.slice(0, 14)}…
-                        </Link>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {!isBtcMode(order.paymentMode) && order.ckbtcMintedSats
-                        ? order.ckbtcMintedSats.toLocaleString()
-                        : '—'}
-                    </TableCell>
-                    <TableCell className='font-mono text-xs'>
-                      {constellationLink ? (
-                        <Link
-                          href={constellationLink}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='text-primary underline-offset-4 hover:underline'
-                        >
-                          {order.constellationTx?.slice(0, 14)}…
-                        </Link>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge>{order.complianceScore}/100</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {order.updatedAt
-                        ? new Date(order.updatedAt).toLocaleString()
-                        : new Date(order.createdAt).toLocaleString()}
+              </TableHeader>
+              <TableBody>
+                {finalizedOrders.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={9}
+                      className='text-center text-sm text-muted-foreground'
+                    >
+                      No finalized licenses yet.
                     </TableCell>
                   </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
+                )}
+                {finalizedOrders.map(order => {
+                  const base = explorerBase(order.network)
+                  const modeLabel = isBtcMode(order.paymentMode) ? 'BTC' : 'ckBTC'
+                  const mintTarget = order.mintTo ?? order.buyer ?? null
+                  const constellationLink =
+                    order.constellationExplorerUrl &&
+                    order.constellationExplorerUrl.length > 0
+                      ? order.constellationExplorerUrl
+                      : order.constellationTx
+                        ? constellationExplorerUrl(
+                            CONSTELLATION_NETWORK,
+                            order.constellationTx
+                          )
+                        : null
+
+                  return (
+                    <TableRow key={order.orderId}>
+                      <TableCell>
+                        <TextDialog
+                          title='Order ID'
+                          content={order.orderId}
+                          truncateLength={10}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <TextDialog
+                          title='IP Asset ID'
+                          content={order.ipId}
+                          truncateLength={10}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {mintTarget ? (
+                          <TextDialog
+                            title='License Wallet'
+                            content={mintTarget}
+                            truncateLength={12}
+                          />
+                        ) : (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant='outline' className='text-xs'>{modeLabel}</Badge>
+                      </TableCell>
+                      <TableCell className='font-mono text-xs'>
+                        {order.tokenOnChainId ? (
+                          <span className='break-all'>{order.tokenOnChainId}</span>
+                        ) : (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {order.btcTxId ? (
+                          <Link
+                            href={`${base}/tx/${order.btcTxId}`}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='inline-flex items-center gap-1 font-mono text-xs text-primary underline-offset-4 hover:underline'
+                          >
+                            {order.btcTxId.slice(0, 12)}…
+                            <ExternalLink className='h-3 w-3' />
+                          </Link>
+                        ) : (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {constellationLink ? (
+                          <Link
+                            href={constellationLink}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='inline-flex items-center gap-1 font-mono text-xs text-primary underline-offset-4 hover:underline'
+                          >
+                            {order.constellationTx?.slice(0, 12)}…
+                            <ExternalLink className='h-3 w-3' />
+                          </Link>
+                        ) : (
+                          <span className='text-muted-foreground'>—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className='bg-emerald-500/10 text-emerald-600 border-emerald-500/20'>
+                          {order.complianceScore}/100
+                        </Badge>
+                      </TableCell>
+                      <TableCell className='whitespace-nowrap text-xs text-muted-foreground'>
+                        {order.updatedAt
+                          ? new Date(order.updatedAt).toLocaleString()
+                          : new Date(order.createdAt).toLocaleString()}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

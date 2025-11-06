@@ -118,7 +118,7 @@ export default async function DisputesPage() {
                         <Badge variant='outline' className='capitalize'>
                           {dispute.status}
                         </Badge>
-                        <Badge variant='secondary' className='text-xs'>
+                        <Badge variant='outline' className='text-xs'>
                           {dispute.targetTag}
                         </Badge>
                       </div>
