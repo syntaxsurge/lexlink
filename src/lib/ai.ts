@@ -5,6 +5,9 @@ type AiGenerationOptions = {
   prompt: string
 }
 
+const OPENAI_IMAGE_MAX_RETRIES = 5
+const OPENAI_IMAGE_RETRY_DELAY_MS = 1000
+
 export type AiGenerationResult = {
   bytes: Uint8Array
   mimeType: string
@@ -29,7 +32,7 @@ export async function generateImageFromPrompt({
     throw new Error('Prompt is required to generate an asset')
   }
 
-  const response = await requestOpenAiImage(trimmedPrompt)
+  const response = await requestOpenAiImageWithRetry(trimmedPrompt)
   const contentHash = sha256Hex(response.bytes)
 
   return {
@@ -40,6 +43,33 @@ export async function generateImageFromPrompt({
     provider: 'openai',
     contentHash
   }
+}
+
+function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function requestOpenAiImageWithRetry(prompt: string) {
+  for (let attempt = 0; attempt <= OPENAI_IMAGE_MAX_RETRIES; attempt++) {
+    try {
+      return await requestOpenAiImage(prompt)
+    } catch (error) {
+      if (attempt === OPENAI_IMAGE_MAX_RETRIES) {
+        throw error
+      }
+
+      const delay = OPENAI_IMAGE_RETRY_DELAY_MS * (attempt + 1)
+      console.warn(
+        `OpenAI image generation failed on attempt ${attempt + 1}/${
+          OPENAI_IMAGE_MAX_RETRIES + 1
+        }. Retrying in ${delay}ms.`,
+        error
+      )
+      await wait(delay)
+    }
+  }
+
+  throw new Error('OpenAI image generation exhausted retries')
 }
 
 async function requestOpenAiImage(prompt: string) {
