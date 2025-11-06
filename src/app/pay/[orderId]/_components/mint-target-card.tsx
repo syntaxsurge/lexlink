@@ -33,6 +33,14 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
     normalized.length === 0 ||
     /^0x[a-fA-F0-9]{40}$/i.test(normalized)
 
+  const principalLabel = useMemo(() => {
+    if (!session?.principal) {
+      return 'your II principal'
+    }
+    const compact = short(session.principal, 8)
+    return compact || session.principal
+  }, [session?.principal])
+
   const handleSave = () => {
     if (!normalized) {
       toast.error('Enter a wallet address before saving')
@@ -66,14 +74,6 @@ export function MintTargetCard({ orderId, defaultMintTo }: MintTargetCardProps) 
       </div>
     )
   }
-
-  const principalLabel = useMemo(() => {
-    if (!session?.principal) {
-      return 'your II principal'
-    }
-    const compact = short(session.principal, 8)
-    return compact || session.principal
-  }, [session?.principal])
 
   return (
     <div className='space-y-3 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm'>
