@@ -238,7 +238,6 @@ export type GenerateAiIpPayload = {
   royaltyPercent: number
   commercialUse: boolean
   derivativesAllowed: boolean
-  enhancePrompt?: boolean
 }
 
 type RelationshipInput = {
@@ -1502,8 +1501,7 @@ export async function generateAiIpAsset(payload: GenerateAiIpPayload) {
   }
 
   const generation = await generateImageFromPrompt({
-    prompt,
-    enhancePrompt: payload.enhancePrompt ?? true
+    prompt
   })
 
   const fileNameBase = `${slugify(title)}-ai`

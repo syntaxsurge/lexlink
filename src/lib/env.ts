@@ -139,7 +139,6 @@ const serverEnvSchema = z.object({
   OPENAI_IMAGE_MODEL: z.string().default('gpt-image-1'),
   OPENAI_IMAGE_SIZE: z.string().default('1024x1024'),
   OPENAI_IMAGE_QUALITY: z.enum(['standard', 'hd']).default('standard'),
-  DEEPSEEK_API_KEY: z.string().min(10).optional(),
   AI_CREATOR_NAME: z
     .string()
     .min(2)
@@ -231,7 +230,6 @@ function parseEnv() {
     OPENAI_IMAGE_MODEL: process.env.OPENAI_IMAGE_MODEL,
     OPENAI_IMAGE_SIZE: process.env.OPENAI_IMAGE_SIZE,
     OPENAI_IMAGE_QUALITY: process.env.OPENAI_IMAGE_QUALITY,
-    DEEPSEEK_API_KEY: process.env.DEEPSEEK_API_KEY,
     AI_CREATOR_NAME: process.env.AI_CREATOR_NAME,
     AI_CREATOR_ADDRESS: process.env.AI_CREATOR_ADDRESS,
     AI_CREATOR_DESCRIPTION: process.env.AI_CREATOR_DESCRIPTION,

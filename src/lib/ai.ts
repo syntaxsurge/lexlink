@@ -3,7 +3,6 @@ import { sha256Hex } from '@/lib/hash'
 
 type AiGenerationOptions = {
   prompt: string
-  enhancePrompt?: boolean
 }
 
 export type AiGenerationResult = {
@@ -17,8 +16,7 @@ export type AiGenerationResult = {
 }
 
 export async function generateImageFromPrompt({
-  prompt,
-  enhancePrompt = true
+  prompt
 }: AiGenerationOptions): Promise<AiGenerationResult> {
   if (!env.OPENAI_API_KEY) {
     throw new Error(
@@ -31,72 +29,16 @@ export async function generateImageFromPrompt({
     throw new Error('Prompt is required to generate an asset')
   }
 
-  const enhancedPromptValue = enhancePrompt
-    ? await maybeEnhancePrompt(trimmedPrompt)
-    : trimmedPrompt
-
-  const renderPrompt = enhancedPromptValue || trimmedPrompt
-  const response = await requestOpenAiImage(renderPrompt)
+  const response = await requestOpenAiImage(trimmedPrompt)
   const contentHash = sha256Hex(response.bytes)
 
   return {
     bytes: response.bytes,
     mimeType: response.mimeType,
     prompt: trimmedPrompt,
-    enhancedPrompt: renderPrompt !== trimmedPrompt ? renderPrompt : undefined,
     model: response.model,
     provider: 'openai',
     contentHash
-  }
-}
-
-async function maybeEnhancePrompt(prompt: string) {
-  if (!env.DEEPSEEK_API_KEY) {
-    return prompt
-  }
-
-  try {
-    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        temperature: 0.7,
-        max_tokens: 120,
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You transform user prompts into short, vivid descriptions optimised for image generators. Keep outputs under 60 words.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(
-        `Prompt enhancement failed: ${response.status} ${response.statusText}`
-      )
-    }
-
-    const payload = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
-    }
-    const content = payload.choices?.[0]?.message?.content?.trim()
-    return content && content.length > 0 ? content : prompt
-  } catch (error) {
-    console.warn(
-      '[ai] DeepSeek prompt enhancement error. Falling back to original prompt.',
-      error
-    )
-    return prompt
   }
 }
 

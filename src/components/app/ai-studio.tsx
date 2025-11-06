@@ -45,8 +45,7 @@ const formSchema = z.object({
     .min(0, 'Royalties cannot be negative')
     .max(100, 'Royalties cannot exceed 100%'),
   commercialUse: z.boolean(),
-  derivativesAllowed: z.boolean(),
-  enhancePrompt: z.boolean().default(true)
+  derivativesAllowed: z.boolean()
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -73,8 +72,7 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
       priceBtc: 0.001,
       royaltyPercent: 10,
       commercialUse: true,
-      derivativesAllowed: true,
-      enhancePrompt: true
+      derivativesAllowed: true
     }
   })
 
@@ -100,8 +98,7 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
           priceBtc: values.priceBtc,
           royaltyPercent: values.royaltyPercent,
           commercialUse: values.commercialUse,
-          derivativesAllowed: values.derivativesAllowed,
-          enhancePrompt: values.enhancePrompt
+          derivativesAllowed: values.derivativesAllowed
         })
         setResult(response)
       } catch (err) {
@@ -236,7 +233,7 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
                     )}
                   </FormField>
                 </div>
-                <div className='grid gap-3 md:grid-cols-3'>
+                <div className='grid gap-3 md:grid-cols-2'>
                   <ToggleControl
                     label='Commercial use'
                     description='Allow the generated asset to be licensed commercially.'
@@ -255,16 +252,6 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
                       type='checkbox'
                       className='h-4 w-4 accent-primary'
                       {...form.register('derivativesAllowed')}
-                    />
-                  </ToggleControl>
-                  <ToggleControl
-                    label='Enhance prompt'
-                    description='Send the prompt through an LLM pre-pass before generating the media.'
-                  >
-                    <input
-                      type='checkbox'
-                      className='h-4 w-4 accent-primary'
-                      {...form.register('enhancePrompt')}
                     />
                   </ToggleControl>
                 </div>
@@ -331,7 +318,7 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
           <CardContent className='space-y-4 text-sm leading-relaxed text-muted-foreground'>
             <StepItem
               title='1. Prompt ingestion'
-              body='We optionally enhance the prompt with DeepSeek before requesting the image from OpenAI’s `gpt-image-1` model.'
+              body='The entered prompt is sent directly to OpenAI’s `gpt-image-1` model for deterministic rendering.'
             />
             <StepItem
               title='2. Asset packaging'
