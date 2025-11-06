@@ -44,23 +44,30 @@ export async function generateImageFromPrompt({
 
 async function requestOpenAiImage(prompt: string) {
   const url = `${env.OPENAI_API_BASE}/images/generations`
+  const requestBody: Record<string, unknown> = {
+    model: env.OPENAI_IMAGE_MODEL,
+    prompt
+  }
+
+  if (env.OPENAI_IMAGE_SIZE) {
+    requestBody.size = env.OPENAI_IMAGE_SIZE
+  }
+
+  if (env.OPENAI_IMAGE_QUALITY) {
+    requestBody.quality = env.OPENAI_IMAGE_QUALITY
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${env.OPENAI_API_KEY}`
     },
-    body: JSON.stringify({
-      model: env.OPENAI_IMAGE_MODEL,
-      prompt,
-      size: env.OPENAI_IMAGE_SIZE,
-      quality: env.OPENAI_IMAGE_QUALITY,
-      response_format: 'b64_json'
-    })
+    body: JSON.stringify(requestBody)
   })
 
   const payload = (await response.json()) as {
-    data?: Array<{ b64_json?: string }>
+    data?: Array<{ b64_json?: string; url?: string }>
     error?: { message?: string }
   }
 
@@ -72,11 +79,34 @@ async function requestOpenAiImage(prompt: string) {
   }
 
   const encoded = payload.data?.[0]?.b64_json
-  if (!encoded) {
+  const imageUrl = payload.data?.[0]?.url
+
+  if (!encoded && !imageUrl) {
     throw new Error('OpenAI did not return image data')
   }
 
-  const buffer = Buffer.from(encoded, 'base64')
+  if (imageUrl) {
+    const imageResponse = await fetch(imageUrl)
+    if (!imageResponse.ok) {
+      throw new Error('Failed to download image from OpenAI URL')
+    }
+
+    const buffer = await imageResponse.arrayBuffer()
+    const contentType = imageResponse.headers.get('content-type') ?? 'image/png'
+
+    return {
+      bytes: new Uint8Array(buffer),
+      mimeType: contentType,
+      model: env.OPENAI_IMAGE_MODEL
+    }
+  }
+
+  const base64 = encoded
+  if (!base64) {
+    throw new Error('OpenAI did not return encoded image data')
+  }
+
+  const buffer = Buffer.from(base64, 'base64')
   return {
     bytes: new Uint8Array(buffer),
     mimeType: 'image/png',
