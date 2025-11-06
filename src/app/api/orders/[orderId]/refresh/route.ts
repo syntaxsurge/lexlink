@@ -19,6 +19,20 @@ export async function POST(
     return NextResponse.json(result)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
+    if (
+      error instanceof Error &&
+      (message.toLowerCase().includes('fetch failed') ||
+        message.toLowerCase().includes('network') ||
+        message.toLowerCase().includes('timeout'))
+    ) {
+      return NextResponse.json(
+        {
+          status: 'pending',
+          error: message
+        },
+        { status: 200 }
+      )
+    }
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
