@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Identity } from '@dfinity/agent'
 import { Principal } from '@dfinity/principal'
@@ -66,6 +66,12 @@ export function CkbtcPayPanel({
   const [isBusy, setIsBusy] = useState(false)
 
   const ckbtcSubaccountHex = invoice.ckbtcSubaccount ?? null
+  const storageKey = useMemo(
+    () => `lexlink:ckbtc-payment:${invoice.orderId}`,
+    [invoice.orderId]
+  )
+  const hasRestoredState = useRef(false)
+  const lastAutoPollAt = useRef(0)
 
   useEffect(() => {
     setMintTo(invoice.mintTo ?? defaultMintTo ?? '')
@@ -200,6 +206,20 @@ export function CkbtcPayPanel({
 
       if ('Ok' in result) {
         const blockIndex = result.Ok.toString()
+        if (typeof window !== 'undefined') {
+          try {
+            sessionStorage.setItem(
+              storageKey,
+              JSON.stringify({
+                blockIndex,
+                amount: price.toString(),
+                timestamp: Date.now()
+              })
+            )
+          } catch {
+            // ignore storage failures (private mode etc.)
+          }
+        }
         setTransferState({ status: 'success', blockIndex })
         await refreshBalances()
         await pollFinalization().catch(() => {
@@ -224,6 +244,9 @@ export function CkbtcPayPanel({
         throw new Error('Ledger rejected the ckBTC transfer.')
       }
     } catch (err) {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(storageKey)
+      }
       setTransferState({
         status: 'error',
         message:
@@ -246,7 +269,8 @@ export function CkbtcPayPanel({
     pollFinalization,
     refreshInvoice,
     invoice.orderId,
-    sessionStatus
+    sessionStatus,
+    storageKey
   ])
 
   const formattedBalance = formatTokenAmount(balance, decimals)
@@ -288,6 +312,91 @@ export function CkbtcPayPanel({
     if (balance < price) return 'Insufficient balance'
     return 'Pay now'
   })()
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (invoice.status === 'finalized') {
+      sessionStorage.removeItem(storageKey)
+      hasRestoredState.current = false
+      if (
+        transferState.status === 'success' ||
+        transferState.status === 'pending'
+      ) {
+        setTransferState({ status: 'idle' })
+        setFeedback(null)
+      }
+      return
+    }
+
+    if (hasRestoredState.current || transferState.status !== 'idle') {
+      return
+    }
+
+    const raw = sessionStorage.getItem(storageKey)
+    if (!raw) {
+      return
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as {
+        blockIndex?: string
+        amount?: string
+        timestamp?: number
+      }
+      if (!parsed?.blockIndex) {
+        sessionStorage.removeItem(storageKey)
+        return
+      }
+      hasRestoredState.current = true
+      setTransferState({
+        status: 'success',
+        blockIndex: parsed.blockIndex
+      })
+      setFeedback(
+        `Payment submitted (ledger block ${parsed.blockIndex}). The order will finalize automatically.`
+      )
+      if (!isFinalizing) {
+        const now = Date.now()
+        if (now - lastAutoPollAt.current > 5000) {
+          lastAutoPollAt.current = now
+          void pollFinalization().catch(() => {
+            // background refresh will retry
+          })
+        }
+      }
+    } catch {
+      sessionStorage.removeItem(storageKey)
+    }
+  }, [
+    invoice.status,
+    isFinalizing,
+    pollFinalization,
+    storageKey,
+    transferState.status
+  ])
+
+  useEffect(() => {
+    if (invoice.status === 'finalized') {
+      return
+    }
+    if (transferState.status !== 'success') {
+      return
+    }
+    if (isFinalizing) {
+      return
+    }
+    const now = Date.now()
+    if (now - lastAutoPollAt.current <= 5000) {
+      return
+    }
+    lastAutoPollAt.current = now
+    void pollFinalization().catch(() => {
+      // non-blocking; background refresh continues polling
+    })
+  }, [invoice.status, isFinalizing, pollFinalization, transferState.status])
 
   return (
     <Card className='border-border/60 bg-card/70'>
