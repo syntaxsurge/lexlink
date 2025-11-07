@@ -87,8 +87,17 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 10) Case Manager
 - On‑screen: `/dashboard/disputes` (owner/operator session).
-- Demo inputs: No input fields unless posting counter‑evidence (skip for this demo).
-- **Voice‑over 10:** On the Case Manager page, the Inbox, Filed, and Watching tabs track disputes; open the new case to view evidence, liveness, and resolution status; owners can add counter‑evidence during liveness and settle after UMA finalizes.
+- Demo inputs:
+  - Open the reported case from the Inbox
+  - Click “Add counter evidence”
+  - Note: Counter‑evidence: Ownership proof and context
+  - Evidence files: upload example file (e.g., counter-evidence.png)
+  - Click “Submit”
+  - Reopen the case and click the response transaction to view the counter submission
+  - Click “View on Story” to open the IP asset page and confirm the dispute number and counter‑evidence hash
+  - Click “View in UMA” to open the UMA Oracle page for the dispute
+- On‑screen: Show the case timeline updated with the counter evidence and the response transaction details.
+- **Voice‑over 10:** Navigate as the IP owner to the Case Manager page, open the reported case, add counter evidence by entering a brief note and uploading an example file, submit it, then reopen the case and click the response transaction; use “View on Story” to confirm the dispute number and counter‑evidence hash on the IP page, and “View in UMA” to jump to the UMA Oracle entry; liveness and resolution status remain visible throughout.
 
 ## 11) Compliance and audit
 - On‑screen: `/dashboard/compliance`.
