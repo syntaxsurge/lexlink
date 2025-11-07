@@ -14,6 +14,7 @@ type SubmitDisputeResult =
       txHash: string
       evidenceCid: string
       evidenceUri: string
+      ipId: string
     }
   | {
       ok: false
@@ -71,7 +72,8 @@ export async function submitDisputeAction(
       disputeId: response.disputeId,
       txHash: response.txHash,
       evidenceCid,
-      evidenceUri: bundle.bundleUri
+      evidenceUri: bundle.bundleUri,
+      ipId
     }
   } catch (error) {
     const message =

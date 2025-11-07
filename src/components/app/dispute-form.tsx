@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRef, useState, useTransition } from 'react'
 
 import { DisputeTargetTag } from '@story-protocol/core-sdk'
+import { ExternalLink } from 'lucide-react'
 
 import { submitDisputeAction } from '@/app/report/actions'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
+import { ipAssetExplorerUrl, storyScanBase, type StoryNetwork } from '@/lib/story-links'
 
 type MinimalIpEntry = {
   ipId: string
@@ -25,6 +27,7 @@ type SubmitState =
       txHash: string
       evidenceCid: string
       evidenceUri: string
+      ipId: string
     }
   | { status: 'error'; message: string }
 
@@ -40,6 +43,8 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
   const [state, setState] = useState<SubmitState>({ status: 'idle' })
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement | null>(null)
+  const storyNetwork =
+    (process.env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -89,7 +94,8 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
         disputeId: result.disputeId,
         txHash: result.txHash,
         evidenceCid: result.evidenceCid,
-        evidenceUri: result.evidenceUri
+        evidenceUri: result.evidenceUri,
+        ipId: result.ipId
       })
       form.reset()
       if (defaultIpId) {
@@ -198,6 +204,20 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
             <dd className='font-mono text-xs'>{state.disputeId}</dd>
           </div>
           <div className='flex flex-col gap-1'>
+            <dt className='font-semibold text-muted-foreground'>IP asset</dt>
+            <dd className='break-all font-mono text-xs'>
+              <Link
+                href={ipAssetExplorerUrl(state.ipId, storyNetwork)}
+                target='_blank'
+                rel='noreferrer'
+                className='inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline'
+              >
+                {state.ipId}
+                <ExternalLink className='h-3 w-3' />
+              </Link>
+            </dd>
+          </div>
+          <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>Evidence bundle</dt>
             <dd className='break-all font-mono text-xs'>
               <Link
@@ -212,7 +232,17 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
           </div>
           <div className='flex flex-col gap-1'>
             <dt className='font-semibold text-muted-foreground'>Transaction hash</dt>
-            <dd className='break-all font-mono text-xs'>{state.txHash}</dd>
+            <dd className='break-all font-mono text-xs'>
+              <Link
+                href={`${storyScanBase(storyNetwork)}/tx/${state.txHash}`}
+                target='_blank'
+                rel='noreferrer'
+                className='inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline'
+              >
+                {state.txHash}
+                <ExternalLink className='h-3 w-3' />
+              </Link>
+            </dd>
           </div>
         </dl>
       )}
