@@ -29,19 +29,19 @@ Programmable licensing, ckBTC settlement, and verifiable evidence for AI and hum
 
 ### Story Protocol
 
-- Best LegalTech IP Tool: LexLink registers IP (manual upload and AI Studio), attaches PIL terms, sets royalty splits, and mints license tokens post-settlement; includes a searchable registry (Gallery/Marketplace) and end-to-end licensing flows.
-- Best Dispute Resolution App: Public “Report IP” form pins evidence to IPFS, raises a Story dispute with UMA liveness, and provides a Case Manager for owners to post counter‑evidence and follow resolution; links to StoryScan and transaction details are surfaced throughout.
+- **Best LegalTech IP Tool:** LexLink registers IP (manual upload and AI Studio), attaches PIL terms, sets royalty splits, and mints license tokens post-settlement; includes a searchable registry (Gallery/Marketplace) and end-to-end licensing flows.
+- **Best Dispute Resolution App:** Public “Report IP” form pins evidence to IPFS, raises a Story dispute with UMA liveness, and provides a Case Manager for owners to post counter‑evidence and follow resolution; links to StoryScan and transaction details are surfaced throughout.
 
 ### The Internet Computer (ICP)
 
-- Best Consumer‑Focused Legal Solution: Consumer‑grade buyer checkout uses Internet Identity and ckBTC, remembers license wallet preferences, and provides receipts and downloadable compliance artifacts (C2PA + VC).
-- Best B2B or Legal System Solution: Operator dashboard manages IP catalog, pricing, royalty policy, invoices, compliance ledger, and disputes with role‑based access via NextAuth + Convex.
-- Best use of ICP’s Bitcoin Integration (consumer product): Licensing invoices derive deterministic ckBTC subaccounts on the escrow canister; buyers pay from the browser against the ckBTC ledger and finalization mints the Story license token.
+- **Best Consumer‑Focused Legal Solution:** Consumer‑grade buyer checkout uses Internet Identity and ckBTC, remembers license wallet preferences, and provides receipts and downloadable compliance artifacts (C2PA + VC).
+- **Best B2B or Legal System Solution:** Operator dashboard manages IP catalog, pricing, royalty policy, invoices, compliance ledger, and disputes with role‑based access via NextAuth + Convex.
+- **Best use of ICP’s Bitcoin Integration (consumer product):** Licensing invoices derive deterministic ckBTC subaccounts on the escrow canister; buyers pay from the browser against the ckBTC ledger and finalization mints the Story license token.
 
 ### Constellation DAG
 
-- Best LegalTech DApp: Every completed license anchors a “digital evidence” pulse to IntegrationNet via dag4; UI links to the explorer and to the signed JSON payload so auditors can correlate settlement with Story licensing.
-- Best RegTech Tool: Compliance views and the public Verify page expose Constellation hash, explorer link, attestation hash, and compliance score; artifacts include the C2PA passport and verifiable credential for downstream checks.
+- **Best LegalTech DApp:** Every completed license anchors a “digital evidence” pulse to IntegrationNet via dag4; UI links to the explorer and to the signed JSON payload so auditors can correlate settlement with Story licensing.
+- **Best RegTech Tool:** Compliance views and the public Verify page expose Constellation hash, explorer link, attestation hash, and compliance score; artifacts include the C2PA passport and verifiable credential for downstream checks.
 
 ---
 
@@ -420,8 +420,6 @@ The canister exposes three methods:
 - `attestation(orderId: Text) -> Text`
 
 Configure `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID` with the output of deployment.
-The deployed Candid UI is available at:
-https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=bqf6p-rqaaa-aaaaa-qc46q-cai.
 
 ## 6. Operational flow
 
