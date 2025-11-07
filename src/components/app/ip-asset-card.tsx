@@ -231,18 +231,21 @@ export function IpAssetCard({
   )
 }
 
-function renderMediaPreview({
+export function renderMediaPreview({
   mediaType,
   mediaSources,
   imageSrc,
-  onImageError
+  onImageError,
+  className
 }: {
   mediaType?: string
   mediaSources: string[]
   imageSrc: string
   onImageError: () => void
+  className?: string
 }) {
   const type = (mediaType ?? '').toLowerCase()
+  const mediaHeightClass = className ?? 'h-56'
 
   if (type.startsWith('video/')) {
     const [primary, ...fallbacks] = mediaSources
@@ -262,7 +265,7 @@ function renderMediaPreview({
         poster={imageSrc || undefined}
         controls
         preload='metadata'
-        className='h-56 w-full object-cover'
+        className={cn(mediaHeightClass, 'w-full object-cover')}
       >
         {sources.map(source => (
           <source key={source} src={source} />
@@ -276,7 +279,12 @@ function renderMediaPreview({
     const audioSources =
       mediaSources.length > 0 ? mediaSources : imageSrc ? [imageSrc] : []
     return (
-      <div className='flex h-56 flex-col items-center justify-center gap-4 bg-background/85 p-6'>
+      <div
+        className={cn(
+          mediaHeightClass,
+          'flex flex-col items-center justify-center gap-4 bg-background/85 p-6'
+        )}
+      >
         {imageSrc ? (
           <Image
             src={imageSrc}
@@ -315,11 +323,16 @@ function renderMediaPreview({
 
   if (!imageSrc) {
     return (
-      <div className='flex h-56 items-center justify-center bg-muted/40 text-xs text-muted-foreground'>
-        Artwork unavailable
-      </div>
-    )
-  }
+        <div
+          className={cn(
+            mediaHeightClass,
+            'flex items-center justify-center bg-muted/40 text-xs text-muted-foreground'
+          )}
+        >
+          Artwork unavailable
+        </div>
+      )
+    }
 
   return (
     <Image
@@ -327,14 +340,14 @@ function renderMediaPreview({
       alt={mediaType ?? 'Asset preview'}
       width={800}
       height={600}
-      className='h-56 w-full object-cover'
+      className={cn(mediaHeightClass, 'w-full object-cover')}
       unoptimized={isIpfsUri(imageSrc)}
       onError={onImageError}
     />
   )
 }
 
-function buildIpfsSources(uri?: string) {
+export function buildIpfsSources(uri?: string) {
   if (!uri) {
     return []
   }
@@ -350,7 +363,7 @@ function buildIpfsSources(uri?: string) {
   return Array.from(sources)
 }
 
-function isIpfsUri(uri?: string) {
+export function isIpfsUri(uri?: string) {
   if (!uri) return false
   return uri.startsWith('ipfs://') || uri.includes('/ipfs/')
 }
