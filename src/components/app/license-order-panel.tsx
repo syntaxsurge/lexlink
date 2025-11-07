@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { TextDialog } from '@/components/ui/text-dialog'
 import { ipAssetExplorerUrl, type StoryNetwork } from '@/lib/story-links'
 
 type LicenseOrderPanelProps = {
@@ -146,6 +147,23 @@ export function LicenseOrderPanel({
     (origin
       ? `${origin}/pay/${createdOrder.orderId}`
       : `/pay/${createdOrder.orderId}`)
+
+  const orderDetails =
+    createdOrder !== null
+      ? [
+          { label: 'Order ID', value: createdOrder.orderId },
+          { label: 'Escrow account', value: createdOrder.btcAddress },
+          {
+            label: 'ckBTC subaccount',
+            value: createdOrder.ckbtcSubaccount ?? 'N/A'
+          },
+          {
+            label: 'Share link',
+            value: shareLink ?? 'N/A',
+            href: shareLink ?? undefined
+          }
+        ]
+      : []
 
   const handleCopyLink = async () => {
     if (!shareLink) return
@@ -319,28 +337,28 @@ export function LicenseOrderPanel({
                 </div>
               </div>
             </div>
-            <div className='grid w-full gap-5 md:grid-cols-2 lg:grid-cols-4'>
-              {[
-                { label: 'Order ID', value: createdOrder.orderId },
-                { label: 'Escrow account', value: createdOrder.btcAddress },
-                {
-                  label: 'ckBTC subaccount',
-                  value: createdOrder.ckbtcSubaccount ?? 'N/A'
-                },
-                { label: 'Share link', value: shareLink ?? 'N/A' }
-              ].map(detail => (
-                <div
-                  key={detail.label}
-                  className='rounded-3xl border border-border/70 bg-card/80 p-4 text-xs shadow-sm'
-                >
-                  <p className='text-[11px] uppercase tracking-wide text-muted-foreground'>
-                    {detail.label}
-                  </p>
-                  <p className='mt-3 break-all rounded-2xl border border-border/50 bg-background/90 px-4 py-3 font-mono text-[11px] text-foreground shadow-inner'>
-                    {detail.value}
-                  </p>
-                </div>
-              ))}
+            <div className='w-full overflow-hidden rounded-3xl border border-border/70 bg-card/80 shadow-sm'>
+              <table className='w-full text-sm'>
+                <tbody>
+                  {orderDetails.map(detail => (
+                    <tr
+                      key={detail.label}
+                      className='border-t border-border/40 first:border-t-0'
+                    >
+                      <th className='w-40 px-4 py-4 text-left text-[11px] uppercase tracking-wide text-muted-foreground'>
+                        {detail.label}
+                      </th>
+                      <td className='px-4 py-4'>
+                        <DetailValue
+                          label={detail.label}
+                          value={detail.value}
+                          href={detail.href}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </CardFooter>
         )}
@@ -463,4 +481,64 @@ function PreviewStat({ label, value }: { label: string; value: string }) {
       <p className='mt-2 font-semibold text-foreground'>{value}</p>
     </div>
   )
+}
+
+function DetailValue({
+  label,
+  value,
+  href,
+  maxLength = 32
+}: {
+  label: string
+  value?: string | null
+  href?: string
+  maxLength?: number
+}) {
+  const resolved =
+    typeof value === 'string' && value.trim().length > 0 ? value.trim() : 'N/A'
+  if (resolved === 'N/A') {
+    return (
+      <span className='font-mono text-xs text-muted-foreground'>N/A</span>
+    )
+  }
+
+  const isTruncated = resolved.length > maxLength
+
+  if (href) {
+    if (isTruncated) {
+      return (
+        <TextDialog
+          title={label}
+          content={resolved}
+          truncateLength={maxLength}
+          externalLinkHref={href}
+          externalLinkLabel='Open link'
+          triggerClassName='h-auto w-full truncate bg-transparent p-0 text-left font-mono text-xs text-primary underline-offset-4 hover:underline'
+        />
+      )
+    }
+    return (
+      <Link
+        href={href}
+        target='_blank'
+        rel='noreferrer'
+        className='break-all font-mono text-xs text-primary underline-offset-4 hover:underline'
+      >
+        {resolved}
+      </Link>
+    )
+  }
+
+  if (isTruncated) {
+    return (
+      <TextDialog
+        title={label}
+        content={resolved}
+        truncateLength={maxLength}
+        triggerClassName='h-auto w-full truncate bg-transparent p-0 text-left font-mono text-xs text-primary underline-offset-4 hover:underline'
+      />
+    )
+  }
+
+  return <span className='break-all font-mono text-xs text-foreground'>{resolved}</span>
 }

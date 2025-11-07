@@ -94,8 +94,7 @@ const serverEnvSchema = z.object({
     .default(259200),
   ICP_HOST: z.string().url(),
   ICP_IDENTITY_PEM_PATH: z.string().min(1).default('icp/icp_identity.pem'),
-  ICP_IDENTITY_PEM: z.string().min(1).optional(),
-  ICP_IDENTITY_PEM_BASE64: z.string().min(1).optional(),
+  ICP_IDENTITY_PEM_BASE64: z.string().min(1),
   CONSTELLATION_ENABLED: z
     .enum(['true', 'false'])
     .default('true')
@@ -202,9 +201,7 @@ function parseEnv() {
       process.env.STORY_DISPUTE_BOND_TOKEN_ADDRESS,
     STORY_DISPUTE_DEFAULT_LIVENESS: process.env.STORY_DISPUTE_DEFAULT_LIVENESS,
     ICP_HOST: process.env.ICP_HOST ?? process.env.NEXT_PUBLIC_ICP_HOST,
-    ICP_IDENTITY_PEM_PATH:
-      process.env.ICP_IDENTITY_PEM_PATH ?? process.env.ICP_IDENTITY_PEM,
-    ICP_IDENTITY_PEM: process.env.ICP_IDENTITY_PEM,
+    ICP_IDENTITY_PEM_PATH: process.env.ICP_IDENTITY_PEM_PATH,
     ICP_IDENTITY_PEM_BASE64: process.env.ICP_IDENTITY_PEM_BASE64,
     CONSTELLATION_ENABLED: process.env.CONSTELLATION_ENABLED,
     CONSTELLATION_PRIVATE_KEY: process.env.CONSTELLATION_PRIVATE_KEY,

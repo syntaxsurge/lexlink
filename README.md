@@ -79,6 +79,7 @@ STORY_DISPUTE_DEFAULT_LIVENESS="259200"
 ICP_HOST="https://icp0.io"                           # or local replica
 NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID="bqf6p-rqaaa-aaaaa-qc46q-cai"
 ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
+ICP_IDENTITY_PEM_BASE64=""                           # run `pnpm encode:icp-identity` after updating the PEM
 
 # Constellation anchoring
 CONSTELLATION_ENABLED="true"
@@ -140,6 +141,7 @@ export NEXT_PUBLIC_ICP_HOST="http://127.0.0.1:4943"
 export NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID=$(dfx canister id btc_escrow)
 export ICP_HOST="http://127.0.0.1:4943"
 export ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
+pnpm encode:icp-identity
 export NEXT_PUBLIC_IC_NETWORK="local"
 ```
 
@@ -216,6 +218,8 @@ export NEXT_PUBLIC_IC_NETWORK="local"
   - Export your identity: `dfx identity whoami` (e.g., `default`)
   - `dfx identity export default > icp/icp_identity.pem`
   - Set `ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"`
+  - Run `pnpm encode:icp-identity` to refresh `ICP_IDENTITY_PEM_BASE64` after
+    updating the PEM so serverless builds never read from disk
   - Identity docs:
     https://internetcomputer.org/docs/current/developer-docs/getting-started/developer-identity
   - Test canister call (Playground):
@@ -260,8 +264,10 @@ Sanity checks
 - The canister expects an ECDSA key with the name `lexlink-btc`. On mainnet,
   file a boundary node proposal; locally, run `dfx identity get-principal` and
   enable ECDSA signing in `dfx.json`.
-- `ICP_IDENTITY_PEM_PATH` can be a filesystem path (default shown) or inline PEM
-  content; the key must correspond to the controller of the escrow canister.
+- `ICP_IDENTITY_PEM_PATH` points at the exported PEM on disk. After updating the
+  file, run `pnpm encode:icp-identity` to refresh `ICP_IDENTITY_PEM_BASE64`,
+  which is the value consumed at runtime (no filesystem access required on
+  Vercel).
 
 ### Constellation configuration
 

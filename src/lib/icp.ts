@@ -1,6 +1,4 @@
 import { Buffer } from 'node:buffer'
-import fs from 'node:fs'
-import path from 'node:path'
 
 import { Actor, HttpAgent } from '@dfinity/agent'
 import { IDL } from '@dfinity/candid'
@@ -17,24 +15,26 @@ type EscrowActor = {
 let cachedActor: EscrowActor | null = null
 let cachedIdentity: Ed25519KeyIdentity | null = null
 
-function loadPemContent(pemOrPath: string): string {
-  const raw = pemOrPath.trim()
-  // If it looks like inline PEM content, return as-is
-  if (raw.includes('BEGIN') && raw.includes('PRIVATE KEY')) return raw
-  // Otherwise, treat as a filesystem path (relative or absolute)
-  const resolved = path.isAbsolute(raw) ? raw : path.join(process.cwd(), raw)
+function decodeIdentityPem(): string {
+  const encoded = env.ICP_IDENTITY_PEM_BASE64
+  if (!encoded) {
+    throw new Error(
+      'ICP_IDENTITY_PEM_BASE64 is not configured. Run "pnpm encode:icp-identity" to sync the PEM contents.'
+    )
+  }
   try {
-    return fs.readFileSync(resolved, 'utf8')
+    return Buffer.from(encoded, 'base64').toString('utf8')
   } catch (error) {
     throw new Error(
-      `Unable to read ICP identity PEM at "${resolved}". ` +
-        'For serverless deployments, set ICP_IDENTITY_PEM or ICP_IDENTITY_PEM_BASE64 with the full PEM contents.'
+      `Failed to decode ICP_IDENTITY_PEM_BASE64: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     )
   }
 }
 
-function deriveSecretKeyFromPem(pemOrPath: string): Uint8Array {
-  const pem = loadPemContent(pemOrPath)
+function deriveSecretKeyFromPem(): Uint8Array {
+  const pem = decodeIdentityPem()
   const lines = pem
     .trim()
     .split(/\r?\n/)
@@ -49,24 +49,11 @@ function deriveSecretKeyFromPem(pemOrPath: string): Uint8Array {
   return new Uint8Array(der.slice(-32))
 }
 
-function resolveIdentityPemSource(): string {
-  if (env.ICP_IDENTITY_PEM && env.ICP_IDENTITY_PEM.trim().length > 0) {
-    return env.ICP_IDENTITY_PEM
-  }
-  if (
-    env.ICP_IDENTITY_PEM_BASE64 &&
-    env.ICP_IDENTITY_PEM_BASE64.trim().length > 0
-  ) {
-    return Buffer.from(env.ICP_IDENTITY_PEM_BASE64, 'base64').toString('utf8')
-  }
-  return env.ICP_IDENTITY_PEM_PATH
-}
-
 export function loadIcpIdentity() {
   if (cachedIdentity) {
     return cachedIdentity
   }
-  const secretKey = deriveSecretKeyFromPem(resolveIdentityPemSource())
+  const secretKey = deriveSecretKeyFromPem()
   cachedIdentity = Ed25519KeyIdentity.fromSecretKey(secretKey)
   return cachedIdentity
 }
