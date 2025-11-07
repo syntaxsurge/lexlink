@@ -244,11 +244,14 @@ export function LicenseOrderPanel({
         ) : (
           <div className='rounded-xl border border-dashed border-border/60 bg-muted/20 p-8 text-center'>
             <p className='text-sm text-muted-foreground'>
-              Register an IP asset before issuing ckBTC invoices.
+              Register or generate an IP asset before issuing ckBTC invoices.
             </p>
-            <div className='mt-4 flex justify-center'>
+            <div className='mt-4 flex flex-wrap items-center justify-center gap-3'>
               <Button asChild variant='outline'>
                 <Link href='/dashboard/ip'>Open IP registry</Link>
+              </Button>
+              <Button asChild variant='secondary'>
+                <Link href='/dashboard/ai'>Open AI Studio</Link>
               </Button>
             </div>
           </div>
