@@ -563,6 +563,15 @@ export default async function LicensesPage({
                   <p className='break-all font-mono text-xs font-medium text-foreground'>
                     Order {order.orderId}
                   </p>
+                  <Link
+                    href={`/pay/${order.orderId}`}
+                    target='_blank'
+                    rel='noreferrer'
+                    className='mt-1 inline-flex items-center gap-1 text-xs text-primary underline-offset-4 hover:underline'
+                  >
+                    View pay page
+                    <ExternalLink className='h-3 w-3' />
+                  </Link>
                   <p className='text-xs text-muted-foreground'>
                     License token {order.tokenOnChainId || '—'}
                   </p>
