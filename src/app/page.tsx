@@ -170,7 +170,7 @@ const references = [
     label: 'UMA — How the Optimistic Oracle Works',
     href: 'https://docs.uma.xyz/protocol-overview/how-does-umas-oracle-work'
   }
-];
+]
 
 export default function HomePage() {
   return (
@@ -513,8 +513,8 @@ export default function HomePage() {
                   </CardTitle>
                   <CardDescription className='text-base leading-relaxed lg:text-lg'>
                     Join the future of decentralized intellectual property
-                    management. Launch your licensing infrastructure in
-                    minutes, not months.
+                    management. Launch your licensing infrastructure in minutes,
+                    not months.
                   </CardDescription>
                 </div>
 

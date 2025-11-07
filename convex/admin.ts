@@ -4,13 +4,7 @@ import { internal } from './_generated/api'
 import type { TableNames } from './_generated/dataModel'
 import { action, internalMutation, type MutationCtx } from './_generated/server'
 
-const TABLES: TableNames[] = [
-  'ips',
-  'licenses',
-  'disputes',
-  'users',
-  'events'
-]
+const TABLES: TableNames[] = ['ips', 'licenses', 'disputes', 'users', 'events']
 
 const DELETE_ORDER: TableNames[] = [
   'events',

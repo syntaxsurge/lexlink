@@ -28,7 +28,7 @@ const publicEnvSchema = z.object({
   NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID: z.string().optional(),
   NEXT_PUBLIC_ICP_CKBTC_NETWORK: z
     .enum(['ckbtc-mainnet', 'ckbtc-testnet'])
-    .optional(),
+    .optional()
 })
 
 const serverEnvSchema = z.object({
@@ -179,7 +179,7 @@ function parseEnv() {
     NEXT_PUBLIC_ICP_CKBTC_HOST: process.env.NEXT_PUBLIC_ICP_CKBTC_HOST,
     NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID:
       process.env.NEXT_PUBLIC_ICP_CKBTC_LEDGER_CANISTER_ID,
-    NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK,
+    NEXT_PUBLIC_ICP_CKBTC_NETWORK: process.env.NEXT_PUBLIC_ICP_CKBTC_NETWORK
   })
 
   const serverEnv = serverEnvSchema.parse({

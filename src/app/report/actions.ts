@@ -21,9 +21,7 @@ type SubmitDisputeResult =
       error: string
     }
 
-const VALID_TAGS = new Set(
-  Object.values(DisputeTargetTag) as readonly string[]
-)
+const VALID_TAGS = new Set(Object.values(DisputeTargetTag) as readonly string[])
 
 export async function submitDisputeAction(
   formData: FormData

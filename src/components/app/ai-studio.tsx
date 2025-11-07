@@ -341,7 +341,6 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
             />
           </CardContent>
         </Card>
-
       </div>
 
       <div className='space-y-4'>

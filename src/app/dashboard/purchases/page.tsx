@@ -19,15 +19,6 @@ import {
   CardTitle
 } from '@/components/ui/card'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
-import { TextDialog, ViewDetailsDialog } from '@/components/ui/text-dialog'
-import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
@@ -65,7 +56,8 @@ export default async function PurchasesPage() {
         <CardHeader>
           <CardTitle>Buyer Profile</CardTitle>
           <CardDescription>
-            Your default license wallet and payment information for this session.
+            Your default license wallet and payment information for this
+            session.
           </CardDescription>
         </CardHeader>
         <CardContent className='grid gap-4'>
@@ -74,10 +66,12 @@ export default async function PurchasesPage() {
               Default License Wallet
             </p>
             <p className='mt-2 break-all font-mono text-xs'>
-              {profile.defaultMintTo ?? 'Not set — will be captured during checkout'}
+              {profile.defaultMintTo ??
+                'Not set — will be captured during checkout'}
             </p>
             <p className='mt-3 text-xs leading-relaxed text-muted-foreground'>
-              This address will be prefilled for future orders. Update it during your next payment.
+              This address will be prefilled for future orders. Update it during
+              your next payment.
             </p>
           </div>
         </CardContent>
@@ -95,7 +89,8 @@ export default async function PurchasesPage() {
             {purchases.length === 0 && (
               <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center'>
                 <p className='text-sm text-muted-foreground'>
-                  No purchases recorded yet. When you pay an invoice, it will appear here with Story and Constellation links.
+                  No purchases recorded yet. When you pay an invoice, it will
+                  appear here with Story and Constellation links.
                 </p>
               </div>
             )}
@@ -160,19 +155,25 @@ export default async function PurchasesPage() {
                   <div className='flex flex-wrap items-start justify-between gap-4'>
                     <div className='flex-1 space-y-3'>
                       <div className='flex flex-wrap items-center gap-2'>
-                        <h3 className='text-base font-semibold'>{order.ipTitle}</h3>
+                        <h3 className='text-base font-semibold'>
+                          {order.ipTitle}
+                        </h3>
                         <Badge
                           variant={statusBadge.variant}
                           className={statusBadge.className}
                         >
                           {order.status}
                         </Badge>
-                        <Badge variant='outline' className='text-xs'>ckBTC</Badge>
+                        <Badge variant='outline' className='text-xs'>
+                          ckBTC
+                        </Badge>
                       </div>
 
                       <dl className='grid gap-2 text-sm'>
                         <div className='flex items-start gap-2'>
-                          <dt className='min-w-[100px] text-muted-foreground'>Order ID:</dt>
+                          <dt className='min-w-[100px] text-muted-foreground'>
+                            Order ID:
+                          </dt>
                           <dd className='flex-1 break-all font-mono text-xs text-foreground'>
                             {order.orderId}
                           </dd>
@@ -180,7 +181,9 @@ export default async function PurchasesPage() {
 
                         {order.mintTo && (
                           <div className='flex items-start gap-2'>
-                            <dt className='min-w-[100px] text-muted-foreground'>License Wallet:</dt>
+                            <dt className='min-w-[100px] text-muted-foreground'>
+                              License Wallet:
+                            </dt>
                             <dd className='flex-1 break-all font-mono text-xs text-foreground'>
                               {order.mintTo}
                             </dd>
@@ -189,7 +192,9 @@ export default async function PurchasesPage() {
 
                         {order.tokenOnChainId && (
                           <div className='flex items-start gap-2'>
-                            <dt className='min-w-[100px] text-muted-foreground'>License Token:</dt>
+                            <dt className='min-w-[100px] text-muted-foreground'>
+                              License Token:
+                            </dt>
                             <dd className='flex-1'>
                               <Link
                                 href={storyLink}
@@ -206,7 +211,9 @@ export default async function PurchasesPage() {
 
                         {constellationLink && order.constellationTx && (
                           <div className='flex items-start gap-2'>
-                            <dt className='min-w-[100px] text-muted-foreground'>Constellation:</dt>
+                            <dt className='min-w-[100px] text-muted-foreground'>
+                              Constellation:
+                            </dt>
                             <dd className='flex-1'>
                               <Link
                                 href={constellationLink}
@@ -225,9 +232,7 @@ export default async function PurchasesPage() {
 
                     <div className='flex flex-col gap-2'>
                       <Button asChild size='sm' variant='outline'>
-                        <Link href={receiptHref}>
-                          View Receipt
-                        </Link>
+                        <Link href={receiptHref}>View Receipt</Link>
                       </Button>
 
                       {order.status !== 'finalized' && (

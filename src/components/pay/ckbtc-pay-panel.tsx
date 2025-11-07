@@ -7,12 +7,14 @@ import { Principal } from '@dfinity/principal'
 import { useSession } from 'next-auth/react'
 
 import { setOrderMintTarget } from '@/app/dashboard/actions'
-import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { useInternetIdentity } from '@/components/auth/internet-identity-provider'
+import { useInvoiceStatus } from '@/components/pay/invoice-status-provider'
+import {
+  LicenseWalletFields,
+  isValidMintAddress
+} from '@/components/pay/license-wallet-fields'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { ledgerActor } from '@/lib/ic/ckbtc/client.browser'
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 
@@ -158,7 +160,7 @@ export function CkbtcPayPanel({
       setTransferState({ status: 'pending' })
 
       const normalizedMintTo = mintTo.trim()
-      if (!/^0x[a-fA-F0-9]{40}$/i.test(normalizedMintTo)) {
+      if (!isValidMintAddress(normalizedMintTo)) {
         throw new Error('Enter a valid 0x-prefixed EVM wallet before paying.')
       }
       if (sessionStatus !== 'authenticated') {
@@ -284,8 +286,11 @@ export function CkbtcPayPanel({
 
   const normalizedMint = mintTo.trim()
   const isMintValid =
-    normalizedMint.length > 0 && /^0x[a-fA-F0-9]{40}$/i.test(normalizedMint)
-  const hasSavedMint = Boolean(invoice.mintTo)
+    normalizedMint.length > 0 && isValidMintAddress(normalizedMint)
+  const walletError =
+    !isMintValid && normalizedMint.length > 0
+      ? 'Wallet must be a 0x-prefixed EVM address.'
+      : null
   const needsSession = sessionStatus !== 'authenticated'
 
   const canPay =
@@ -442,51 +447,18 @@ export function CkbtcPayPanel({
           </div>
         </div>
 
-        <div className='space-y-2'>
-          <Label htmlFor='mint-to'>License receiver (EVM wallet)</Label>
-          <Input
-            id='mint-to'
-            value={mintTo}
-            onChange={event => setMintTo(event.target.value)}
-            placeholder='0x…'
-            spellCheck={false}
-          />
-          <p className='text-xs text-muted-foreground'>
-            We mint the Story license token to this address once payment
-            finalizes.
-          </p>
-          {defaultMintTo && !invoice.mintTo && (
-            <button
-              type='button'
-              className='text-xs text-primary underline-offset-4 hover:underline'
-              onClick={() => setMintTo(defaultMintTo)}
-            >
-              Use saved wallet {short(defaultMintTo)}
-            </button>
-          )}
-          {!isMintValid && mintTo.trim().length > 0 && (
-            <p className='text-xs text-destructive'>
-              Wallet must be a 0x-prefixed EVM address.
-            </p>
-          )}
-          <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-            <input
-              id='remember-wallet'
-              type='checkbox'
-              className='h-4 w-4 rounded border border-border bg-background text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
-              checked={rememberPreference}
-              onChange={event => setRememberPreference(event.target.checked)}
-            />
-            <Label htmlFor='remember-wallet' className='cursor-pointer'>
-              Remember this wallet for future purchases
-            </Label>
-          </div>
-          {hasSavedMint && (
-            <p className='text-xs text-muted-foreground'>
-              Saved wallet: {short(invoice.mintTo as string)}
-            </p>
-          )}
-        </div>
+        <LicenseWalletFields
+          value={mintTo}
+          onChange={setMintTo}
+          rememberPreference={rememberPreference}
+          onRememberPreferenceChange={setRememberPreference}
+          defaultMintTo={defaultMintTo}
+          savedMintTo={invoice.mintTo ?? undefined}
+          error={walletError}
+          disabled={isBusy || isFinalized || isSettling}
+          label='License receiver (EVM wallet)'
+          description='We mint the Story license token to this address once payment finalizes.'
+        />
 
         <div className='flex flex-wrap gap-2'>
           {showConnect ? (
@@ -575,10 +547,4 @@ export function CkbtcPayPanel({
       </CardContent>
     </Card>
   )
-}
-
-function short(value: string, length = 10) {
-  if (!value) return ''
-  if (value.length <= length) return value
-  return `${value.slice(0, length)}…`
 }

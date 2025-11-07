@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 
 import { autoFinalizeCkbtcOrder } from '@/app/dashboard/actions'
 import { getConvexClient } from '@/lib/convex'
-import { env } from '@/lib/env'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'

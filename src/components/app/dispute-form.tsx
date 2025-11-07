@@ -12,7 +12,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
-import { ipAssetExplorerUrl, storyScanBase, type StoryNetwork } from '@/lib/story-links'
+import {
+  ipAssetExplorerUrl,
+  storyScanBase,
+  type StoryNetwork
+} from '@/lib/story-links'
 
 type MinimalIpEntry = {
   ipId: string
@@ -175,7 +179,8 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
             inputMode='url'
           />
           <p className='text-xs text-muted-foreground'>
-            We will snapshot and pin the URL to IPFS so the dispute references immutable content.
+            We will snapshot and pin the URL to IPFS so the dispute references
+            immutable content.
           </p>
         </div>
 
@@ -183,7 +188,8 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
           <Label htmlFor='files'>Evidence files</Label>
           <Input id='files' name='files' type='file' multiple />
           <p className='text-xs text-muted-foreground'>
-            Upload screenshots, audio, video, or PDFs (max 25&nbsp;MB each). Files are pinned to IPFS and bundled automatically.
+            Upload screenshots, audio, video, or PDFs (max 25&nbsp;MB each).
+            Files are pinned to IPFS and bundled automatically.
           </p>
         </div>
 
@@ -218,7 +224,9 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
             </dd>
           </div>
           <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>Evidence bundle</dt>
+            <dt className='font-semibold text-muted-foreground'>
+              Evidence bundle
+            </dt>
             <dd className='break-all font-mono text-xs'>
               <Link
                 href={`${IPFS_GATEWAYS[0]}${state.evidenceCid}`}
@@ -231,7 +239,9 @@ export function DisputeForm({ ips = [], defaultIpId }: DisputeFormProps) {
             </dd>
           </div>
           <div className='flex flex-col gap-1'>
-            <dt className='font-semibold text-muted-foreground'>Transaction hash</dt>
+            <dt className='font-semibold text-muted-foreground'>
+              Transaction hash
+            </dt>
             <dd className='break-all font-mono text-xs'>
               <Link
                 href={`${storyScanBase(storyNetwork)}/tx/${state.txHash}`}

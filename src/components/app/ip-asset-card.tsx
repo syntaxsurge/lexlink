@@ -112,7 +112,9 @@ export function IpAssetCard({
                   : 'bg-amber-600/80 text-white'
               )}
             >
-              {asset.derivativesAllowed ? 'Derivatives OK' : 'Derivatives Locked'}
+              {asset.derivativesAllowed
+                ? 'Derivatives OK'
+                : 'Derivatives Locked'}
             </Badge>
           </div>
         </div>

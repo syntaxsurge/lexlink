@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 
 import {
   respondToDisputeAction,
@@ -152,8 +152,8 @@ export function CaseActions({
                     disabled={respondPending}
                   />
                   <p className='text-[11px] text-muted-foreground'>
-                    Accepts screenshots, video, audio, PDFs, and ZIP archives
-                    up to 25&nbsp;MB each.
+                    Accepts screenshots, video, audio, PDFs, and ZIP archives up
+                    to 25&nbsp;MB each.
                   </p>
                 </div>
                 <div className='space-y-2'>

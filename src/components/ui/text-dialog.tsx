@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { Copy, Eye } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +15,6 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { toast } from 'sonner'
 
 type TextDialogProps = {
   title: string
@@ -57,7 +57,9 @@ export function TextDialog({
         <Button
           variant='ghost'
           size='sm'
-          className={triggerClassName ?? 'h-auto p-0 font-mono text-xs hover:underline'}
+          className={
+            triggerClassName ?? 'h-auto p-0 font-mono text-xs hover:underline'
+          }
         >
           {truncated}
         </Button>
@@ -112,16 +114,12 @@ export function ViewDetailsDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant='outline'
-          size='sm'
-          className={triggerClassName}
-        >
+        <Button variant='outline' size='sm' className={triggerClassName}>
           {triggerIcon ?? <Eye className='mr-2 h-4 w-4' />}
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className='max-w-3xl max-h-[80vh]'>
+      <DialogContent className='max-h-[80vh] max-w-3xl'>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           {description && <DialogDescription>{description}</DialogDescription>}

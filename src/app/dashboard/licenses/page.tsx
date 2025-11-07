@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 
 import Link from 'next/link'
 
-import { Download, ExternalLink, Share2 } from 'lucide-react'
+import { ExternalLink, Share2 } from 'lucide-react'
 
 import { loadDashboardData } from '@/app/dashboard/actions'
 import { LicenseOrderPanel } from '@/components/app/license-order-panel'
@@ -72,9 +72,7 @@ export default async function LicensesPage({
 }) {
   const { ips, licenses } = await loadDashboardData()
   const ckbtcEscrowPrincipal =
-    env.CKBTC_MERCHANT_PRINCIPAL ??
-    env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID ??
-    ''
+    env.CKBTC_MERCHANT_PRINCIPAL ?? env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID ?? ''
   const resolvedSearchParams = (await searchParams) ?? {}
   const focusedIpId =
     typeof resolvedSearchParams.ip === 'string'
@@ -97,7 +95,8 @@ export default async function LicensesPage({
         <CardHeader>
           <CardTitle>Pending Payments</CardTitle>
           <CardDescription>
-            Share payment targets with buyers. ckBTC invoices finalize automatically once the escrow ledger receives the transfer.
+            Share payment targets with buyers. ckBTC invoices finalize
+            automatically once the escrow ledger receives the transfer.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -255,7 +254,9 @@ export default async function LicensesPage({
                   <TableHead className='min-w-[150px]'>IP Asset</TableHead>
                   <TableHead className='min-w-[100px]'>Amount</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className='min-w-[200px]'>Escrow Account</TableHead>
+                  <TableHead className='min-w-[200px]'>
+                    Escrow Account
+                  </TableHead>
                   <TableHead className='min-w-[150px]'>Updated</TableHead>
                 </TableRow>
               </TableHeader>
@@ -272,8 +273,7 @@ export default async function LicensesPage({
                 )}
                 {orderHistory.map(order => {
                   const statusBadge = statusStyles(order.status)
-                  const ipTitle =
-                    ipTitleLookup.get(order.ipId) ?? 'Unknown IP'
+                  const ipTitle = ipTitleLookup.get(order.ipId) ?? 'Unknown IP'
                   return (
                     <TableRow key={`history-${order.orderId}`}>
                       <TableCell>
@@ -324,7 +324,8 @@ export default async function LicensesPage({
         <CardHeader>
           <CardTitle>Finalized Licenses</CardTitle>
           <CardDescription>
-            Story license tokens, C2PA bundles, and verifiable credentials for completed sales.
+            Story license tokens, C2PA bundles, and verifiable credentials for
+            completed sales.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -336,7 +337,9 @@ export default async function LicensesPage({
                   <TableHead className='min-w-[120px]'>IP</TableHead>
                   <TableHead className='min-w-[150px]'>Wallet</TableHead>
                   <TableHead className='min-w-[100px]'>Token</TableHead>
-                  <TableHead className='min-w-[180px]'>Settlement Reference</TableHead>
+                  <TableHead className='min-w-[180px]'>
+                    Settlement Reference
+                  </TableHead>
                   <TableHead className='min-w-[150px]'>Constellation</TableHead>
                   <TableHead>Score</TableHead>
                   <TableHead className='min-w-[150px]'>Updated</TableHead>
@@ -395,7 +398,9 @@ export default async function LicensesPage({
                       </TableCell>
                       <TableCell className='font-mono text-xs'>
                         {order.tokenOnChainId ? (
-                          <span className='break-all'>{order.tokenOnChainId}</span>
+                          <span className='break-all'>
+                            {order.tokenOnChainId}
+                          </span>
                         ) : (
                           <span className='text-muted-foreground'>—</span>
                         )}
@@ -427,7 +432,7 @@ export default async function LicensesPage({
                         )}
                       </TableCell>
                       <TableCell>
-                        <Badge className='bg-emerald-500/10 text-emerald-600 border-emerald-500/20'>
+                        <Badge className='border-emerald-500/20 bg-emerald-500/10 text-emerald-600'>
                           {order.complianceScore}/100
                         </Badge>
                       </TableCell>

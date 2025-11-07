@@ -125,9 +125,7 @@ function EventActionsMenu({ event }: { event: AuditEvent }) {
               <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                 Timestamp
               </span>
-              <div className='mt-2 text-sm'>
-                {formatDate(event.createdAt)}
-              </div>
+              <div className='mt-2 text-sm'>{formatDate(event.createdAt)}</div>
             </div>
           </div>
         </DialogContent>

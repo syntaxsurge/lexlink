@@ -1,15 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 
 import { Loader2, Share2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import {
-  createLicenseOrder,
-  type IpRecord
-} from '@/app/dashboard/actions'
+import { createLicenseOrder, type IpRecord } from '@/app/dashboard/actions'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,11 +19,6 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle
-} from '@/components/ui/alert'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -33,8 +27,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { TextDialog } from '@/components/ui/text-dialog'
-import { useRouter } from 'next/navigation'
 
 type LicenseOrderPanelProps = {
   ips: IpRecord[]
@@ -209,7 +201,11 @@ export function LicenseOrderPanel({
                 {selectedIp.tags && selectedIp.tags.length > 0 && (
                   <div className='mt-4 flex flex-wrap gap-2'>
                     {selectedIp.tags.slice(0, 4).map(tag => (
-                      <Badge key={tag} variant='outline' className='bg-background'>
+                      <Badge
+                        key={tag}
+                        variant='outline'
+                        className='bg-background'
+                      >
                         #{tag}
                       </Badge>
                     ))}
@@ -231,9 +227,7 @@ export function LicenseOrderPanel({
                 disabled={isPending || !selectedIp}
                 className='min-w-[220px]'
               >
-                {isPending && (
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                )}
+                {isPending && <Loader2 className='mr-2 h-4 w-4 animate-spin' />}
                 Generate ckBTC invoice
               </Button>
               <p className='text-xs text-muted-foreground'>
@@ -262,9 +256,12 @@ export function LicenseOrderPanel({
           <div className='rounded-3xl border border-primary/40 bg-gradient-to-r from-primary/10 via-background to-background p-5 shadow-inner'>
             <div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
               <div>
-                <p className='text-base font-semibold text-primary'>Invoice ready</p>
+                <p className='text-base font-semibold text-primary'>
+                  Invoice ready
+                </p>
                 <p className='text-sm text-muted-foreground'>
-                  Share the payment page or copy the link below to collect ckBTC.
+                  Share the payment page or copy the link below to collect
+                  ckBTC.
                 </p>
               </div>
               <div className='flex flex-wrap items-center gap-3'>

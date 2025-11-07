@@ -17,7 +17,8 @@ export default async function CompliancePage() {
         <CardHeader>
           <CardTitle>Audit Trail</CardTitle>
           <CardDescription>
-            Canonical evidence of all cross-chain actions executed inside LexLink.
+            Canonical evidence of all cross-chain actions executed inside
+            LexLink.
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -1,26 +1,28 @@
 'use client'
 
-import { ChangeEvent, useEffect, useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 
 import { useSession } from 'next-auth/react'
 import { toast } from 'sonner'
 
 import { setOrderMintTarget } from '@/app/dashboard/actions'
+import { useInvoiceStatus } from '@/components/pay/invoice-status-provider'
+import {
+  LicenseWalletFields,
+  isValidMintAddress,
+  shortAddress
+} from '@/components/pay/license-wallet-fields'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 
-import { useInvoiceStatus } from './invoice-status-provider'
-
-type MintTargetCardProps = {
+type LicenseWalletCardProps = {
   orderId: string
   defaultMintTo?: string | null
 }
 
-export function MintTargetCard({
+export function LicenseWalletCard({
   orderId,
   defaultMintTo
-}: MintTargetCardProps) {
+}: LicenseWalletCardProps) {
   const { data: session, status } = useSession()
   const { invoice, refresh } = useInvoiceStatus()
   const [mintTo, setMintTo] = useState<string>(
@@ -34,14 +36,13 @@ export function MintTargetCard({
   }, [invoice.mintTo, defaultMintTo])
 
   const normalized = useMemo(() => mintTo.trim(), [mintTo])
-  const isValid =
-    normalized.length === 0 || /^0x[a-fA-F0-9]{40}$/i.test(normalized)
+  const isValid = normalized.length === 0 || isValidMintAddress(normalized)
 
   const principalLabel = useMemo(() => {
     if (!session?.principal) {
       return 'your II principal'
     }
-    const compact = short(session.principal, 8)
+    const compact = shortAddress(session.principal, 8)
     return compact || session.principal
   }, [session?.principal])
 
@@ -80,6 +81,11 @@ export function MintTargetCard({
     )
   }
 
+  const walletError =
+    !isValid && normalized.length > 0
+      ? 'Wallet address must be a 0x-prefixed EVM address.'
+      : null
+
   return (
     <div className='space-y-3 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm'>
       <div className='flex items-start justify-between gap-3'>
@@ -90,48 +96,22 @@ export function MintTargetCard({
             finalizes.
           </p>
         </div>
-        {invoice.mintTo && <BadgeCandidate value={invoice.mintTo} />}
-      </div>
-      <div className='space-y-2'>
-        <Label htmlFor='mint-to'>EVM address</Label>
-        <Input
-          id='mint-to'
-          value={mintTo}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setMintTo(event.target.value)
-          }
-          placeholder='0x…'
-          spellCheck={false}
-        />
-        {!isValid && (
-          <p className='text-xs text-destructive'>
-            Wallet address must be a 0x-prefixed EVM address.
-          </p>
-        )}
-        {defaultMintTo && !invoice.mintTo && (
-          <button
-            type='button'
-            className='text-xs text-primary underline-offset-4 hover:underline'
-            onClick={() => setMintTo(defaultMintTo)}
-          >
-            Use saved wallet {short(defaultMintTo)}
-          </button>
+        {invoice.mintTo && (
+          <span className='rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600'>
+            Saved: {shortAddress(invoice.mintTo, 10)}
+          </span>
         )}
       </div>
-      <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-        <input
-          id='remember-wallet'
-          type='checkbox'
-          className='h-4 w-4 rounded border border-border bg-background text-primary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring'
-          checked={rememberPreference}
-          onChange={(event: ChangeEvent<HTMLInputElement>) =>
-            setRememberPreference(event.target.checked)
-          }
-        />
-        <Label htmlFor='remember-wallet' className='cursor-pointer'>
-          Remember this wallet for future purchases
-        </Label>
-      </div>
+      <LicenseWalletFields
+        value={mintTo}
+        onChange={setMintTo}
+        rememberPreference={rememberPreference}
+        onRememberPreferenceChange={setRememberPreference}
+        defaultMintTo={defaultMintTo}
+        savedMintTo={invoice.mintTo ?? undefined}
+        error={walletError}
+        helperText={`Principal ${principalLabel} must save a wallet before ckBTC auto-finalization can mint your license token.`}
+      />
       <div className='flex items-center gap-2'>
         <Button
           type='button'
@@ -142,28 +122,10 @@ export function MintTargetCard({
         </Button>
         {invoice.mintTo && (
           <span className='text-xs text-muted-foreground'>
-            Current wallet: {short(invoice.mintTo)}
+            Current wallet: {shortAddress(invoice.mintTo)}
           </span>
         )}
       </div>
-      <p className='text-xs text-muted-foreground'>
-        Principal {principalLabel} must save a wallet before ckBTC
-        auto-finalization can mint your license token.
-      </p>
     </div>
-  )
-}
-
-function short(value: string, length = 10) {
-  if (!value) return ''
-  if (value.length <= length) return value
-  return `${value.slice(0, length)}…`
-}
-
-function BadgeCandidate({ value }: { value: string }) {
-  return (
-    <span className='rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600'>
-      Saved: {short(value, 10)}
-    </span>
   )
 }

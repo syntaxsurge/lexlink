@@ -16,6 +16,10 @@ import { createLicenseArchive } from '@/lib/c2pa'
 import { deriveOrderSubaccount, formatSubaccountHex } from '@/lib/ckbtc'
 import { publishEvidence } from '@/lib/constellation'
 import { getConvexClient } from '@/lib/convex'
+import {
+  createDisputeEvidenceBundle,
+  type DisputeEvidenceAttachment
+} from '@/lib/disputes'
 import { env } from '@/lib/env'
 import { sha256Hex } from '@/lib/hash'
 import {
@@ -30,10 +34,6 @@ import {
   getDefaultLicenseTerms,
   getDefaultLicensingConfig
 } from '@/lib/story'
-import {
-  createDisputeEvidenceBundle,
-  type DisputeEvidenceAttachment
-} from '@/lib/disputes'
 import { generateLicenseCredential } from '@/lib/vc'
 
 export type IpRecord = {
@@ -2364,9 +2364,9 @@ export type RespondToDisputeResult =
       evidenceUri: string
     }
   | {
-    ok: false
-    error: string
-  }
+      ok: false
+      error: string
+    }
 
 export async function respondToDisputeAction(
   formData: FormData
@@ -2558,9 +2558,7 @@ export async function settleDisputeAction(disputeId: string) {
       disputeId: dispute.disputeId,
       txHash,
       constellationTx:
-        resolutionEvidence.status === 'ok'
-          ? resolutionEvidence.txHash
-          : null
+        resolutionEvidence.status === 'ok' ? resolutionEvidence.txHash : null
     },
     resourceId: dispute.disputeId
   })

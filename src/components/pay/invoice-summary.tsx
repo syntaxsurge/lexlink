@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react'
 
-import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
+import { useInvoiceStatus } from '@/components/pay/invoice-status-provider'
 import { Badge } from '@/components/ui/badge'
 
 function formatBtc(sats?: number) {

@@ -16,7 +16,7 @@ export default async function MarketplacePage() {
     <div className='container-edge space-y-12 py-16'>
       <section className='relative overflow-hidden rounded-[40px] border border-border/60 bg-gradient-to-br from-card via-background to-card p-12 text-center shadow-2xl'>
         <div className='absolute left-0 top-0 h-48 w-48 rounded-full bg-primary/20 blur-3xl' />
-        <div className='absolute right-6 bottom-4 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl' />
+        <div className='absolute bottom-4 right-6 h-56 w-56 rounded-full bg-amber-400/20 blur-3xl' />
         <div className='relative z-10 space-y-4'>
           <div className='mx-auto w-fit rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-primary'>
             LexLink marketplace
@@ -26,8 +26,8 @@ export default async function MarketplacePage() {
           </h1>
           <p className='mx-auto max-w-3xl text-base text-muted-foreground md:text-lg'>
             Listings reflect live pricing, derivative permissions, and royalty
-            splits. Generate invoices or share ckBTC payment links with buyers in
-            a single flow.
+            splits. Generate invoices or share ckBTC payment links with buyers
+            in a single flow.
           </p>
           <div className='flex flex-wrap items-center justify-center gap-3 text-sm'>
             <p className='text-muted-foreground'>

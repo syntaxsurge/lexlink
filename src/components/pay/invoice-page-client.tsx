@@ -4,16 +4,16 @@ import Link from 'next/link'
 
 import { ShieldAlert } from 'lucide-react'
 
-import { CkbtcPayPanel } from '@/app/pay/[orderId]/_components/ckbtc-pay-panel'
-import { FinalizationTimeline } from '@/app/pay/[orderId]/_components/finalization-timeline'
+import { CkbtcPayPanel } from '@/components/pay/ckbtc-pay-panel'
+import { FinalizationTimeline } from '@/components/pay/finalization-timeline'
 import {
   InvoiceStatusProvider,
   type InvoiceSnapshot
-} from '@/app/pay/[orderId]/_components/invoice-status-provider'
-import { InvoiceSummary } from '@/app/pay/[orderId]/_components/invoice-summary'
-import { MintTargetCard } from '@/app/pay/[orderId]/_components/mint-target-card'
-import { Button } from '@/components/ui/button'
+} from '@/components/pay/invoice-status-provider'
+import { InvoiceSummary } from '@/components/pay/invoice-summary'
+import { LicenseWalletCard } from '@/components/pay/license-wallet-card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -62,7 +62,7 @@ export default function InvoicePageClient({
           <CardHeader className='space-y-4 text-center'>
             <Badge
               variant='outline'
-              className='mx-auto w-fit uppercase tracking-widest text-xs text-muted-foreground'
+              className='mx-auto w-fit text-xs uppercase tracking-widest text-muted-foreground'
             >
               LexLink invoice
             </Badge>
@@ -89,7 +89,12 @@ export default function InvoicePageClient({
             </div>
           </CardContent>
           <CardFooter className='flex flex-wrap items-center justify-center gap-3'>
-            <Button variant='outline' size='sm' asChild className='gap-2 rounded-full px-4'>
+            <Button
+              variant='outline'
+              size='sm'
+              asChild
+              className='gap-2 rounded-full px-4'
+            >
               <Link href={`/report?ipId=${initialInvoice.ipId}`}>
                 <ShieldAlert className='h-4 w-4' />
                 Report IP misuse
@@ -121,7 +126,7 @@ export default function InvoicePageClient({
         )}
 
         {!showCkbtcPay && (
-          <MintTargetCard
+          <LicenseWalletCard
             orderId={initialInvoice.orderId}
             defaultMintTo={defaultMintTo}
           />

@@ -60,9 +60,7 @@ function takeMostRecent<T>(
   limit = 3
 ) {
   return [...items]
-    .sort(
-      (a, b) => (getTimestamp(b) ?? 0) - (getTimestamp(a) ?? 0)
-    )
+    .sort((a, b) => (getTimestamp(b) ?? 0) - (getTimestamp(a) ?? 0))
     .slice(0, limit)
 }
 
@@ -99,7 +97,10 @@ function EventItem({ event }: { event: AuditEventRecord }) {
     <div className='rounded-lg border border-border/60 bg-background/70 p-3 shadow-sm transition-colors hover:bg-accent/50'>
       <div className='flex flex-wrap items-center justify-between gap-2'>
         <div className='flex min-w-0 flex-1 flex-wrap items-center gap-2'>
-          <Badge variant='outline' className='flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs'>
+          <Badge
+            variant='outline'
+            className='flex-shrink-0 rounded-full px-2.5 py-0.5 text-xs'
+          >
             {event.action}
           </Badge>
           {event.resourceId && (
@@ -123,7 +124,11 @@ function EventItem({ event }: { event: AuditEventRecord }) {
         </div>
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant='ghost' size='sm' className='h-7 flex-shrink-0 text-xs'>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-7 flex-shrink-0 text-xs'
+            >
               <Eye className='mr-1.5 h-3.5 w-3.5' />
               View Details
             </Button>
@@ -150,7 +155,9 @@ function EventItem({ event }: { event: AuditEventRecord }) {
                     <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       Resource ID
                     </span>
-                    <div className='mt-1 break-all font-mono text-xs'>{event.resourceId}</div>
+                    <div className='mt-1 break-all font-mono text-xs'>
+                      {event.resourceId}
+                    </div>
                   </div>
                 )}
                 {event.actorAddress && (
@@ -158,7 +165,9 @@ function EventItem({ event }: { event: AuditEventRecord }) {
                     <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       Actor Address
                     </span>
-                    <div className='mt-1 break-all font-mono text-xs'>{event.actorAddress}</div>
+                    <div className='mt-1 break-all font-mono text-xs'>
+                      {event.actorAddress}
+                    </div>
                   </div>
                 )}
                 {event.actorPrincipal && (
@@ -166,14 +175,18 @@ function EventItem({ event }: { event: AuditEventRecord }) {
                     <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                       Actor Principal
                     </span>
-                    <div className='mt-1 break-all font-mono text-xs'>{event.actorPrincipal}</div>
+                    <div className='mt-1 break-all font-mono text-xs'>
+                      {event.actorPrincipal}
+                    </div>
                   </div>
                 )}
                 <div>
                   <span className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
                     Timestamp
                   </span>
-                  <div className='mt-1 text-xs'>{formatDate(event.createdAt)}</div>
+                  <div className='mt-1 text-xs'>
+                    {formatDate(event.createdAt)}
+                  </div>
                 </div>
               </div>
               <div>
@@ -195,15 +208,12 @@ function EventItem({ event }: { event: AuditEventRecord }) {
 }
 
 export default async function OverviewPage() {
-  const [
-    { principal, ips, licenses, disputes },
-    auditTrail,
-    ckbtcSnapshot
-  ] = await Promise.all([
-    loadDashboardData(),
-    loadAuditTrail(8),
-    loadCkbtcSnapshot()
-  ])
+  const [{ principal, ips, licenses, disputes }, auditTrail, ckbtcSnapshot] =
+    await Promise.all([
+      loadDashboardData(),
+      loadAuditTrail(8),
+      loadCkbtcSnapshot()
+    ])
 
   const pendingOrders = licenses.filter((license: LicenseRecord) =>
     ['pending', 'funded', 'confirmed'].includes(license.status)
@@ -273,12 +283,19 @@ export default async function OverviewPage() {
         <Card className='rounded-2xl border border-border/60 bg-card/70 shadow-sm'>
           <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-3'>
             <div className='space-y-1'>
-              <CardTitle className='text-lg'>Pending License Payments</CardTitle>
+              <CardTitle className='text-lg'>
+                Pending License Payments
+              </CardTitle>
               <CardDescription className='text-sm'>
                 Orders awaiting settlement
               </CardDescription>
             </div>
-            <Button asChild variant='outline' size='sm' className='flex-shrink-0'>
+            <Button
+              asChild
+              variant='outline'
+              size='sm'
+              className='flex-shrink-0'
+            >
               <Link href='/dashboard/licenses'>Manage</Link>
             </Button>
           </CardHeader>
@@ -307,7 +324,12 @@ export default async function OverviewPage() {
                       {order.status}
                     </Badge>
                   </div>
-                  <Button asChild variant='ghost' size='sm' className='h-7 text-xs'>
+                  <Button
+                    asChild
+                    variant='ghost'
+                    size='sm'
+                    className='h-7 text-xs'
+                  >
                     <Link href='/dashboard/licenses'>View</Link>
                   </Button>
                 </div>
@@ -324,7 +346,12 @@ export default async function OverviewPage() {
                 Active Story disputes
               </CardDescription>
             </div>
-            <Button asChild variant='outline' size='sm' className='flex-shrink-0'>
+            <Button
+              asChild
+              variant='outline'
+              size='sm'
+              className='flex-shrink-0'
+            >
               <Link href='/dashboard/disputes'>Review</Link>
             </Button>
           </CardHeader>
@@ -353,11 +380,14 @@ export default async function OverviewPage() {
                     key={dispute.disputeId}
                     className='rounded-lg border border-border/60 bg-background/70 p-3 transition-colors hover:bg-accent/50'
                   >
-                    <div className='flex items-center justify-between gap-2 mb-2'>
+                    <div className='mb-2 flex items-center justify-between gap-2'>
                       <span className='truncate font-mono text-xs font-medium'>
                         {dispute.disputeId.slice(0, 12)}…
                       </span>
-                      <Badge variant='outline' className='flex-shrink-0 rounded-full px-2 py-0.5 text-xs capitalize'>
+                      <Badge
+                        variant='outline'
+                        className='flex-shrink-0 rounded-full px-2 py-0.5 text-xs capitalize'
+                      >
                         {dispute.status}
                       </Badge>
                     </div>
@@ -534,7 +564,9 @@ export default async function OverviewPage() {
                   <TableHead className='whitespace-nowrap'>Order</TableHead>
                   <TableHead className='whitespace-nowrap'>IP ID</TableHead>
                   <TableHead className='whitespace-nowrap'>Status</TableHead>
-                  <TableHead className='whitespace-nowrap'>Constellation Tx</TableHead>
+                  <TableHead className='whitespace-nowrap'>
+                    Constellation Tx
+                  </TableHead>
                   <TableHead className='whitespace-nowrap'>Score</TableHead>
                 </TableRow>
               </TableHeader>

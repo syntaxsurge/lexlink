@@ -3,10 +3,7 @@ import { ReactNode } from 'react'
 
 import { ExternalLink, ShieldAlert } from 'lucide-react'
 
-import {
-  loadDashboardData,
-  type DisputeRecord
-} from '@/app/dashboard/actions'
+import { loadDashboardData, type DisputeRecord } from '@/app/dashboard/actions'
 import { CaseActions } from '@/components/app/case-actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,14 +14,14 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
-import { TextDialog } from '@/components/ui/text-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { TextDialog } from '@/components/ui/text-dialog'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
 } from '@/lib/constellation-links'
-import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import { env } from '@/lib/env'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import {
   ipAssetExplorerUrl,
   storyScanBase,
@@ -176,10 +173,14 @@ function CaseCard({
   principal: string
 }) {
   const constellationLink =
-    dispute.constellationExplorerUrl && dispute.constellationExplorerUrl.length > 0
+    dispute.constellationExplorerUrl &&
+    dispute.constellationExplorerUrl.length > 0
       ? dispute.constellationExplorerUrl
       : dispute.constellationTx
-        ? constellationExplorerUrl(CONSTELLATION_NETWORK, dispute.constellationTx)
+        ? constellationExplorerUrl(
+            CONSTELLATION_NETWORK,
+            dispute.constellationTx
+          )
         : null
 
   const storyExplorer = ipAssetExplorerUrl(dispute.ipId, STORY_NETWORK)
@@ -187,7 +188,9 @@ function CaseCard({
   const responseEvidenceUrl = resolveIpfs(dispute.responseEvidenceUri)
   const deadline =
     dispute.livenessDeadline ??
-    (dispute.createdAt ? dispute.createdAt + dispute.livenessSeconds * 1000 : undefined)
+    (dispute.createdAt
+      ? dispute.createdAt + dispute.livenessSeconds * 1000
+      : undefined)
   const livenessLabel = formatLiveness(deadline)
 
   return (
@@ -364,13 +367,7 @@ function CaseCard({
   )
 }
 
-function DataRow({
-  label,
-  children
-}: {
-  label: string
-  children: ReactNode
-}) {
+function DataRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className='flex items-start gap-2'>
       <dt className='min-w-[120px] text-xs font-semibold uppercase tracking-wide text-muted-foreground'>

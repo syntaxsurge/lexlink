@@ -3,9 +3,16 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 
-import { CheckCircle2, Circle, Clock3, Download, ExternalLink, XCircle } from 'lucide-react'
+import {
+  CheckCircle2,
+  Circle,
+  Clock3,
+  Download,
+  ExternalLink,
+  XCircle
+} from 'lucide-react'
 
-import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
+import { useInvoiceStatus } from '@/components/pay/invoice-status-provider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -519,7 +526,7 @@ export function FinalizationTimeline({
             <div className='flex h-5 w-5 items-center justify-center'>
               {resolveStatusIcon(step.status)}
             </div>
-            <div className='flex-1 rounded-2xl border border-border/50 bg-background/80 p-4 shadow-inner space-y-3'>
+            <div className='flex-1 space-y-3 rounded-2xl border border-border/50 bg-background/80 p-4 shadow-inner'>
               <div className='flex flex-wrap items-center gap-3'>
                 <p className='text-base font-semibold text-foreground'>
                   {step.title}
