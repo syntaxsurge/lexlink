@@ -1,69 +1,96 @@
 # LexLink YouTube Demo Script (6–8 minutes)
 
-A factual, click-by-click walkthrough of the current LexLink build. Each segment lists the screen and an accurate voice‑over that mirrors the app’s behavior today.
+A factual, click-by-click walkthrough of the current LexLink build. Each segment lists the screen, exact demo inputs, and a concise voice‑over.
 
 —
 
 ## 1) Problem framing (0:00 – 0:30)
 - On‑screen: Landing page (`/`), “Real problems we address” section.
-- Voice‑over: “Teams struggle to prove rights and provenance, buyers can’t tell if assets are clean, and compliance needs an auditable chain of custody. LexLink unifies Story Protocol licensing, ICP ckBTC settlement, and Constellation evidence so creators can monetize safely and buyers trust what they’re licensing.”
+- Demo inputs: No input fields on this page.
+- **Voice‑over 1:** Teams struggle to prove rights and provenance, buyers can’t tell if assets are clean, and compliance needs an auditable chain of custody. LexLink unifies Story Protocol licensing, ICP ckBTC settlement, and Constellation evidence so creators can monetize safely and buyers trust what they’re licensing.
 
 ## 2) Secure sign‑in (0:30 – 0:50)
 - On‑screen: `/signin` → Sign in with Internet Identity.
-- Voice‑over: “Authentication uses Internet Identity. The server verifies the delegation and persists your principal and role in Convex.”
+- Demo inputs:
+  - Click “Sign in with Internet Identity” and complete the popup. No text fields.
+- **Voice‑over 2:** Authentication uses Internet Identity. The server verifies the delegation and persists your principal and role in Convex.
 
-## 3) Dashboard overview (0:50 – 1:20)
-- On‑screen: `/dashboard` KPIs, Pending Payments, Recent Audit Activity.
-- Voice‑over: “The overview mirrors Story, ckBTC invoices, and audit events. Every privileged action writes a structured event payload with your principal.”
+## 3) Create IP via AI Studio (with Registry preview) (0:50 – 2:10)
+- On‑screen (preview only): Open `/dashboard/ip` (IP Registry) briefly to show the page. Do not scroll or interact.
+- On‑screen (actual interaction): Navigate to `/dashboard/ai` and fill the form. Click “Generate & Register”.
+- AI Studio demo inputs (type exactly):
+  - Prompt: Design an album cover featuring neon‑lit architecture reflected on rain‑soaked streets, cyberpunk synthwave aesthetic, 4k, cinematic lighting, vibrant magenta and teal palette.
+  - Title: Neon District Suite
+  - Description: Futuristic album artwork depicting a neon‑lit cityscape with rain reflections and cinematic lighting; licensed for commercial use with derivatives allowed.
+  - License price (BTC): 0.001
+  - Royalty share (%): 10
+  - Commercial use: checked
+  - Derivatives allowed: checked
+- On‑screen: Confirm the generated preview, wait for registration, then copy the displayed IP ID. Open the Story explorer link to show the asset.
+- **Voice‑over 3:** IP can be registered from existing files—upload a cover image and the primary media, set price, royalties, and metadata. For this demo, I will generate the asset in AI Studio by entering the prompt, title, and description, setting the license price to 0.001 BTC, keeping the royalty share at 10%, and leaving commercial use and derivatives allowed checked; the studio renders media, pins metadata to IPFS, registers the IP on Story with commercial PIL terms, and mirrors everything to Convex.
 
-## 4) Create IP via AI Studio (1:20 – 2:10)
-- On‑screen: `/dashboard/ai`.
-- Voice‑over: “You can register any existing asset from IP Registry, but for this demo we’ll generate one in AI Studio. The studio renders media, computes hashes, mints a Story IP Asset, attaches PIL license terms, and mirrors everything to Convex.”
-- On‑screen: Submit a prompt, confirm the generated preview, then watch the registration complete. Click the Story explorer link for the new IP ID.
+## 4) List the asset for sale (2:10 – 2:50)
+- On‑screen: `/dashboard/licenses` → “Generate ckBTC Invoice”.
+- Demo inputs:
+  - IP asset: Select “Neon District Suite – 0.001000 ckBTC” from the dropdown.
+  - Click “Generate ckBTC invoice”.
+- On‑screen: After submission, find the new entry under Pending Payments and click “Open invoice”.
+- **Voice‑over 4:** Select the IP to invoice. Each order derives a deterministic ICRC‑1 subaccount for ckBTC escrow and saves a shareable payment link.
 
-## 5) List the asset for sale (2:10 – 2:50)
-- On‑screen: `/dashboard/licenses` → Generate License Order.
-- Voice‑over: “Pick the IP and amount. Every order derives a deterministic ICRC‑1 subaccount for ckBTC settlement and saves a shareable pay link.”
-- On‑screen: After submit, the order appears in Pending Payments with status, amount, and the ckBTC escrow target.
+## 5) Buyer checkout and wallet capture (2:50 – 3:40)
+- On‑screen: Open the shared link `/pay/[orderId]` as the buyer session.
+- Demo inputs:
+  - License wallet (EVM address): 0x1111111111111111111111111111111111111111
+  - Remember this wallet for future purchases: checked
+  - Click “Connect Internet Identity”, then click “Pay now”.
+  - Amount: pay the shown price (expected 0.00100000 ckTESTBTC on testnet).
+- **Voice‑over 5:** Buyers authenticate with Internet Identity, set a license wallet, and pay with ckBTC from the browser; the page auto‑refreshes on ledger updates, and once funded the server mints the Story license token, pins a C2PA bundle and verifiable credential, and anchors Constellation evidence.
 
-## 6) Buyer checkout and wallet capture (2:50 – 3:40)
-- On‑screen: open the share link `/pay/[orderId]` as the buyer session.
-- Voice‑over: “Buyers authenticate with Internet Identity, set their default license wallet inline, and pay with ckBTC from the browser.”
-- On‑screen: Click Pay, send ckTESTBTC. The page auto‑refreshes when the escrow balance increases.
-- Voice‑over: “Once funded, the server mints the Story license token and anchors a C2PA archive, a verifiable credential, and a Constellation hash. The buyer’s default wallet is remembered for future purchases.”
-
-## 7) Buyer’s My Licenses (3:40 – 4:05)
+## 6) Buyer’s My Licenses (3:40 – 4:05)
 - On‑screen: `/dashboard/purchases` (buyer session).
-- Voice‑over: “My Licenses lists every claimed order for this principal with one‑click links: Story explorer, Constellation explorer, C2PA archive, and the VC download. The default license wallet is shown at the top.”
+- Demo inputs: No input fields on this page.
+- **Voice‑over 6:** Lists each claimed order with quick links to Story, Constellation, the C2PA archive, and the verifiable credential. The saved license wallet is shown.
 
-## 8) Seller’s license management (4:05 – 4:35)
-- On‑screen: switch to the seller/operator session → `/dashboard/licenses`.
-- Voice‑over: “The Licenses tab shows pending invoices, manual finalization for native BTC, and a full order history sorted by update time. Each row links to mempool, Story, and Constellation.”
+## 7) Seller’s license management (4:05 – 4:35)
+- On‑screen: Switch to the seller/operator session → `/dashboard/licenses`.
+- Demo inputs: No input fields on this page.
+- **Voice‑over 7:** Shows pending invoices, automatic ckBTC finalization, and a chronological history. Each row links to settlement references and explorers.
 
-## 9) Public “Report IP” (4:35 – 5:00)
-- On‑screen: Header → “Report IP” or the button on the invoice page → `/report`.
-- Voice‑over: “Anyone can report misuse. Reporters upload evidence or paste a source URL. LexLink pins the files to IPFS, builds a single evidence bundle CID, and passes that to Story’s Dispute Module.”
-- On‑screen: Submit a dispute with tag `IMPROPER_USAGE`. Show the returned Dispute ID and evidence bundle link.
+## 8) Public “Report IP” (4:35 – 5:00)
+- On‑screen: Header → “Report IP” or the button from an invoice → `/report`.
+- Demo inputs (type exactly):
+  - IP asset (ipId): Use the dropdown to select “Neon District Suite” (autofills ipId). If not listed, paste the copied ipId from AI Studio.
+  - Dispute tag: improper usage (IMPROPER_USAGE)
+  - Note: Suspected unauthorized repost on social media; link below.
+  - Source URL: https://example.com/infringing-post
+  - Evidence files: leave empty (URL provided above suffices)
+  - Click “Raise dispute”.
+- On‑screen: Show the returned Dispute ID and evidence bundle link.
+- **Voice‑over 8:** Anyone can report misuse. Evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module.
 
-## 10) Case Manager (5:00 – 5:30)
+## 9) Case Manager (5:00 – 5:30)
 - On‑screen: `/dashboard/disputes` (owner/operator session).
-- Voice‑over: “The Cases view has Inbox, Filed, and Watching tabs. Owners can open a dispute card, add counter evidence, follow deadlines, and trigger settlement once UMA’s liveness window ends. Reporters see the same evidence trail plus the Story + Constellation transactions.”
+- Demo inputs: No input fields unless posting counter‑evidence (skip for this demo).
+- **Voice‑over 9:** Inbox, Filed, and Watching tabs track disputes. Open the new case to view evidence, liveness, and resolution status. Owners can add counter‑evidence during liveness and settle after UMA finalizes.
 
-## 11) Compliance and audit (5:30 – 5:55)
+## 10) Compliance and audit (5:30 – 5:55)
 - On‑screen: `/dashboard/compliance`.
-- Voice‑over: “A searchable audit trail with actor principal, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.”
+- Demo inputs: No input fields on this page.
+- **Voice‑over 10:** A searchable audit ledger with principals, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.
 
-## 12) Settings (5:55 – 6:10)
+## 11) Settings (5:55 – 6:10)
 - On‑screen: `/dashboard/settings`.
-- Voice‑over: “Session details and role‑based controls live here. Sessions auto‑expire; rotate credentials as needed.”
+- Demo inputs: No input fields to type for this demo.
+- **Voice‑over 11:** Shows the current Internet Identity principal and role. Operators can manage team roles.
 
-## 13) Gallery and marketplace (6:10 – 6:40)
+## 12) Gallery and marketplace (6:10 – 6:40)
 - On‑screen: `/gallery` then `/marketplace`.
-- Voice‑over: “The gallery surfaces registered media and attribution. The marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders safely.”
+- Demo inputs: No input fields on these pages.
+- **Voice‑over 12:** The gallery surfaces registered media and attribution. The marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders.
 
-## 14) How creators earn (6:40 – 7:10)
+## 13) How creators earn (6:40 – 7:10)
 - On‑screen: Show an IP’s royalty and minting settings (from IP detail cards and Licenses order builder).
-- Voice‑over: “Revenue comes from minting fees per license and ongoing royalties on derivatives encoded in PIL terms. Disputes can carry bonds on UMA; upheld claims return bonds plus a portion of the counter‑party bond to the winner.”
+- **Voice‑over 13:** Revenue comes from per‑license minting and ongoing royalties encoded in PIL terms. Disputes can require bonds; upheld claims reflect across licensing flows.
 
 —
 
