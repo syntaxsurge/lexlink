@@ -1,7 +1,5 @@
 # LexLink
 
-Programmable licensing, ckBTC settlement, and verifiable evidence for AI and human-created IP.
-
 [![LexLink Demo](public/images/lexlink-demo.png)](https://www.youtube.com/watch?v=gs01pInUGZ0)
 
 ---
