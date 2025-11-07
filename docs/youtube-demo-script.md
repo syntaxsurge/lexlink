@@ -52,7 +52,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Select “Neon District Suite – 0.001000 ckBTC” from the dropdown
   - Click “Generate ckBTC invoice”
 - On‑screen: After submission, find the new entry under Pending Payments and click “Open invoice”.
-- **Voice‑over 5:** On the Licenses page, select the IP to invoice; each order derives a deterministic ICRC‑1 subaccount for ckBTC escrow and saves a shareable payment link.
+- **Voice‑over 5:** For this demonstration, I will select the recently generated AI IP; on the Licenses page, select the IP to invoice; each order derives a deterministic ICRC‑1 subaccount for ckBTC escrow and saves a shareable payment link.
 
 ## 6) Buyer checkout and wallet capture
 - On‑screen: Open the shared link `/pay/[orderId]` as the buyer session.
