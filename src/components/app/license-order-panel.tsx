@@ -258,70 +258,60 @@ export function LicenseOrderPanel({
         )}
       </CardContent>
       {createdOrder && (
-        <CardFooter className='flex flex-col gap-4 border-t border-border/60 bg-primary/5'>
-          <div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-            <div>
-              <p className='text-sm font-semibold text-primary'>
-                Invoice ready
-              </p>
-              <p className='text-xs text-muted-foreground'>
-                Share the link or open the public pay page to collect ckBTC.
-              </p>
-            </div>
-            <div className='flex flex-wrap items-center gap-2'>
-              <Button asChild size='sm'>
-                <Link
-                  href={`/pay/${createdOrder.orderId}`}
-                  target='_blank'
-                  rel='noreferrer'
+        <CardFooter className='flex flex-col gap-5 border-t border-primary/30 bg-primary/5'>
+          <div className='rounded-2xl border border-primary/30 bg-background/90 p-4 shadow-sm'>
+            <div className='flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
+              <div>
+                <p className='text-sm font-semibold text-primary'>Invoice ready</p>
+                <p className='text-xs text-muted-foreground'>
+                  Share the payment page or copy the link below to collect ckBTC.
+                </p>
+              </div>
+              <div className='flex flex-wrap items-center gap-2'>
+                <Button asChild size='sm' className='gap-2'>
+                  <Link
+                    href={`/pay/${createdOrder.orderId}`}
+                    target='_blank'
+                    rel='noreferrer'
+                  >
+                    <Share2 className='h-4 w-4' />
+                    Open invoice
+                  </Link>
+                </Button>
+                <Button
+                  type='button'
+                  size='sm'
+                  variant='outline'
+                  onClick={handleCopyLink}
+                  disabled={!shareLink}
                 >
-                  <Share2 className='mr-2 h-4 w-4' />
-                  Open invoice
-                </Link>
-              </Button>
-              <Button
-                type='button'
-                size='sm'
-                variant='outline'
-                onClick={handleCopyLink}
-                disabled={!shareLink}
-              >
-                {copied ? 'Link copied' : 'Copy share link'}
-              </Button>
+                  {copied ? 'Link copied' : 'Copy share link'}
+                </Button>
+              </div>
             </div>
           </div>
-          <div className='rounded-xl border border-primary/40 bg-background/80 p-4 text-xs'>
-            <dl className='grid gap-2 md:grid-cols-2'>
-              <div>
-                <dt className='text-muted-foreground'>Order ID</dt>
-                <dd>
-                  <TextDialog
-                    title='Order ID'
-                    content={createdOrder.orderId}
-                    truncateLength={16}
-                    triggerClassName='font-mono text-xs text-primary hover:underline'
-                  />
-                </dd>
+          <div className='grid w-full gap-4 md:grid-cols-2 lg:grid-cols-4'>
+            {[
+              { label: 'Order ID', value: createdOrder.orderId },
+              { label: 'Escrow account', value: createdOrder.btcAddress },
+              {
+                label: 'ckBTC subaccount',
+                value: createdOrder.ckbtcSubaccount ?? 'N/A'
+              },
+              { label: 'Share link', value: shareLink ?? 'N/A' }
+            ].map(detail => (
+              <div
+                key={detail.label}
+                className='rounded-2xl border border-primary/20 bg-background/95 p-3 text-xs'
+              >
+                <p className='text-[11px] uppercase tracking-wide text-muted-foreground'>
+                  {detail.label}
+                </p>
+                <p className='mt-2 break-all rounded-lg border border-primary/10 bg-primary/5 px-3 py-2 font-mono text-[11px] text-foreground'>
+                  {detail.value}
+                </p>
               </div>
-              <div>
-                <dt className='text-muted-foreground'>Escrow account</dt>
-                <dd className='break-all font-mono'>
-                  {createdOrder.btcAddress}
-                </dd>
-              </div>
-              <div>
-                <dt className='text-muted-foreground'>ckBTC subaccount</dt>
-                <dd className='font-mono'>
-                  {createdOrder.ckbtcSubaccount ?? 'N/A'}
-                </dd>
-              </div>
-              <div>
-                <dt className='text-muted-foreground'>Share link</dt>
-                <dd className='break-all font-mono'>
-                  {shareLink}
-                </dd>
-              </div>
-            </dl>
+            ))}
           </div>
         </CardFooter>
       )}
