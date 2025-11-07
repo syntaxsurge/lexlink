@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { Layers, Sparkles, BookOpen, ExternalLink } from 'lucide-react'
 
 import { loadDashboardData } from '@/app/dashboard/actions'
-import { IpAssetCard } from '@/components/app/ip-asset-card'
 import { RegisterIpForm } from '@/components/app/register-ip-form'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,8 +13,6 @@ import {
   CardTitle
 } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { env } from '@/lib/env'
-import { type StoryNetwork } from '@/lib/story-links'
 
 export default async function IpRegistryPage() {
   const { ips } = await loadDashboardData()
@@ -118,80 +115,10 @@ export default async function IpRegistryPage() {
         </Card>
       </div>
 
-      <Separator className='my-8 bg-gradient-to-r from-transparent via-border to-transparent' />
-
-      <section className='space-y-6'>
-        <div className='flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-gradient-to-br from-card/50 to-background p-6'>
-          <div>
-            <h2 className='text-2xl font-bold text-foreground'>
-              Registered IP Assets
-            </h2>
-            <p className='mt-1 text-sm text-muted-foreground'>
-              All Story Protocol registrations owned by this account, ready for
-              licensing, marketplace listing, and AI genealogy
-            </p>
-          </div>
-          <Badge
-            variant='outline'
-            className='shrink-0 rounded-full border-primary/40 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary'
-          >
-            {ips.length} {ips.length === 1 ? 'Asset' : 'Assets'}
-          </Badge>
-        </div>
-        {ips.length > 0 ? (
-          <div className='grid gap-6 lg:grid-cols-2 2xl:grid-cols-3'>
-            {ips.map(ip => (
-              <IpAssetCard
-                key={ip.ipId}
-                asset={ip}
-                network={
-                  (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
-                }
-                highlightActions
-                actionSlot={
-                  <div className='space-y-3 text-xs text-muted-foreground'>
-                    <p className='font-semibold text-foreground'>Next Steps</p>
-                    <p>
-                      Generate a ckBTC or BTC invoice from Licenses → Create
-                      order to start selling this asset with the configured
-                      royalties
-                    </p>
-                    <div className='space-y-2'>
-                      <Link
-                        href={`/report?ipId=${ip.ipId}`}
-                        className='flex items-center gap-1 text-primary underline-offset-4 hover:underline'
-                      >
-                        <ExternalLink className='h-3 w-3' />
-                        Share public report link
-                      </Link>
-                      <Link
-                        href={`/dashboard/licenses?ip=${ip.ipId}`}
-                        className='flex items-center gap-1 text-primary underline-offset-4 hover:underline'
-                      >
-                        <ExternalLink className='h-3 w-3' />
-                        Create license order
-                      </Link>
-                    </div>
-                  </div>
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          <Card className='rounded-3xl border-2 border-dashed border-border/60 bg-gradient-to-br from-muted/30 to-background py-20 text-center shadow-xl'>
-            <CardContent>
-              <Layers className='mx-auto mb-4 h-12 w-12 text-muted-foreground/50' />
-              <p className='text-base font-medium text-foreground'>
-                No IP assets registered yet
-              </p>
-              <p className='mt-2 text-sm text-muted-foreground'>
-                Use the form above to mint your first Story asset and expose it
-                to buyers instantly
-              </p>
-            </CardContent>
-          </Card>
-        )}
-      </section>
+      <Card className='rounded-3xl border border-dashed border-border/60 bg-muted/20 p-6 text-sm text-muted-foreground'>
+        Registered assets live exclusively in the gallery, keeping the registry
+        focused on submissions and catalogue health.
+      </Card>
     </div>
   )
 }

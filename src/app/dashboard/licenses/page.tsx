@@ -555,9 +555,9 @@ export default async function LicensesPage({
                 key={`${order.orderId}-bundle`}
                 className='flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-background/60 p-3 text-sm'
               >
-                <div className='flex-1'>
-                  <p className='font-medium'>
-                    Order {order.orderId.slice(0, 10)}…
+                <div className='min-w-0 flex-1'>
+                  <p className='break-all font-mono text-xs font-medium text-foreground'>
+                    Order {order.orderId}
                   </p>
                   <p className='text-xs text-muted-foreground'>
                     License token {order.tokenOnChainId || '—'}

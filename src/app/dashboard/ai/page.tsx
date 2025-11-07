@@ -1,6 +1,5 @@
 import { Wand2 } from 'lucide-react'
 
-import { loadDashboardData, type IpRecord } from '@/app/dashboard/actions'
 import { AiStudio } from '@/components/app/ai-studio'
 import { Badge } from '@/components/ui/badge'
 import { env } from '@/lib/env'
@@ -9,11 +8,6 @@ const network =
   (env.NEXT_PUBLIC_STORY_NETWORK as 'aeneid' | 'mainnet') ?? 'aeneid'
 
 export default async function AiGenerationPage() {
-  const { ips } = await loadDashboardData()
-  const aiAssets = ips
-    .filter((ip: IpRecord) => Boolean(ip.aiMetadata))
-    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
-    .slice(0, 6)
   return (
     <div className='space-y-10'>
       {/* Hero Section */}
@@ -41,7 +35,7 @@ export default async function AiGenerationPage() {
         </div>
       </section>
 
-      <AiStudio recentAssets={aiAssets} network={network} />
+      <AiStudio network={network} />
     </div>
   )
 }

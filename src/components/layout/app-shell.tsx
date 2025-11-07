@@ -198,43 +198,6 @@ export function AppShell({ children }: AppShellProps) {
                 </div>
               </SheetContent>
             </Sheet>
-
-            <div className='space-y-1'>
-              <h1 className='text-2xl font-semibold tracking-tight text-foreground md:text-3xl'>
-                LexLink Dashboard
-              </h1>
-              <p className='max-w-2xl text-sm leading-relaxed text-muted-foreground'>
-                Monitor registrations, settle licenses, and trace provenance
-                across Story, ICP, and Constellation.
-              </p>
-            </div>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              asChild
-              className='hidden md:inline-flex'
-            >
-              <Link href='/report'>Report IP</Link>
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              asChild
-              className='hidden md:inline-flex'
-            >
-              <Link href='/dashboard/settings'>Settings</Link>
-            </Button>
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={handleSignOut}
-              className='hidden md:inline-flex'
-            >
-              Sign out
-            </Button>
           </div>
         </header>
 

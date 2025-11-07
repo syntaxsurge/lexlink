@@ -138,11 +138,6 @@ export function LicenseOrderPanel({
             instantly.
           </CardDescription>
         </div>
-        {selectedIp && (
-          <Badge variant='outline' className='text-xs'>
-            {selectedIp.title}
-          </Badge>
-        )}
       </CardHeader>
       <CardContent>
         {hasLicensableAssets ? (

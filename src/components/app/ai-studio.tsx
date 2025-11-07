@@ -9,8 +9,7 @@ import { Wand2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-import { generateAiIpAsset, type IpRecord } from '@/app/dashboard/actions'
-import { IpAssetCard } from '@/components/app/ip-asset-card'
+import { generateAiIpAsset } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -52,13 +51,12 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>
 
 type AiStudioProps = {
-  recentAssets: IpRecord[]
   network: StoryNetwork
 }
 
 type AiGenerationResult = Awaited<ReturnType<typeof generateAiIpAsset>>
 
-export function AiStudio({ recentAssets, network }: AiStudioProps) {
+export function AiStudio({ network }: AiStudioProps) {
   const [result, setResult] = useState<AiGenerationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -343,58 +341,9 @@ export function AiStudio({ recentAssets, network }: AiStudioProps) {
         </Card>
       </div>
 
-      <div className='space-y-4'>
-        <div className='flex items-center justify-between gap-3'>
-          <div>
-            <h2 className='text-xl font-semibold text-foreground'>
-              Recent AI assets
-            </h2>
-            <p className='text-sm text-muted-foreground'>
-              Registered through the studio with royalties, provenance hashes,
-              and Story identifiers.
-            </p>
-          </div>
-          <Button asChild variant='outline'>
-            <Link href='/gallery'>View public gallery</Link>
-          </Button>
-        </div>
-        {recentAssets.length > 0 ? (
-          <div className='grid gap-6 lg:grid-cols-2 xl:grid-cols-3'>
-            {recentAssets.map(asset => (
-              <IpAssetCard
-                key={asset.ipId}
-                asset={asset}
-                network={network}
-                highlightActions
-                actionSlot={
-                  <div className='space-y-2 text-xs text-muted-foreground'>
-                    <p className='font-medium text-foreground'>
-                      Issue a license
-                    </p>
-                    <p>
-                      Generate a ckBTC or BTC invoice from the Licenses tab to
-                      start monetizing this asset instantly.
-                    </p>
-                    <Button asChild size='sm' variant='outline'>
-                      <Link href={`/dashboard/licenses?ip=${asset.ipId}`}>
-                        Create license order
-                      </Link>
-                    </Button>
-                  </div>
-                }
-              />
-            ))}
-          </div>
-        ) : (
-          <Card className='border-dashed border-border/60 bg-muted/20 py-16 text-center'>
-            <CardContent>
-              <p className='text-sm text-muted-foreground'>
-                Your AI assets will appear here once they are generated and
-                registered.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+      <div className='rounded-3xl border border-border/60 bg-muted/10 px-6 py-4 text-sm text-muted-foreground'>
+        Generated assets automatically land in the gallery, so operators can
+        focus on prompts and licensing runs here.
       </div>
     </div>
   )
