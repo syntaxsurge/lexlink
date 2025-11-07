@@ -369,11 +369,11 @@ export function LicenseOrderPanel({
                 <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/20' />
                 <div className='absolute left-4 top-4 flex flex-wrap gap-2'>
                   {selectedIp.aiMetadata ? (
-                    <Badge className='border border-white/30 bg-white/10 text-[11px] font-semibold uppercase tracking-wide text-white shadow'>
+                    <Badge className='border border-black/70 bg-black/80 text-[11px] font-semibold uppercase tracking-wide text-white shadow-lg'>
                       AI Generated
                     </Badge>
                   ) : null}
-                  <Badge className='border border-white/30 bg-white/10 text-[11px] uppercase tracking-wide text-white shadow'>
+                  <Badge className='border border-black/70 bg-black/80 text-[11px] uppercase tracking-wide text-white shadow-lg'>
                     {selectedIp.mediaType?.split('/')?.[0] ?? 'Media'}
                   </Badge>
                 </div>
