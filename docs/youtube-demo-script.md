@@ -52,7 +52,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Select “Neon District Suite – 0.001000 ckBTC” from the dropdown
   - Click “Generate ckBTC invoice”
 - On‑screen: After submission, find the new entry under Pending Payments and click “Open invoice”.
-- **Voice‑over 5:** Select the IP to invoice; each order derives a deterministic ICRC‑1 subaccount for ckBTC escrow and saves a shareable payment link.
+- **Voice‑over 5:** On the Licenses page, select the IP to invoice; each order derives a deterministic ICRC‑1 subaccount for ckBTC escrow and saves a shareable payment link.
 
 ## 6) Buyer checkout and wallet capture
 - On‑screen: Open the shared link `/pay/[orderId]` as the buyer session.
@@ -62,17 +62,17 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Click “Connect Internet Identity”
   - Click “Pay now”
   - Amount: pay the shown price (expected 0.00100000 ckTESTBTC on testnet)
-- **Voice‑over 6:** Buyers authenticate with Internet Identity, set a license wallet, and pay with ckBTC from the browser; the page auto‑refreshes on ledger updates, and once funded the server mints the Story license token, pins a C2PA bundle and verifiable credential, and anchors Constellation evidence.
+- **Voice‑over 6:** On the invoice page, buyers authenticate with Internet Identity, set a license wallet, and pay with ckBTC from the browser; the page auto‑refreshes on ledger updates, and once funded the server mints the Story license token, pins a C2PA bundle and verifiable credential, and anchors Constellation evidence.
 
 ## 7) Buyer’s My Licenses
 - On‑screen: `/dashboard/purchases` (buyer session).
 - Demo inputs: No input fields on this page.
-- **Voice‑over 7:** Lists each claimed order with quick links to Story, Constellation, the C2PA archive, and the verifiable credential; the saved license wallet is shown.
+- **Voice‑over 7:** On the My Licenses page, see each claimed order with quick links to Story, Constellation, the C2PA archive, and the verifiable credential; the saved license wallet is shown.
 
 ## 8) Seller’s license management
 - On‑screen: Switch to the seller/operator session → `/dashboard/licenses`.
 - Demo inputs: No input fields on this page.
-- **Voice‑over 8:** Shows pending invoices, automatic ckBTC finalization, and a chronological history; each row links to settlement references and explorers.
+- **Voice‑over 8:** On the Licenses page, review pending invoices, automatic ckBTC finalization, and a chronological history; each row links to settlement references and explorers.
 
 ## 9) Public “Report IP”
 - On‑screen: Header → “Report IP” or the button from an invoice → `/report`.
@@ -84,28 +84,28 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Evidence files: leave empty
   - Click “Raise dispute”
 - On‑screen: Show the returned Dispute ID and evidence bundle link.
-- **Voice‑over 9:** Anyone can report misuse; evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module.
+- **Voice‑over 9:** On the Report IP page, anyone can report misuse; evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module.
 
 ## 10) Case Manager
 - On‑screen: `/dashboard/disputes` (owner/operator session).
 - Demo inputs: No input fields unless posting counter‑evidence (skip for this demo).
-- **Voice‑over 10:** Inbox, Filed, and Watching tabs track disputes; open the new case to view evidence, liveness, and resolution status; owners can add counter‑evidence during liveness and settle after UMA finalizes.
+- **Voice‑over 10:** On the Case Manager page, the Inbox, Filed, and Watching tabs track disputes; open the new case to view evidence, liveness, and resolution status; owners can add counter‑evidence during liveness and settle after UMA finalizes.
 
 ## 11) Compliance and audit
 - On‑screen: `/dashboard/compliance`.
 - Demo inputs: No input fields on this page.
-- **Voice‑over 11:** A searchable audit ledger with principals, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.
+- **Voice‑over 11:** On the Compliance page, a searchable audit ledger lists principals, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.
 
 ## 12) Settings
 - On‑screen: `/dashboard/settings`.
 - Demo inputs: No input fields to type for this demo.
-- **Voice‑over 12:** Shows the current Internet Identity principal and role; operators can manage team roles.
+- **Voice‑over 12:** On the Settings page, see the current Internet Identity principal and role; operators can manage team roles.
 
 ## 13) Gallery and marketplace
 - On‑screen: `/gallery` then `/marketplace`.
 - Demo inputs: No input fields on these pages.
-- **Voice‑over 13:** The gallery surfaces registered media and attribution; the marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders.
+- **Voice‑over 13:** On the Gallery and Marketplace pages, the gallery surfaces registered media and attribution; the marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders.
 
 ## 14) How creators earn
 - On‑screen: Show an IP’s royalty and minting settings (from IP detail cards and Licenses order builder).
-- **Voice‑over 14:** Revenue comes from per‑license minting and ongoing royalties encoded in PIL terms; disputes can require bonds and upheld claims reflect across licensing flows.
+- **Voice‑over 14:** From the IP details and Licenses builder, revenue comes from per‑license minting and ongoing royalties encoded in PIL terms; disputes can require bonds and upheld claims reflect across licensing flows.
