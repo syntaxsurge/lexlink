@@ -106,7 +106,7 @@ export default async function IpRegistryPage() {
               </p>
             </div>
             <Link
-              href='https://docs.storyprotocol.xyz/docs/spg'
+              href='https://docs.story.foundation/concepts/spg/overview'
               target='_blank'
               rel='noreferrer'
               className='inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/50 px-4 py-2 text-sm font-medium transition-all hover:border-primary/40 hover:bg-primary/5'
