@@ -1,34 +1,85 @@
 # LexLink
 
-LexLink is a production-ready, cross-protocol legaltech stack:
+Programmable licensing, ckBTC settlement, and verifiable evidence for AI and human-created IP.
 
-- **Story Protocol (Aeneid Testnet)** registers IP assets, attaches
-  PIL-compliant licenses, and mints license tokens when settlements clear.
-- **ICP ckBTC Escrow Canister** provisions ICRC escrow targets for license
-  orders, verifies balances against the ckBTC ledger, and emits signed
-  attestations.
-- **Constellation IntegrationNet** receives an on-ledger heartbeat for every
-  completed license sale so auditors can correlate Story transactions with ckBTC
-  settlements.
-- **C2PA passport + VC issuance** produce a downloadable archive containing a
-  manifest that references the Story license token, ckBTC payment reference, and
-  Constellation proof along with a signed Ed25519 verifiable credential.
-- **UMA-backed dispute intake** exposes a public report form, mirrors evidence
-  in Convex, and routes owners through a disputes inbox with UMA judgement
-  simulation for testnets and on-chain resolution tracking.
-- **Convex** stores operational mirrors (IP catalogue, license orders, evidence
-  hashes, C2PA bundles, and VC documents) to power the dashboard.
-- **NextAuth + Internet Identity** provide delegated operator sessions with
-  Convex-backed roles and a full audit ledger.
+![LexLink Home](public/images/lexlink-home.png)
 
-This repository contains the full end-to-end implementation for Days 2 and 3 of
-the build plan, ready to deploy without placeholders.
+---
 
-Revenue accrues in three places: Story PIL minting fees collected per license,
-royalty shares encoded in `royaltyBps` for downstream derivative sales, and
-optional dispute bonds when UMA arbitration upholds infringement claims. The
-dashboard surfaces these levers so operators can quantify licensing income and
-compliance costs in real time.
+## Quick Links
+
+- Live app: https://lexlink-legal.vercel.app/
+- YouTube demo: https://www.youtube.com/watch?v=gs01pInUGZ0
+- GitHub repo: https://github.com/syntaxsurge/lexlink
+- ckTESTBTC faucet (testnet): https://testnet-faucet.ckboost.com/
+- ICP escrow canister (Candid UI): https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=bqf6p-rqaaa-aaaaa-qc46q-cai
+
+## Core Capabilities
+
+- Story Protocol (Aeneid) registration with PIL terms and license token minting on settlement
+- ICP ckBTC escrow (ICRC‑1) with deterministic subaccounts and II-based buyer checkout
+- Constellation IntegrationNet anchoring with explorer + raw JSON payloads for evidence
+- Downloadable C2PA license passport and signed verifiable credential (Ed25519)
+- UMA-backed dispute reporting, IPFS-pinned evidence, and owner counter‑evidence flows
+- Convex-powered dashboards for IP, licensing, disputes, compliance, and verification
+
+---
+
+## Sponsor Track Alignment (Hackathon)
+
+### Story Protocol
+
+- Best LegalTech IP Tool: LexLink registers IP (manual upload and AI Studio), attaches PIL terms, sets royalty splits, and mints license tokens post-settlement; includes a searchable registry (Gallery/Marketplace) and end-to-end licensing flows.
+- Best Dispute Resolution App: Public “Report IP” form pins evidence to IPFS, raises a Story dispute with UMA liveness, and provides a Case Manager for owners to post counter‑evidence and follow resolution; links to StoryScan and transaction details are surfaced throughout.
+
+### The Internet Computer (ICP)
+
+- Best Consumer‑Focused Legal Solution: Consumer‑grade buyer checkout uses Internet Identity and ckBTC, remembers license wallet preferences, and provides receipts and downloadable compliance artifacts (C2PA + VC).
+- Best B2B or Legal System Solution: Operator dashboard manages IP catalog, pricing, royalty policy, invoices, compliance ledger, and disputes with role‑based access via NextAuth + Convex.
+- Best use of ICP’s Bitcoin Integration (consumer product): Licensing invoices derive deterministic ckBTC subaccounts on the escrow canister; buyers pay from the browser against the ckBTC ledger and finalization mints the Story license token.
+
+### Constellation DAG
+
+- Best LegalTech DApp: Every completed license anchors a “digital evidence” pulse to IntegrationNet via dag4; UI links to the explorer and to the signed JSON payload so auditors can correlate settlement with Story licensing.
+- Best RegTech Tool: Compliance views and the public Verify page expose Constellation hash, explorer link, attestation hash, and compliance score; artifacts include the C2PA passport and verifiable credential for downstream checks.
+
+---
+
+## Contracts, Canisters & Network References
+
+- Story (Aeneid testnet):
+  - PILicenseToken: `0xFe3838BFb30B34170F00030B52eA4893d8aAC6bC`
+  - PILicenseTemplate: `0x2E896b0b2Fdb7457499B56AAaA4AE55BCB4Cd316`
+  - DisputeModule: `0x9b7A9c70AFF961C799110954fc06F3093aeb94C5`
+  - UMA Arbitration Policy: `0xfFD98c3877B8789124f02C7E8239A4b0Ef11E936`
+- ICP (ckBTC escrow canister):
+  - Canister ID: `bqf6p-rqaaa-aaaaa-qc46q-cai`
+  - Candid UI: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=bqf6p-rqaaa-aaaaa-qc46q-cai
+- Constellation:
+  - Network: `integrationnet`
+  - Explorer: https://integrationnet.dagexplorer.io/
+
+---
+
+## High‑Level Architecture
+
+```
+Client (Next.js App Router)
+  └─> Server Actions (Node runtime)
+       ├─ Story Protocol (Aeneid): IP registration, PIL terms, license token mint
+       ├─ ICP ckBTC: escrow canister (ICRC‑1), ledger balance checks, II authentication
+       ├─ Constellation IntegrationNet: dag4 anchor + explorer link + JSON payload
+       └─ Convex: IP catalog, invoices, disputes, compliance ledger, artifacts (C2PA/VC)
+```
+
+### License Sale Finalization (Sequence)
+
+```
+Create order → derive ckBTC subaccount → share invoice link
+Buyer (II) → set license wallet → ckBTC transfer to escrow
+Ledger credit detected → mint Story license token → issue C2PA + VC → Constellation anchor
+Convex mirrors updated → Verify page exposes proofs, artifacts, and explorer links
+```
 
 ## 1. Prerequisites
 
@@ -394,6 +445,4 @@ pnpm lint
 - Build and deploy the Next.js application using `pnpm build` or your preferred
   platform (Vercel, Fly.io, etc.).
 
-LexLink now provides a unified surface for Story Protocol licensing, ICP ckBTC
-escrow, and Constellation compliance evidence—no placeholders, ready for real
-integrations.
+LexLink provides a unified surface for Story Protocol licensing, ICP ckBTC escrow, and Constellation compliance evidence—ready for real integrations.
