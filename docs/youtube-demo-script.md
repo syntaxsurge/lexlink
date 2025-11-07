@@ -90,7 +90,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 - Demo inputs:
   - Open the reported case from the Inbox
   - Click “Add counter evidence”
-  - Note: Counter‑evidence: Ownership proof and context
+  - Note: Counter‑evidence: Original authorship and licensing context; request rejection of the report citing PIL terms (commercial use + derivatives allowed; include License Terms ID) and the UMA arbitration policy reference
   - Evidence files: upload example file (e.g., counter-evidence.png)
   - Click “Submit”
   - Reopen the case and click the response transaction to view the counter submission
