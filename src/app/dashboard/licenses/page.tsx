@@ -295,7 +295,7 @@ export default async function LicensesPage({
         <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
         <CardContent className='pt-6'>
           <div className='overflow-x-auto'>
-            <Table>
+            <Table className='min-w-[720px]'>
               <TableHeader>
                 <TableRow>
                   <TableHead className='min-w-[120px]'>Order</TableHead>
@@ -388,7 +388,7 @@ export default async function LicensesPage({
         <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
         <CardContent className='pt-6'>
           <div className='overflow-x-auto'>
-            <Table>
+            <Table className='min-w-[720px]'>
               <TableHeader>
                 <TableRow>
                   <TableHead className='min-w-[120px]'>Order</TableHead>

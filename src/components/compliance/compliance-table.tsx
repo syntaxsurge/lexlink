@@ -157,7 +157,7 @@ type ComplianceTableProps = {
 export function ComplianceTable({ events }: ComplianceTableProps) {
   return (
     <div className='overflow-x-auto'>
-      <Table>
+      <Table className='min-w-[640px]'>
         <TableHeader>
           <TableRow>
             <TableHead className='min-w-[140px]'>Event</TableHead>

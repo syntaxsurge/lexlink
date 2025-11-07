@@ -706,7 +706,7 @@ export default async function OverviewPage() {
         <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
         <CardContent className='pt-6'>
           <div className='overflow-x-auto rounded-2xl border border-border/60 bg-background/50'>
-            <Table className='min-w-full'>
+            <Table className='min-w-[720px]'>
               <TableHeader>
                 <TableRow className='border-border/60 bg-muted/30'>
                   <TableHead className='whitespace-nowrap font-bold'>

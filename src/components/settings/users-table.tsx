@@ -42,79 +42,81 @@ export function UsersTable({ users, currentPrincipal }: Props) {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Identity</TableHead>
-          <TableHead>Role</TableHead>
-          <TableHead>Created</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {users.length === 0 && (
+    <div className='overflow-x-auto'>
+      <Table className='min-w-[640px]'>
+        <TableHeader>
           <TableRow>
-            <TableCell
-              colSpan={3}
-              className='text-center text-sm text-muted-foreground'
-            >
-              No users found.
-            </TableCell>
+            <TableHead>Identity</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Created</TableHead>
           </TableRow>
-        )}
-        {users.map(user => {
-          const isSelf =
-            !!currentPrincipal && user.principal === currentPrincipal
-
-          return (
-            <TableRow key={user.id}>
-              <TableCell className='text-sm'>
-                <div className='flex flex-col gap-1'>
-                  {user.principal && (
-                    <span className='font-mono text-xs'>{user.principal}</span>
-                  )}
-                  {user.address && (
-                    <span className='font-mono text-xs text-muted-foreground'>
-                      {user.address}
-                    </span>
-                  )}
-                  {!user.principal && !user.address && (
-                    <span className='text-muted-foreground'>—</span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <select
-                  defaultValue={user.role}
-                  onChange={event =>
-                    handleRoleChange(
-                      user.id,
-                      event.target.value as UserRecord['role']
-                    )
-                  }
-                  className='rounded-md border border-input bg-transparent px-3 py-2 text-sm'
-                  disabled={isPending || isSelf}
-                >
-                  {roles.map(role => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-                {isSelf && (
-                  <p className='mt-1 text-xs text-muted-foreground'>
-                    You cannot change your own role.
-                  </p>
-                )}
-              </TableCell>
-              <TableCell>
-                <Badge variant='outline'>
-                  {new Date(user.createdAt).toLocaleString()}
-                </Badge>
+        </TableHeader>
+        <TableBody>
+          {users.length === 0 && (
+            <TableRow>
+              <TableCell
+                colSpan={3}
+                className='text-center text-sm text-muted-foreground'
+              >
+                No users found.
               </TableCell>
             </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+          )}
+          {users.map(user => {
+            const isSelf =
+              !!currentPrincipal && user.principal === currentPrincipal
+
+            return (
+              <TableRow key={user.id}>
+                <TableCell className='text-sm'>
+                  <div className='flex flex-col gap-1'>
+                    {user.principal && (
+                      <span className='font-mono text-xs'>{user.principal}</span>
+                    )}
+                    {user.address && (
+                      <span className='font-mono text-xs text-muted-foreground'>
+                        {user.address}
+                      </span>
+                    )}
+                    {!user.principal && !user.address && (
+                      <span className='text-muted-foreground'>—</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <select
+                    defaultValue={user.role}
+                    onChange={event =>
+                      handleRoleChange(
+                        user.id,
+                        event.target.value as UserRecord['role']
+                      )
+                    }
+                    className='rounded-md border border-input bg-transparent px-3 py-2 text-sm'
+                    disabled={isPending || isSelf}
+                  >
+                    {roles.map(role => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
+                  {isSelf && (
+                    <p className='mt-1 text-xs text-muted-foreground'>
+                      You cannot change your own role.
+                    </p>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant='outline'>
+                    {new Date(user.createdAt).toLocaleString()}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

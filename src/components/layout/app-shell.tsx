@@ -8,7 +8,6 @@ import {
   BarChart3,
   BookOpen,
   LayoutDashboard,
-  Menu,
   Scale,
   ScrollText,
   Settings,
@@ -21,7 +20,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import {
   Tooltip,
   TooltipContent,
@@ -145,63 +143,7 @@ export function AppShell({ children }: AppShellProps) {
       </aside>
 
       <div className='flex min-w-0 flex-1 flex-col'>
-        <header className='flex flex-col gap-4 rounded-2xl border border-border/60 bg-gradient-to-r from-background via-card/50 to-background px-6 py-5 shadow-sm backdrop-blur-sm md:flex-row md:items-center md:justify-between'>
-          <div className='flex items-center gap-3'>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant='outline' size='icon' className='md:hidden'>
-                  <Menu className='h-5 w-5' />
-                  <span className='sr-only'>Open menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side='left' className='w-72 p-6'>
-                <div className='flex items-center gap-3 rounded-xl border border-border/60 bg-background/80 px-3 py-3'>
-                  <Avatar className='h-9 w-9'>
-                    <AvatarFallback className='bg-primary/10 font-semibold text-primary'>
-                      {fallback}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className='flex min-w-0 flex-1 flex-col'>
-                    <span className='truncate text-sm font-medium'>
-                      {identityLabel}
-                    </span>
-                    {session?.role && (
-                      <span className='text-xs uppercase tracking-wide text-muted-foreground'>
-                        {session.role}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <Separator className='my-4' />
-
-                <nav
-                  className='grid gap-1'
-                  role='navigation'
-                  aria-label='Mobile navigation'
-                >
-                  {navItems}
-                </nav>
-
-                <Separator className='my-4' />
-
-                <div className='space-y-2 text-xs text-muted-foreground'>
-                  <p>Manage your session under Settings.</p>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='w-full'
-                    onClick={handleSignOut}
-                  >
-                    Sign out
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </header>
-
-        <main className='mt-6 flex-1 space-y-6' role='main'>
+        <main className='flex-1 space-y-6' role='main'>
           {children}
         </main>
       </div>
