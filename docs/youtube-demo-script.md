@@ -31,7 +31,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Derivatives allowed: checked
 - On‑screen: Optionally expand “Advanced metadata” to preview Tags, Creators, Lineage, and Attributes, then collapse it and proceed without changes.
 - On‑screen: Click “Register IP Asset”; after success, copy the IP ID and open the Story explorer link.
-- **Voice‑over 3:** Open the IP Registry page, paste the cover image and primary media URLs, confirm the app auto‑detects the media type as audio/mpeg (mp3), set License price to 0.001 BTC and Royalty to 10%, leave Commercial use and Derivatives allowed checked, click Advanced metadata to preview Tags, Creators, Lineage, and Attributes then collapse without changes, and click Register IP Asset to complete.
+- **Voice‑over 3:** Open the IP Registry page, paste the cover image and primary media URLs, confirm the app auto‑detects the media type as audio/mpeg (mp3), set License price to 0.001 BTC and Royalty to 10%, leave Commercial use and Derivatives allowed checked, click Advanced metadata then collapse without changes for this demo, click Register IP Asset to complete, then click “View on StoryScan” or “View in Story IP Explorer” to verify the asset.
 
 ## 4) Create IP via AI Studio
 - On‑screen: `/dashboard/ai` → LexLink AI Studio.
