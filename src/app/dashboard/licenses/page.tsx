@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Download, ExternalLink, Share2 } from 'lucide-react'
 
 import { loadDashboardData } from '@/app/dashboard/actions'
+import { LicenseOrderPanel } from '@/components/app/license-order-panel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -64,12 +65,18 @@ function statusStyles(status: string) {
   }
 }
 
-export default async function LicensesPage() {
+type LicensesPageProps = {
+  searchParams?: Record<string, string | string[] | undefined>
+}
+
+export default async function LicensesPage({ searchParams }: LicensesPageProps) {
   const { ips, licenses } = await loadDashboardData()
   const ckbtcEscrowPrincipal =
     env.CKBTC_MERCHANT_PRINCIPAL ??
     env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID ??
     ''
+  const focusedIpId =
+    typeof searchParams?.ip === 'string' ? searchParams.ip : undefined
 
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)
@@ -82,6 +89,7 @@ export default async function LicensesPage() {
 
   return (
     <div className='space-y-6'>
+      <LicenseOrderPanel ips={ips} defaultIpId={focusedIpId} />
       <Card className='border-border/60 bg-card/60'>
         <CardHeader>
           <CardTitle>Pending Payments</CardTitle>
