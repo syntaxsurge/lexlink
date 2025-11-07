@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation'
+ 
 
 import { loadInvoicePublic, loadBuyerProfile } from '@/app/dashboard/actions'
-import InvoicePageClient from '@/app/pay/[orderId]/_components/invoice-page-client'
+// Import the client component dynamically to avoid RSC manifest mismatches in production
+// Static import of client component from outside app route tree
+import InvoicePageClient from '@/components/pay/invoice-page-client'
 import type { ConstellationNetworkId } from '@/lib/constellation-links'
 import { env } from '@/lib/env'
 import type { StoryNetwork } from '@/lib/story-links'
