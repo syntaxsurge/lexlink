@@ -62,7 +62,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Click “Connect Internet Identity”
   - Click “Pay now”
   - Amount: pay the shown price (expected 0.00100000 ckTESTBTC on testnet)
-- **Voice‑over 6:** On the invoice page, buyers authenticate with Internet Identity, set a license wallet, and pay with ckBTC from the browser; the page auto‑refreshes on ledger updates, and once funded the server mints the Story license token, pins a C2PA bundle and verifiable credential, and anchors Constellation evidence.
+- **Voice‑over 6:** After copying the shareable payment link from the Licenses page, open it in another browser as a separate buyer using a different Internet Identity account; on the invoice page, authenticate, set a license wallet, and pay with ckBTC from the browser—the page auto‑refreshes on ledger updates, and once funded the server mints the Story license token, pins a C2PA bundle and verifiable credential, and anchors Constellation evidence.
 
 ## 7) Buyer’s My Licenses
 - On‑screen: `/dashboard/purchases` (buyer session).
