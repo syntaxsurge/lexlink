@@ -26,6 +26,7 @@ function extractEnvValue(filePath: string, key: string): string | null {
 
 function setEnvValue(filePath: string, key: string, value: string) {
   if (!fs.existsSync(filePath)) {
+    console.warn(`Skipping ${path.basename(filePath)} (file not found).`)
     return
   }
   const contents = fs.readFileSync(filePath, 'utf8')
@@ -62,24 +63,16 @@ function main() {
   const pemContents = fs.readFileSync(resolvedPath)
   const base64 = pemContents.toString('base64')
 
-  let updatedAny = false
-  ;[ENV_PATH, ENV_EXAMPLE_PATH].forEach(file => {
-    if (!fs.existsSync(file)) {
-      console.warn(`Skipping ${path.basename(file)} (file not found).`)
-      return
-    }
-    setEnvValue(file, BASE64_KEY, base64)
-    updatedAny = true
-    console.log(
-      `Updated ${BASE64_KEY} in ${path.basename(file)} using ${identityPath}`
-    )
-  })
-
-  if (!updatedAny) {
-    console.warn(
-      'No environment files were updated. Ensure .env and/or .env.example exist.'
-    )
-  }
+  setEnvValue(ENV_PATH, BASE64_KEY, base64)
+  console.log(
+    `Updated ${BASE64_KEY} in .env using ${path.relative(
+      ROOT_DIR,
+      resolvedPath
+    )}`
+  )
+  console.log(
+    '.env.example was left untouched; copy values manually if needed.'
+  )
 }
 
 main()
