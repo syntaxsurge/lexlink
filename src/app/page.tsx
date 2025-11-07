@@ -267,6 +267,74 @@ export default function HomePage() {
             </div>
           </section>
 
+          {/* Video Introduction Section */}
+          <section className='relative'>
+            <div className='mx-auto max-w-6xl'>
+              <div className='mb-12 text-center'>
+                <Badge
+                  variant='outline'
+                  className='mb-4 border-primary/30 bg-primary/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide'
+                >
+                  Watch Demo
+                </Badge>
+                <h2 className='mb-4 text-3xl font-bold md:text-4xl lg:text-5xl'>
+                  See LexLink in{' '}
+                  <span className='bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent'>
+                    Action
+                  </span>
+                </h2>
+                <p className='mx-auto max-w-2xl text-lg text-muted-foreground'>
+                  Watch how LexLink revolutionizes IP licensing with blockchain
+                  technology, instant settlements, and provenance tracking
+                </p>
+              </div>
+
+              <Card className='group overflow-hidden border-border/60 bg-gradient-to-br from-card via-card/95 to-card/90 shadow-2xl transition-all duration-300 hover:border-primary/30 hover:shadow-primary/10'>
+                <div className='relative'>
+                  {/* Decorative gradient overlay */}
+                  <div className='pointer-events-none absolute inset-0 z-10 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100' />
+
+                  <CardContent className='p-4 md:p-6 lg:p-8'>
+                    <div className='relative overflow-hidden rounded-xl border border-border/40 bg-black/5 shadow-inner'>
+                      {/* 16:9 Aspect Ratio Container */}
+                      <div className='relative w-full' style={{ paddingBottom: '56.25%' }}>
+                        <iframe
+                          className='absolute inset-0 h-full w-full rounded-lg'
+                          src='https://www.youtube.com/embed/gs01pInUGZ0'
+                          title='LexLink Platform Demo'
+                          allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+                          allowFullScreen
+                          loading='lazy'
+                          style={{
+                            border: 'none'
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Video Description */}
+                    <div className='mt-6 flex items-start gap-4 rounded-xl border border-border/40 bg-muted/30 p-4 backdrop-blur-sm md:p-6'>
+                      <div className='flex-shrink-0 rounded-lg bg-primary/10 p-2.5'>
+                        <Sparkles className='h-5 w-5 text-primary' />
+                      </div>
+                      <div className='flex-1'>
+                        <h3 className='mb-2 text-lg font-semibold'>
+                          Complete Platform Walkthrough
+                        </h3>
+                        <p className='text-sm leading-relaxed text-muted-foreground'>
+                          Discover how LexLink combines Story Protocol, ckBTC
+                          payments, and Constellation Network to deliver seamless
+                          IP licensing with instant verification and automated
+                          compliance.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
+            </div>
+          </section>
+
           {/* Technology Stack */}
           <section className='relative'>
             <div className='mb-16 text-center'>
