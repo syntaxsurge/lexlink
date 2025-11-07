@@ -503,53 +503,62 @@ export function FinalizationTimeline({
   ])
 
   return (
-    <section className='space-y-6 rounded-3xl border border-border/60 bg-gradient-to-b from-background via-card to-card p-8 shadow-lg'>
-      <header>
-        <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground/80'>
-          Automated verification
+    <section className='relative space-y-8 overflow-hidden rounded-[40px] border border-border/60 bg-gradient-to-br from-card via-background to-card p-10 shadow-2xl'>
+      <div className='absolute right-0 top-0 h-64 w-64 rounded-full bg-primary/10 blur-3xl' />
+      <div className='absolute bottom-0 left-0 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl' />
+      <header className='relative z-10 space-y-3'>
+        <p className='text-xs font-semibold uppercase tracking-[0.3em] text-primary'>
+          Automated Verification
         </p>
-        <h2 className='text-2xl font-semibold text-foreground'>
-          Verification timeline
+        <h2 className='text-3xl font-semibold tracking-tight text-foreground'>
+          Verification Timeline
         </h2>
-        <p className='text-sm text-muted-foreground'>
+        <p className='max-w-3xl text-sm leading-relaxed text-muted-foreground'>
           Track each automated action after payment lands: ckBTC settlement,
           Story license minting, Constellation anchoring, and the compliance
           ledger update.
         </p>
       </header>
-      <ol className='space-y-6'>
-        {steps.map(step => (
-          <li key={step.key} className='flex gap-3'>
-            <div className='flex h-5 w-5 items-center justify-center'>
-              {resolveStatusIcon(step.status)}
+      <ol className='relative z-10 space-y-6'>
+        {steps.map((step, index) => (
+          <li key={step.key} className='flex gap-4'>
+            <div className='relative flex flex-col items-center'>
+              <div className='flex h-8 w-8 items-center justify-center rounded-full border-2 border-border/60 bg-background shadow-sm'>
+                {resolveStatusIcon(step.status)}
+              </div>
+              {index < steps.length - 1 && (
+                <div className='mt-2 h-full w-0.5 bg-gradient-to-b from-border/60 to-transparent' />
+              )}
             </div>
-            <div className='flex-1 space-y-3 rounded-2xl border border-border/50 bg-background/80 p-4 shadow-inner'>
+            <div className='flex-1 space-y-3 rounded-2xl border border-border/60 bg-gradient-to-br from-background/90 via-card/50 to-background/90 p-6 shadow-lg backdrop-blur-sm transition-all hover:shadow-xl'>
               <div className='flex flex-wrap items-center gap-3'>
-                <p className='text-base font-semibold text-foreground'>
+                <p className='text-lg font-semibold text-foreground'>
                   {step.title}
                 </p>
                 <Badge
                   variant={step.status === 'complete' ? 'default' : 'outline'}
-                  className={
+                  className={`px-3 py-1 text-xs font-semibold ${
                     step.status === 'complete'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'border-emerald-500/40 bg-emerald-500 text-white'
                       : step.status === 'current'
-                        ? 'border-primary/60 text-primary'
+                        ? 'border-primary/60 bg-primary/10 text-primary'
                         : step.status === 'failed'
-                          ? 'border-rose-400 text-rose-600'
-                          : 'text-muted-foreground'
-                  }
+                          ? 'border-rose-500/40 bg-rose-500/10 text-rose-600'
+                          : 'border-border/60 text-muted-foreground'
+                  }`}
                 >
                   {step.status === 'complete'
                     ? 'Complete'
                     : step.status === 'current'
-                      ? 'In progress'
+                      ? 'In Progress'
                       : step.status === 'failed'
                         ? 'Failed'
                         : 'Waiting'}
                 </Badge>
               </div>
-              {step.content}
+              <div className='rounded-xl border border-border/40 bg-background/50 p-4'>
+                {step.content}
+              </div>
             </div>
           </li>
         ))}

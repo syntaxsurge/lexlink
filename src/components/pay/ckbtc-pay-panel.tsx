@@ -402,46 +402,59 @@ export function CkbtcPayPanel({
   }, [invoice.status, isFinalizing, pollFinalization, transferState.status])
 
   return (
-    <Card className='border-border/60 bg-card/70'>
-      <CardHeader>
-        <CardTitle>Pay with ckBTC</CardTitle>
+    <Card className='rounded-2xl border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+      <CardHeader className='space-y-2'>
+        <CardTitle className='text-2xl font-semibold'>Pay with ckBTC</CardTitle>
+        <p className='text-sm text-muted-foreground'>
+          Complete your payment securely using the ckBTC ledger
+        </p>
       </CardHeader>
-      <CardContent className='space-y-4 text-sm'>
-        <div className='rounded-md border border-border/50 bg-muted/20 p-3'>
+      <CardContent className='space-y-6 text-sm'>
+        <div className='rounded-xl border border-border/60 bg-gradient-to-br from-primary/5 to-background p-4'>
           <div className='flex items-center justify-between'>
-            <span className='text-xs text-muted-foreground'>Network</span>
-            <span className='font-medium uppercase'>{network}</span>
+            <span className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+              Network
+            </span>
+            <span className='rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase text-primary'>
+              {network}
+            </span>
           </div>
-          <div className='mt-2 text-xs text-muted-foreground'>
+          <div className='mt-3 text-xs text-muted-foreground'>
             Authenticated ckBTC transfers finalize this order and mint your
             Story license automatically.
           </div>
         </div>
 
         {needsSession && (
-          <div className='rounded-md border border-border/50 bg-amber-500/10 p-3 text-xs text-amber-600'>
-            Sign in with Internet Identity to bind this order to your principal
-            and saved wallet.
-            <a
-              href='/signin'
-              className='ml-1 text-primary underline-offset-4 hover:underline'
-            >
-              Open sign in
-            </a>
-            .
+          <div className='rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-4 text-xs text-amber-700 dark:text-amber-400'>
+            <p className='font-semibold'>Authentication Required</p>
+            <p className='mt-1'>
+              Sign in with Internet Identity to bind this order to your
+              principal and saved wallet.{' '}
+              <a
+                href='/signin'
+                className='font-semibold text-primary underline-offset-4 hover:underline'
+              >
+                Open sign in
+              </a>
+            </p>
           </div>
         )}
 
-        <div className='grid gap-3 sm:grid-cols-2'>
-          <div className='rounded-md border border-border/60 bg-background p-3'>
-            <p className='text-xs text-muted-foreground'>Your balance</p>
-            <p className='text-lg font-semibold'>
+        <div className='grid gap-4 sm:grid-cols-2'>
+          <div className='rounded-xl border border-border/60 bg-gradient-to-br from-background to-card p-4 shadow-sm'>
+            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+              Your Balance
+            </p>
+            <p className='mt-2 text-2xl font-bold text-foreground'>
               {formattedBalance} {symbol}
             </p>
           </div>
-          <div className='rounded-md border border-border/60 bg-background p-3'>
-            <p className='text-xs text-muted-foreground'>Amount due</p>
-            <p className='text-lg font-semibold'>
+          <div className='rounded-xl border border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 to-background p-4 shadow-sm'>
+            <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+              Amount Due
+            </p>
+            <p className='mt-2 text-2xl font-bold text-foreground'>
               {formattedPrice} {symbol}
             </p>
           </div>
@@ -460,11 +473,13 @@ export function CkbtcPayPanel({
           description='We mint the Story license token to this address once payment finalizes.'
         />
 
-        <div className='flex flex-wrap gap-2'>
+        <div className='flex flex-wrap gap-3'>
           {showConnect ? (
             <Button
               onClick={handleConnect}
               disabled={!ready || isAuthenticating || isBusy}
+              className='rounded-full px-6'
+              size='lg'
             >
               Connect Internet Identity
             </Button>
@@ -472,6 +487,8 @@ export function CkbtcPayPanel({
             <Button
               onClick={handlePay}
               disabled={!ready || isAuthenticating || isBusy || !canPay}
+              className='rounded-full px-6'
+              size='lg'
             >
               {payButtonLabel}
             </Button>
@@ -482,41 +499,53 @@ export function CkbtcPayPanel({
               void refreshBalances()
             }}
             disabled={!ready || isBusy || isAuthenticating}
+            className='rounded-full px-6'
+            size='lg'
           >
-            Refresh balance
+            Refresh Balance
           </Button>
         </div>
 
         {!isPaymentRouteReady && (
-          <div className='rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-600'>
-            This invoice is missing ckBTC escrow metadata. Contact the LexLink
-            operator to regenerate the order before paying.
+          <div className='rounded-xl border border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-4 text-xs text-amber-700 dark:text-amber-400'>
+            <p className='font-semibold'>Missing Escrow Metadata</p>
+            <p className='mt-1'>
+              This invoice is missing ckBTC escrow metadata. Contact the LexLink
+              operator to regenerate the order before paying.
+            </p>
           </div>
         )}
 
         {transferState.status === 'success' && !isFinalized && (
-          <div className='rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-600'>
-            Transfer accepted at ledger block {transferState.blockIndex}. The
-            order will finalize shortly.
+          <div className='rounded-xl border border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 p-4 text-xs text-emerald-700 dark:text-emerald-400'>
+            <p className='font-semibold'>Transfer Accepted</p>
+            <p className='mt-1'>
+              Transfer accepted at ledger block {transferState.blockIndex}. The
+              order will finalize shortly.
+            </p>
           </div>
         )}
         {isFinalized && (
-          <div className='rounded-md border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-600'>
-            Payment finalized
-            {invoice.ckbtcBlockIndex
-              ? ` at ledger block ${invoice.ckbtcBlockIndex}`
-              : ''}
-            . License tokenization is complete.
+          <div className='rounded-xl border border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 p-4 text-xs text-emerald-700 dark:text-emerald-400'>
+            <p className='font-semibold'>Payment Complete</p>
+            <p className='mt-1'>
+              Payment finalized
+              {invoice.ckbtcBlockIndex
+                ? ` at ledger block ${invoice.ckbtcBlockIndex}`
+                : ''}
+              . License tokenization is complete.
+            </p>
           </div>
         )}
         {transferState.status === 'error' && (
-          <div className='rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive'>
-            {transferState.message}
+          <div className='rounded-xl border border-rose-500/40 bg-gradient-to-br from-rose-500/10 to-rose-500/5 p-4 text-xs text-rose-700 dark:text-rose-400'>
+            <p className='font-semibold'>Payment Error</p>
+            <p className='mt-1'>{transferState.message}</p>
           </div>
         )}
 
-        <div className='space-y-3 rounded-md border border-border/60 bg-muted/10 p-4'>
-          <div className='text-sm font-semibold text-muted-foreground'>
+        <div className='space-y-3 rounded-xl border border-border/60 bg-gradient-to-br from-muted/30 to-background p-5'>
+          <div className='text-sm font-semibold text-foreground'>
             Need ckTESTBTC?
           </div>
           <div className='text-xs text-muted-foreground'>
@@ -525,7 +554,7 @@ export function CkbtcPayPanel({
               href='https://testnet-faucet.ckboost.com/'
               target='_blank'
               rel='noreferrer'
-              className='text-primary underline-offset-4 hover:underline'
+              className='font-semibold text-primary underline-offset-4 hover:underline'
             >
               testnet-faucet.ckboost.com
             </a>
@@ -535,13 +564,15 @@ export function CkbtcPayPanel({
         </div>
 
         {feedback && (
-          <div className='rounded-md border border-primary/40 bg-primary/10 p-3 text-xs text-primary'>
-            {feedback}
+          <div className='rounded-xl border border-primary/40 bg-gradient-to-br from-primary/10 to-primary/5 p-4 text-xs text-primary'>
+            <p className='font-semibold'>Info</p>
+            <p className='mt-1'>{feedback}</p>
           </div>
         )}
         {error && (
-          <div className='rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive'>
-            {error}
+          <div className='rounded-xl border border-rose-500/40 bg-gradient-to-br from-rose-500/10 to-rose-500/5 p-4 text-xs text-rose-700 dark:text-rose-400'>
+            <p className='font-semibold'>Error</p>
+            <p className='mt-1'>{error}</p>
           </div>
         )}
       </CardContent>

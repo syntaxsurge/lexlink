@@ -74,9 +74,12 @@ export function LicenseWalletCard({
 
   if (status !== 'authenticated') {
     return (
-      <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground'>
-        Sign in with Internet Identity to choose where the Story license token
-        mints.
+      <div className='rounded-xl border border-dashed border-border/60 bg-gradient-to-br from-muted/30 to-background p-6 text-sm text-muted-foreground shadow-sm'>
+        <p className='font-medium text-foreground'>Authentication Required</p>
+        <p className='mt-1'>
+          Sign in with Internet Identity to choose where the Story license token
+          mints.
+        </p>
       </div>
     )
   }
@@ -87,17 +90,19 @@ export function LicenseWalletCard({
       : null
 
   return (
-    <div className='space-y-3 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm'>
+    <div className='space-y-4 rounded-2xl border border-border/60 bg-gradient-to-br from-card via-background to-card p-6 shadow-xl'>
       <div className='flex items-start justify-between gap-3'>
         <div>
-          <p className='text-sm font-medium'>License wallet</p>
-          <p className='text-xs text-muted-foreground'>
+          <p className='text-base font-semibold text-foreground'>
+            License Wallet
+          </p>
+          <p className='mt-1 text-xs text-muted-foreground'>
             We mint the Story license token to this address after payment
             finalizes.
           </p>
         </div>
         {invoice.mintTo && (
-          <span className='rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-600'>
+          <span className='rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400'>
             Saved: {shortAddress(invoice.mintTo, 10)}
           </span>
         )}
@@ -112,13 +117,15 @@ export function LicenseWalletCard({
         error={walletError}
         helperText={`Principal ${principalLabel} must save a wallet before ckBTC auto-finalization can mint your license token.`}
       />
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center gap-3'>
         <Button
           type='button'
           onClick={handleSave}
           disabled={saving || normalized.length === 0 || !isValid}
+          className='rounded-full px-6'
+          size='lg'
         >
-          {saving ? 'Saving…' : 'Save wallet'}
+          {saving ? 'Saving…' : 'Save Wallet'}
         </Button>
         {invoice.mintTo && (
           <span className='text-xs text-muted-foreground'>
