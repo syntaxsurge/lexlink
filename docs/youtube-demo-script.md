@@ -72,16 +72,15 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 ## 8) Seller’s license management
 - On‑screen: Switch to the seller/operator session → `/dashboard/licenses`.
 - Demo inputs: No input fields on this page.
-- **Voice‑over 8:** Back in the seller’s browser session, open the Licenses page to review pending invoices, automatic ckBTC finalization, and the chronological order history; each row links to the settlement reference, Story explorer, and Constellation explorer.
+- **Voice‑over 8:** Back in the seller’s browser session, open the Licenses page to review pending invoices, automatic ckBTC finalization, and the chronological order history.
 
 ## 9) Public “Report IP”
 - On‑screen: Header → “Report IP” or the button from an invoice → `/report`.
 - Demo inputs:
   - Select the IP (autofills ipId) or paste the copied ipId
   - Dispute tag: improper usage (IMPROPER_USAGE)
-  - Note: Suspected unauthorized repost on social media; link below
-  - Source URL: https://example.com/infringing-post
-  - Evidence files: leave empty
+  - Note: Suspected unauthorized repost on social media
+  - Evidence files: upload example files (e.g., screenshot.png, evidence.pdf)
   - Click “Raise dispute”
 - On‑screen: Show the returned Dispute ID and evidence bundle link.
 - **Voice‑over 9:** On the Report IP page, anyone can report misuse; evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module.
