@@ -156,12 +156,8 @@ export default async function LicensesPage({
                           <dt className='min-w-[120px] text-muted-foreground'>
                             Order ID:
                           </dt>
-                          <dd className='flex-1'>
-                            <TextDialog
-                              title='Order ID'
-                              content={order.orderId}
-                              truncateLength={16}
-                            />
+                          <dd className='flex-1 break-all font-mono text-xs'>
+                            {order.orderId}
                           </dd>
                         </div>
 
@@ -179,12 +175,8 @@ export default async function LicensesPage({
                             <dt className='min-w-[120px] text-muted-foreground'>
                               License Wallet:
                             </dt>
-                            <dd className='flex-1'>
-                              <TextDialog
-                                title='License Wallet Address'
-                                content={mintTarget}
-                                truncateLength={20}
-                              />
+                            <dd className='flex-1 break-all font-mono text-xs'>
+                              {mintTarget}
                             </dd>
                           </div>
                         )}
@@ -195,22 +187,18 @@ export default async function LicensesPage({
                           </dt>
                           <dd className='flex-1'>
                             <div className='space-y-1'>
-                              <TextDialog
-                                title='Escrow Account Target'
-                                content={order.btcAddress}
-                                truncateLength={24}
-                              />
+                              <p className='break-all font-mono text-xs'>
+                                {order.btcAddress}
+                              </p>
                               {ckbtcEscrowPrincipal && (
                                 <p className='text-xs text-muted-foreground'>
                                   Escrow principal: {ckbtcEscrowPrincipal}
                                 </p>
                               )}
                               {subaccount && (
-                                <TextDialog
-                                  title='ckBTC Subaccount'
-                                  content={subaccount}
-                                  truncateLength={24}
-                                />
+                                <p className='break-all font-mono text-xs'>
+                                  Subaccount: {subaccount}
+                                </p>
                               )}
                               {ledgerBlock && (
                                 <p className='text-xs text-muted-foreground'>
