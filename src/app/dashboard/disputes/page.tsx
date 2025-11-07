@@ -27,6 +27,7 @@ import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import { env } from '@/lib/env'
 import {
   ipAssetExplorerUrl,
+  storyScanBase,
   type StoryNetwork
 } from '@/lib/story-links'
 
@@ -324,11 +325,15 @@ function CaseCard({
         )}
         {dispute.responseTxHash && (
           <DataRow label='Response tx'>
-            <TextDialog
-              title='Response transaction hash'
-              content={dispute.responseTxHash}
-              truncateLength={24}
-            />
+            <Link
+              href={`${storyScanBase(STORY_NETWORK)}/tx/${dispute.responseTxHash}`}
+              target='_blank'
+              rel='noreferrer'
+              className='inline-flex items-center gap-1 break-all font-mono text-xs text-primary underline-offset-4 hover:underline'
+            >
+              {dispute.responseTxHash}
+              <ExternalLink className='h-3 w-3 flex-shrink-0' />
+            </Link>
           </DataRow>
         )}
         {dispute.resolutionTx && (
