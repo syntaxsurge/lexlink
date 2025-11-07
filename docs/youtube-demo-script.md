@@ -104,7 +104,12 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 - Demo inputs: No input fields on this page.
 - **Voice‑over 11:** On the Compliance page, a searchable audit ledger lists principals, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.
 
-## 13) Gallery and marketplace
-- On‑screen: `/gallery` then `/marketplace`.
-- Demo inputs: No input fields on these pages.
-- **Voice‑over 13:** On the Gallery and Marketplace pages, the gallery surfaces registered media and attribution; the marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders.
+## 12) Gallery
+- On‑screen: `/gallery`.
+- Demo inputs: No input fields on this page.
+- **Voice‑over 12:** On the Gallery page, browse registered media and attribution pulled live from Convex; assets include previews, titles, and creator credits.
+
+## 13) Marketplace
+- On‑screen: `/marketplace`.
+- Demo inputs: No input fields on this page.
+- **Voice‑over 13:** On the Marketplace page, listings highlight price and royalty splits with direct Story links so buyers can initiate orders.
