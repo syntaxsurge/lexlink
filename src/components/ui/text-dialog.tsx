@@ -22,6 +22,8 @@ type TextDialogProps = {
   content: string
   truncateLength?: number
   triggerClassName?: string
+  externalLinkHref?: string
+  externalLinkLabel?: string
 }
 
 export function TextDialog({
@@ -29,7 +31,9 @@ export function TextDialog({
   description,
   content,
   truncateLength = 20,
-  triggerClassName
+  triggerClassName,
+  externalLinkHref,
+  externalLinkLabel = 'Open link'
 }: TextDialogProps) {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -86,6 +90,13 @@ export function TextDialog({
             <Copy className='mr-2 h-4 w-4' />
             {copied ? 'Copied!' : 'Copy to clipboard'}
           </Button>
+          {externalLinkHref ? (
+            <Button asChild size='sm' className='w-full'>
+              <a href={externalLinkHref} target='_blank' rel='noreferrer'>
+                {externalLinkLabel}
+              </a>
+            </Button>
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>

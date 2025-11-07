@@ -329,6 +329,8 @@ export default async function LicensesPage({
                           title='Order ID'
                           content={order.orderId}
                           truncateLength={10}
+                          externalLinkHref={`/pay/${order.orderId}`}
+                          externalLinkLabel='Open pay page'
                         />
                       </TableCell>
                       <TableCell className='max-w-[200px]'>
@@ -434,6 +436,8 @@ export default async function LicensesPage({
                           title='Order ID'
                           content={order.orderId}
                           truncateLength={10}
+                          externalLinkHref={`/pay/${order.orderId}`}
+                          externalLinkLabel='Open pay page'
                         />
                       </TableCell>
                       <TableCell>
