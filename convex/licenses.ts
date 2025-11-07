@@ -256,7 +256,12 @@ export const requestFinalization = mutationGeneric({
 export const markFinalizationFailed = mutationGeneric({
   args: {
     orderId: v.string(),
-    error: v.string()
+    error: v.string(),
+    tokenOnChainId: v.optional(v.string()),
+    ckbtcMintedSats: v.optional(v.number()),
+    ckbtcBlockIndex: v.optional(v.number()),
+    constellationStatus: v.optional(v.string()),
+    constellationError: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const license = await ctx.db
@@ -268,12 +273,24 @@ export const markFinalizationFailed = mutationGeneric({
       throw new Error('License order not found')
     }
 
-    await ctx.db.patch(license._id, {
+    const patch: Record<string, any> = {
       status: 'failed',
-      constellationStatus: 'failed',
-      constellationError: args.error,
+      constellationStatus: args.constellationStatus ?? 'failed',
+      constellationError: args.constellationError ?? args.error,
       updatedAt: Date.now()
-    })
+    }
+
+    if (typeof args.ckbtcMintedSats === 'number') {
+      patch.ckbtcMintedSats = args.ckbtcMintedSats
+    }
+    if (typeof args.ckbtcBlockIndex === 'number') {
+      patch.ckbtcBlockIndex = args.ckbtcBlockIndex
+    }
+    if (args.tokenOnChainId) {
+      patch.tokenOnChainId = args.tokenOnChainId
+    }
+
+    await ctx.db.patch(license._id, patch)
   }
 })
 

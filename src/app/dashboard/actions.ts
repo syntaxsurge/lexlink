@@ -1841,6 +1841,13 @@ async function finalizeOrder({
     throw new Error(note)
   }
 
+  let licenseTokenId: string | undefined
+  let constellationStatus: 'ok' | 'failed' | 'skipped' = 'skipped'
+  let constellationTx = ''
+  let constellationExplorerUrl = ''
+  let constellationAnchoredAt: number | undefined
+  let constellationError: string | undefined
+
   try {
     const attestationJson = await fetchAttestation(order.orderId)
     const attestation = JSON.parse(attestationJson)
@@ -1905,7 +1912,10 @@ async function finalizeOrder({
       )
     }
 
-    const licenseTokenId = mintResponse.licenseTokenIds[0].toString()
+    licenseTokenId = mintResponse.licenseTokenIds[0].toString()
+    if (!licenseTokenId) {
+      throw new Error('Failed to resolve the license token ID after minting.')
+    }
 
     const mediaUrl = ipfsGatewayUrl(ip.mediaUrl)
     const mediaResponse = await fetch(mediaUrl, { cache: 'no-store' })
@@ -1945,12 +1955,6 @@ async function finalizeOrder({
       ...evidencePayload,
       evidenceHash
     })
-
-    let constellationStatus: 'ok' | 'failed' | 'skipped' = 'skipped'
-    let constellationTx = ''
-    let constellationExplorerUrl = ''
-    let constellationAnchoredAt: number | undefined
-    let constellationError: string | undefined
 
     if (evidenceResult.status === 'ok') {
       constellationStatus = 'ok'
@@ -2084,7 +2088,12 @@ async function finalizeOrder({
     try {
       await convex.mutation('licenses:markFinalizationFailed' as any, {
         orderId: order.orderId,
-        error: message
+        error: message,
+        tokenOnChainId: licenseTokenId,
+        ckbtcMintedSats: minted?.sats,
+        ckbtcBlockIndex: minted?.blockIndex,
+        constellationStatus,
+        constellationError: constellationError ?? message
       })
     } catch (persistError) {
       console.error(

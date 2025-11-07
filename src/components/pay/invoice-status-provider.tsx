@@ -158,7 +158,7 @@ export function InvoiceStatusProvider({
       void refresh().catch(() => {
         // Ignore polling errors; next tick will retry.
       })
-    }, 6000)
+    }, 3500)
     return () => {
       if (pollTimer.current) {
         clearInterval(pollTimer.current)

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import {
   CheckCircle2,
@@ -83,7 +83,10 @@ export function FinalizationTimeline({
   constellationNetwork,
   constellationEnabled
 }: FinalizationTimelineProps) {
-  const { invoice } = useInvoiceStatus()
+  const { invoice, pollFinalization, refresh, isFinalizing } =
+    useInvoiceStatus()
+  const [retryMessage, setRetryMessage] = useState<string | null>(null)
+  const [retryError, setRetryError] = useState<string | null>(null)
 
   const ckbtcSymbol = ckbtcNetwork === 'ckbtc-testnet' ? 'ckTESTBTC' : 'ckBTC'
   const paymentComplete =
@@ -505,6 +508,42 @@ export function FinalizationTimeline({
   const totalSteps = steps.length
   const progressPercentage = (completedSteps / totalSteps) * 100
 
+  const handleRetry = useCallback(async () => {
+    setRetryError(null)
+    setRetryMessage(null)
+    try {
+      const result = await pollFinalization()
+      if (result?.status === 'finalized') {
+        setRetryMessage('Order finalized successfully.')
+      } else {
+        setRetryMessage('Retry requested. Monitoring automated steps…')
+      }
+    } catch (error) {
+      setRetryError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to trigger a finalization retry.'
+      )
+    } finally {
+      await refresh().catch(() => {
+        // background refresh handles errors
+      })
+    }
+  }, [pollFinalization, refresh])
+
+  const canRetryFinalization =
+    invoice.status !== 'finalized' &&
+    (constellationState === 'failed' ||
+      normalizedConstellationStatus === 'failed' ||
+      invoice.status === 'failed')
+
+  useEffect(() => {
+    if (invoice.status === 'finalized') {
+      setRetryMessage(null)
+      setRetryError(null)
+    }
+  }, [invoice.status])
+
   return (
     <section className='relative space-y-10 overflow-hidden rounded-[48px] border-2 border-border/60 bg-gradient-to-br from-primary/5 via-background to-card p-12 shadow-2xl'>
       {/* Decorative Elements */}
@@ -513,24 +552,49 @@ export function FinalizationTimeline({
 
       {/* Header with Progress */}
       <header className='relative z-10 space-y-6'>
-        <div className='space-y-4'>
-          <Badge
-            variant='outline'
-            className='border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-primary'
-          >
-            <Sparkles className='mr-2 h-3 w-3' />
-            Automated Verification
-          </Badge>
-          <div className='space-y-2'>
-            <h2 className='text-4xl font-bold tracking-tight text-foreground'>
-              Verification Timeline
-            </h2>
-            <p className='max-w-3xl text-base leading-relaxed text-muted-foreground'>
-              Track each automated action after payment lands. Your license
-              token will be minted automatically once all steps complete
-              successfully.
-            </p>
+        <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
+          <div className='space-y-4'>
+            <Badge
+              variant='outline'
+              className='border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.3em] text-primary'
+            >
+              <Sparkles className='mr-2 h-3 w-3' />
+              Automated Verification
+            </Badge>
+            <div className='space-y-2'>
+              <h2 className='text-4xl font-bold tracking-tight text-foreground'>
+                Verification Timeline
+              </h2>
+              <p className='max-w-3xl text-base leading-relaxed text-muted-foreground'>
+                Track each automated action after payment lands. Your license
+                token will be minted automatically once all steps complete
+                successfully.
+              </p>
+            </div>
           </div>
+          {canRetryFinalization ? (
+            <div className='flex w-full flex-col gap-2 lg:w-auto'>
+              <Button
+                type='button'
+                variant='outline'
+                className='gap-2 rounded-full border-primary/40 px-5 text-sm font-semibold text-primary hover:bg-primary/10'
+                disabled={isFinalizing}
+                onClick={handleRetry}
+              >
+                {isFinalizing ? 'Retrying…' : 'Retry finalization'}
+              </Button>
+              {retryMessage && (
+                <p className='text-xs text-emerald-500 dark:text-emerald-300'>
+                  {retryMessage}
+                </p>
+              )}
+              {retryError && (
+                <p className='text-xs text-rose-500 dark:text-rose-400'>
+                  {retryError}
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {/* Overall Progress Card */}

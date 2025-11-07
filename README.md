@@ -79,7 +79,7 @@ STORY_DISPUTE_DEFAULT_LIVENESS="259200"
 ICP_HOST="https://icp0.io"                           # or local replica
 NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID="bqf6p-rqaaa-aaaaa-qc46q-cai"
 ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
-ICP_IDENTITY_PEM_BASE64=""                           # run `pnpm encode:icp-identity` to refresh your .env
+ICP_IDENTITY_PEM_BASE64=""                           # run `pnpm encode:icp-identity` to refresh your .env (append --example to sync this file)
 
 # Constellation anchoring
 CONSTELLATION_ENABLED="true"
@@ -219,8 +219,8 @@ export NEXT_PUBLIC_IC_NETWORK="local"
   - `dfx identity export default > icp/icp_identity.pem`
   - Set `ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"`
   - Run `pnpm encode:icp-identity` to refresh `ICP_IDENTITY_PEM_BASE64` in your
-    local `.env` whenever the PEM changes (copy the value into `.env.example`
-    manually if you share sample configs)
+    local `.env` whenever the PEM changes (`pnpm encode:icp-identity -- --example`
+    will also sync `.env.example` if you need to share sample configs)
   - Identity docs:
     https://internetcomputer.org/docs/current/developer-docs/getting-started/developer-identity
   - Test canister call (Playground):
@@ -267,9 +267,9 @@ Sanity checks
   enable ECDSA signing in `dfx.json`.
 - `ICP_IDENTITY_PEM_PATH` points at the exported PEM on disk. After updating the
   file, run `pnpm encode:icp-identity` to refresh `ICP_IDENTITY_PEM_BASE64` in
-  your local `.env`. Copy that value to `.env.example` manually if needed; the
-  runtime only reads the base64 env, so serverless deployments never touch the
-  filesystem.
+  your local `.env`. Add the `--example` flag if you also want to sync
+  `.env.example`; otherwise copy the value manually. The runtime only reads the
+  base64 env, so serverless deployments never touch the filesystem.
 
 ### Constellation configuration
 

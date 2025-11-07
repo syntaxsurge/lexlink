@@ -7,6 +7,7 @@ const ENV_EXAMPLE_PATH = path.join(ROOT_DIR, '.env.example')
 const ENV_KEY = 'ICP_IDENTITY_PEM_PATH'
 const BASE64_KEY = 'ICP_IDENTITY_PEM_BASE64'
 const DEFAULT_PATH = 'icp/icp_identity.pem'
+const shouldUpdateExample = process.argv.includes('--example')
 
 function extractEnvValue(filePath: string, key: string): string | null {
   if (!fs.existsSync(filePath)) {
@@ -70,9 +71,14 @@ function main() {
       resolvedPath
     )}`
   )
-  console.log(
-    '.env.example was left untouched; copy values manually if needed.'
-  )
+  if (shouldUpdateExample) {
+    setEnvValue(ENV_EXAMPLE_PATH, BASE64_KEY, base64)
+    console.log('Synced .env.example (requested via --example flag).')
+  } else {
+    console.log(
+      '.env.example was left untouched; rerun with "--example" to sync it.'
+    )
+  }
 }
 
 main()
