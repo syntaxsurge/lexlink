@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { useMemo } from 'react'
 
-import { CheckCircle2, Circle, Clock3, XCircle } from 'lucide-react'
+import { CheckCircle2, Circle, Clock3, Download, ExternalLink, XCircle } from 'lucide-react'
 
 import { useInvoiceStatus } from '@/app/pay/[orderId]/_components/invoice-status-provider'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   constellationExplorerUrl,
   constellationTransactionApiUrl,
@@ -255,24 +256,30 @@ export function FinalizationTimeline({
                   </p>
                 )}
                 {storyLinks && (
-                  <p className='space-x-2'>
-                    <Link
-                      href={storyLinks.tokenUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      View token on StoryScan
-                    </Link>
-                    <Link
-                      href={storyLinks.contractUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      View contract
-                    </Link>
-                  </p>
+                  <div className='flex flex-wrap gap-2'>
+                    <Button asChild size='sm' variant='outline'>
+                      <Link
+                        href={storyLinks.tokenUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='gap-2'
+                      >
+                        <ExternalLink className='h-3.5 w-3.5' />
+                        View token on StoryScan
+                      </Link>
+                    </Button>
+                    <Button asChild size='sm' variant='ghost'>
+                      <Link
+                        href={storyLinks.contractUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='gap-2'
+                      >
+                        <ExternalLink className='h-3.5 w-3.5' />
+                        View contract
+                      </Link>
+                    </Button>
+                  </div>
                 )}
               </>
             ) : (
@@ -328,24 +335,30 @@ export function FinalizationTimeline({
                       .
                     </p>
                   )}
-                  <p className='space-x-2'>
-                    <Link
-                      href={constellationLinks.explorerUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      Open explorer
-                    </Link>
-                    <Link
-                      href={constellationLinks.apiUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      View JSON payload
-                    </Link>
-                  </p>
+                  <div className='flex flex-wrap gap-2'>
+                    <Button asChild size='sm' variant='outline'>
+                      <Link
+                        href={constellationLinks.explorerUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='gap-2'
+                      >
+                        <ExternalLink className='h-3.5 w-3.5' />
+                        Open explorer
+                      </Link>
+                    </Button>
+                    <Button asChild size='sm' variant='ghost'>
+                      <Link
+                        href={constellationLinks.apiUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='gap-2'
+                      >
+                        <ExternalLink className='h-3.5 w-3.5' />
+                        View JSON payload
+                      </Link>
+                    </Button>
+                  </div>
                 </>
               ) : normalizedConstellationStatus === 'skipped' ? (
                 <p>
@@ -410,21 +423,24 @@ export function FinalizationTimeline({
                   </p>
                 )}
                 {invoice.c2paArchiveUrl && (
-                  <p className='space-x-1'>
-                    <Link
-                      href={invoice.c2paArchiveUrl}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='text-primary underline-offset-4 hover:underline'
-                    >
-                      {invoice.c2paArchiveFileName ?? 'Download C2PA bundle'}
-                    </Link>
+                  <div className='flex flex-wrap items-center gap-2'>
+                    <Button asChild size='sm' variant='outline'>
+                      <Link
+                        href={invoice.c2paArchiveUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='gap-2'
+                      >
+                        <Download className='h-3.5 w-3.5' />
+                        {invoice.c2paArchiveFileName ?? 'Download C2PA bundle'}
+                      </Link>
+                    </Button>
                     {formatBytes(invoice.c2paArchiveSize) && (
-                      <span className='text-muted-foreground'>
-                        ({formatBytes(invoice.c2paArchiveSize)})
-                      </span>
+                      <Badge variant='outline'>
+                        {formatBytes(invoice.c2paArchiveSize)}
+                      </Badge>
                     )}
-                  </p>
+                  </div>
                 )}
               </>
             ) : (
@@ -483,9 +499,12 @@ export function FinalizationTimeline({
   ])
 
   return (
-    <section className='space-y-4 rounded-xl border border-border/70 bg-card/60 p-6'>
+    <section className='space-y-6 rounded-3xl border border-border/60 bg-gradient-to-b from-background via-card to-card p-8 shadow-lg'>
       <header>
-        <h2 className='text-lg font-semibold text-foreground'>
+        <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground/80'>
+          Automated verification
+        </p>
+        <h2 className='text-2xl font-semibold text-foreground'>
           Verification timeline
         </h2>
         <p className='text-sm text-muted-foreground'>
@@ -500,9 +519,11 @@ export function FinalizationTimeline({
             <div className='flex h-5 w-5 items-center justify-center'>
               {resolveStatusIcon(step.status)}
             </div>
-            <div className='flex-1 space-y-2'>
-              <div className='flex flex-wrap items-center gap-2'>
-                <p className='font-medium text-foreground'>{step.title}</p>
+            <div className='flex-1 rounded-2xl border border-border/50 bg-background/80 p-4 shadow-inner space-y-3'>
+              <div className='flex flex-wrap items-center gap-3'>
+                <p className='text-base font-semibold text-foreground'>
+                  {step.title}
+                </p>
                 <Badge
                   variant={step.status === 'complete' ? 'default' : 'outline'}
                   className={
