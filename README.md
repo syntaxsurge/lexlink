@@ -81,6 +81,77 @@ Ledger credit detected → mint Story license token → issue C2PA + VC → Cons
 Convex mirrors updated → Verify page exposes proofs, artifacts, and explorer links
 ```
 
+---
+
+## Additional End‑to‑End Flows (ASCII)
+
+### IP Registration (Manual vs AI Studio)
+
+```
+[Creator]
+   |
+   |  Manual: upload cover + primary media (or URLs)
+   |  AI Studio: enter prompt, title, description, price/royalty
+   v
+[Next.js UI]
+   |
+   v
+[Server Actions]
+   |-- Pin media/metadata → [IPFS / Pinata]
+   |-- Register IPA + PIL → [Story Protocol]
+   |-- Mirror record      → [Convex]
+   '-- Return IP ID + links → [UI]
+```
+
+### Invoice + Buyer Checkout (ckBTC)
+
+```
+[Operator] --select IP--> [Licenses UI] --Create order--> [Server Actions]
+     |                                                        |
+     |<-- shareable payment link -----------------------------|
+                                                             v
+                                                     [ICP Escrow Canister]
+                                                     | derive subaccount
+                                                     v
+                                                   [ckBTC Ledger]
+
+[Buyer (Internet Identity)] --open link--> [Invoice UI] --set wallet--> [Server Actions]
+     |                                                     \-- remember preference → [Convex]
+     |-- icrc1_transfer (ckBTC) --------------------------------------> [ckBTC Ledger]
+     |                                             (escrow credited; block index)
+     v
+[Invoice UI] <--- finalize --- [Server Actions] -- mint token --> [Story Protocol]
+                                     |  \-- issue C2PA + VC → [IPFS]
+                                     |  \-- anchor evidence → [Constellation]
+                                     '-- mirror updates     → [Convex]
+```
+
+### Dispute & Resolution (UMA)
+
+```
+[Reporter] → [Report IP UI] → [Server Actions]
+      |                          |-- Pin evidence → [IPFS]
+      |                          |-- Raise dispute → [Story DisputeModule]
+      |                          '-- Anchor payload → [Constellation]
+      v
+ [Dispute ID + IP + evidence bundle + tx hash]
+
+[Owner] → [Case Manager] → Add counter‑evidence (note + file)
+      |                          |-- Pin counter → [IPFS]
+      |                          '-- Respond → [Story / UMA]
+      v
+  [UMA Liveness Window] → [Resolution] → [Convex mirrors] → [Dashboards]
+```
+
+### Compliance & Verification
+
+```
+[Verify Page] ← [Convex]
+   | shows: compliance score, attestation hash, Story links, Constellation link
+   | artifacts: download C2PA archive + Verifiable Credential (JSON)
+   | explorers: open Constellation transaction + raw JSON payload
+```
+
 ## 1. Prerequisites
 
 - Node.js ≥ 18
@@ -366,7 +437,7 @@ pnpm dev
 Visit http://localhost:3000/signin, authenticate with Internet Identity, and you
 will be redirected into the protected `/app` console.
 
-## 5. ICP canister (optional but recommended)
+## 5. ICP canister
 
 The Motoko canister that powers ckBTC escrow lives in `icp/`.
 
