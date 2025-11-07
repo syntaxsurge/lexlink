@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 
 import { loadUsers } from '@/app/dashboard/actions'
 import { UsersTable } from '@/components/settings/users-table'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -21,7 +22,18 @@ export default async function SettingsPage() {
   }
 
   const isOperator = session.role === 'operator'
-  const users = isOperator ? await loadUsers() : []
+  let users: Awaited<ReturnType<typeof loadUsers>> = []
+  let usersError: string | null = null
+
+  if (isOperator) {
+    try {
+      users = await loadUsers()
+    } catch (error) {
+      console.error('Failed to load users from Convex', error)
+      usersError =
+        'The team roster could not be retrieved from Convex. Check your network connection and try again.'
+    }
+  }
 
   return (
     <div className='space-y-10'>
@@ -105,7 +117,13 @@ export default async function SettingsPage() {
             </div>
           </CardHeader>
           <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
-          <CardContent className='pt-6'>
+          <CardContent className='space-y-6 pt-6'>
+            {usersError && (
+              <Alert variant='destructive'>
+                <AlertTitle>Unable to load team roles</AlertTitle>
+                <AlertDescription>{usersError}</AlertDescription>
+              </Alert>
+            )}
             <UsersTable users={users} currentPrincipal={session.principal} />
           </CardContent>
         </Card>
