@@ -39,7 +39,7 @@ type InvoicePageClientProps = {
   defaultMintTo?: string | null
 }
 
-function InvoicePageClient({
+export default function InvoicePageClient({
   initialInvoice,
   showCkbtcPay,
   escrowPrincipal,
@@ -140,6 +140,3 @@ function InvoicePageClient({
     </InvoiceStatusProvider>
   )
 }
-
-export { InvoicePageClient }
-export default InvoicePageClient
