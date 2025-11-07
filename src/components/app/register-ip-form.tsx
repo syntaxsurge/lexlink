@@ -130,10 +130,7 @@ const formSchema = z
       .max(100, 'Royalties cannot exceed 100%'),
     commercialUse: z.boolean(),
     derivativesAllowed: z.boolean(),
-    creators: z
-      .array(creatorSchema)
-      .min(1, 'Add at least one creator')
-      .optional(),
+    creators: z.array(creatorSchema).optional(),
     relationships: z.array(relationshipSchema).optional(),
     nftAttributes: z.array(attributeSchema).optional(),
     tags: z.string().optional(),

@@ -544,7 +544,7 @@ function isSystemActor(actor: SessionActor | undefined) {
   return actor?.principal.startsWith('system:')
 }
 
-function sanitizeCreators(creators?: CreatorInput[]) {
+function sanitizeCreators(creators?: CreatorInput[]): CreatorShare[] {
   if (!creators) {
     return []
   }
@@ -558,6 +558,29 @@ function sanitizeCreators(creators?: CreatorInput[]) {
       socialMedia: sanitizeCreatorSocialLinks(creator.socialMedia)
     }))
     .filter(creator => creator.name.length > 0 && creator.address.length > 0)
+}
+
+function defaultAiCreators(): CreatorShare[] {
+  const social =
+    env.AI_CREATOR_SOCIAL_URL !== undefined
+      ? [
+          {
+            platform: env.AI_CREATOR_SOCIAL_PLATFORM,
+            url: env.AI_CREATOR_SOCIAL_URL
+          }
+        ]
+      : undefined
+
+  return [
+    {
+      name: env.AI_CREATOR_NAME,
+      address: env.AI_CREATOR_ADDRESS,
+      role: 'AI Generator',
+      description: env.AI_CREATOR_DESCRIPTION,
+      contributionPercent: 100,
+      socialMedia: social
+    }
+  ]
 }
 
 function sanitizeCreatorSocialLinks(
@@ -616,7 +639,7 @@ function sanitizeRelationships(relationships?: RelationshipInput[]) {
     )
 }
 
-function ensurePercent(creators: CreatorInput[]) {
+function ensurePercent(creators: CreatorShare[]) {
   if (creators.length === 0) {
     return
   }
@@ -1269,7 +1292,10 @@ async function recordEvent({
 
 export async function registerIpAsset(payload: RegisterIpPayload) {
   const actor = await requireRole(['operator', 'creator'])
-  const creators = sanitizeCreators(payload.creators)
+  let creators = sanitizeCreators(payload.creators)
+  if (creators.length === 0) {
+    creators = defaultAiCreators()
+  }
   const relationships = sanitizeRelationships(payload.relationships)
   const tags = sanitizeTags(payload.tags)
   const aiMetadata = normalizeAiMetadata(payload.aiMetadata)
@@ -1541,26 +1567,7 @@ export async function generateAiIpAsset(payload: GenerateAiIpPayload) {
     data: `data:${generation.mimeType};base64,${base64}`
   }
 
-  const creatorSocial =
-    env.AI_CREATOR_SOCIAL_URL !== undefined
-      ? [
-          {
-            platform: env.AI_CREATOR_SOCIAL_PLATFORM,
-            url: env.AI_CREATOR_SOCIAL_URL
-          }
-        ]
-      : undefined
-
-  const creators: CreatorInput[] = [
-    {
-      name: env.AI_CREATOR_NAME,
-      address: env.AI_CREATOR_ADDRESS,
-      role: 'AI Generator',
-      description: env.AI_CREATOR_DESCRIPTION,
-      contributionPercent: 100,
-      socialMedia: creatorSocial
-    }
-  ]
+  const creators = defaultAiCreators()
 
   const tags = sanitizeTags(payload.tags)
 
