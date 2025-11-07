@@ -83,7 +83,7 @@ Convex mirrors updated → Verify page exposes proofs, artifacts, and explorer l
 
 ---
 
-## Additional End‑to‑End Flows (ASCII)
+## Additional End‑to‑End Flows
 
 ### IP Registration (Manual vs AI Studio)
 
@@ -103,27 +103,43 @@ Convex mirrors updated → Verify page exposes proofs, artifacts, and explorer l
    '-- Return IP ID + links → [UI]
 ```
 
-### Invoice + Buyer Checkout (ckBTC)
+### Invoice Creation (ckBTC)
 
 ```
-[Operator] --select IP--> [Licenses UI] --Create order--> [Server Actions]
-     |                                                        |
-     |<-- shareable payment link -----------------------------|
-                                                             v
-                                                     [ICP Escrow Canister]
-                                                     | derive subaccount
-                                                     v
-                                                   [ckBTC Ledger]
+[Operator]
+   |
+   | Select IP to license
+   v
+[Licenses UI]
+   |
+   | Create order → derive ckBTC subaccount (escrow)
+   | Return shareable payment link
+   v
+[Server Actions] → [ICP Escrow Canister] → [ckBTC Ledger]
+```
 
-[Buyer (Internet Identity)] --open link--> [Invoice UI] --set wallet--> [Server Actions]
-     |                                                     \-- remember preference → [Convex]
-     |-- icrc1_transfer (ckBTC) --------------------------------------> [ckBTC Ledger]
-     |                                             (escrow credited; block index)
-     v
-[Invoice UI] <--- finalize --- [Server Actions] -- mint token --> [Story Protocol]
-                                     |  \-- issue C2PA + VC → [IPFS]
-                                     |  \-- anchor evidence → [Constellation]
-                                     '-- mirror updates     → [Convex]
+### Buyer Checkout & Finalization (ckBTC)
+
+```
+[Buyer (Internet Identity)]
+   |
+   | Open share link in browser
+   v
+[Invoice UI]
+   |
+   | Enter license wallet (remember preference)
+   | Submit ckBTC payment (icrc1_transfer)
+   v
+[ckBTC Ledger] → Escrow credited (block index)
+   |
+   v
+[Server Actions]
+   | Mint Story license token → [Story Protocol]
+   | Issue C2PA + VC → [IPFS]
+   | Anchor evidence → [Constellation]
+   | Mirror updates → [Convex]
+   v
+[Invoice UI] → Verification timeline updates (payment credited, token minted)
 ```
 
 ### Dispute & Resolution (UMA)
@@ -168,60 +184,12 @@ pnpm install
 
 ## 3. Environment variables
 
-Create a `.env.local` file at the repository root using the template below. All
+Create a `.env` file at the repository root using the `.env.example` template. All
 values must point to real infrastructure—no placeholders remain in the code.
-
-```dotenv
-# App + auth
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="replace-with-64-char-secret"
-NEXT_PUBLIC_SITE_DOMAIN="localhost:3000"
-NEXT_PUBLIC_IDENTITY_PROVIDER_URL="https://identity.internetcomputer.org" # optional override
-NEXT_PUBLIC_STORY_NETWORK="aeneid" # or 'mainnet'
-NEXT_PUBLIC_ICP_HOST="http://127.0.0.1:4943"            # optional fallback for dev
-
-# Public RPCs
-NEXT_PUBLIC_AENEID_RPC="https://aeneid.storyrpc.io"
-NEXT_PUBLIC_DAG_ADDRESS="DAG..."
-NEXT_PUBLIC_CONVEX_URL="https://<your-deployment>.convex.cloud"
-
-# Story Protocol signer
-STORY_RPC_URL="https://aeneid.storyrpc.io"
-STORY_CHAIN_ID="1315"
-STORY_SPG_NFT_ADDRESS="0x..."                        # SPG NFT contract
-STORY_LICENSE_TEMPLATE_ADDRESS="0x..."               # PIL license template
-STORY_PRIVATE_KEY="0x..."                            # 32-byte hex private key
-STORY_PIL_URI="https://example.com/pil.json"
-STORY_DISPUTE_MODULE_ADDRESS="0x..."                 # DisputeModule contract for the active Story network
-STORY_ARBITRATION_POLICY_ADDRESS="0x..."             # UMA arbitration policy contract
-STORY_DISPUTE_BOND_TOKEN_ADDRESS="0x0000000000000000000000000000000000000000"
-STORY_DISPUTE_DEFAULT_LIVENESS="259200"
-
-# ICP ckBTC escrow canister
-ICP_HOST="https://icp0.io"                           # or local replica
-NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID="bqf6p-rqaaa-aaaaa-qc46q-cai"
-ICP_IDENTITY_PEM_PATH="icp/icp_identity.pem"
-ICP_IDENTITY_PEM_BASE64=""                           # run `pnpm encode:icp-identity` to refresh your .env (append --example to sync this file)
-
-# Constellation anchoring
-CONSTELLATION_ENABLED="true"
-CONSTELLATION_NETWORK="integrationnet"
-CONSTELLATION_PRIVATE_KEY="0x..."
-CONSTELLATION_ADDRESS="DAG..."
-CONSTELLATION_SINK_ADDRESS="DAG..."                 # must differ from CONSTELLATION_ADDRESS
-
-# Verifiable credential issuer
-VC_ISSUER_DID="did:lexlink:issuer"
-VC_PRIVATE_KEY="0x..."
-
-# Convex deployment metadata
-CONVEX_URL="https://<your-deployment>.convex.cloud"
-CONVEX_DEPLOYMENT="<deployment-name>"
-```
 
 ### How to obtain each env value (commands + links)
 
-Use this checklist to source every value in `.env.local`.
+Use this checklist to source every value in `.env`.
 
 1. App shell, auth, and Convex
 
@@ -365,7 +333,7 @@ export NEXT_PUBLIC_IC_NETWORK="local"
   - Faucet:
     `GET https://faucet.constellationnetwork.io/integrationnet/faucet/<YOUR_DAG_ADDRESS>`
 
-Sanity checks
+**Sanity checks**
 
 - Story: `pnpm spg:create` returns a valid `spgNftContract`
 - ICP:
@@ -434,9 +402,6 @@ pnpm convex:dev          # optional if you prefer local Convex
 pnpm dev
 ```
 
-Visit http://localhost:3000/signin, authenticate with Internet Identity, and you
-will be redirected into the protected `/app` console.
-
 ## 5. ICP canister
 
 The Motoko canister that powers ckBTC escrow lives in `icp/`.
@@ -458,36 +423,7 @@ Configure `NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID` with the output of deployment.
 The deployed Candid UI is available at:
 https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=bqf6p-rqaaa-aaaaa-qc46q-cai.
 
-## 6. Production build
-
-```bash
-pnpm build
-pnpm start
-```
-
-## 7. Project structure
-
-```
-.
-├── src/app/app/actions.ts    # Server actions for Story, ICP, Constellation
-├── src/app/app/              # Protected dashboard routes (overview, ip, licenses…)
-├── src/components/app/       # Client-side forms for registration & sales
-├── src/components/layout/    # AppShell + layout primitives
-├── src/lib/                  # Integrations (Story, ICP, Constellation, Convex, auth)
-├── convex/                   # Convex schema and functions
-└── icp/                      # Motoko canister for ckBTC escrow
-```
-
-## 8. Testing & linting
-
-Run the standard checks before shipping updates:
-
-```bash
-pnpm typecheck
-pnpm lint
-```
-
-## 9. Operational flow
+## 6. Operational flow
 
 1. **Register IP** – The console fetches metadata, hashes its contents, and
    calls `StoryClient.ipAsset.mintAndRegisterIpAssetWithPilTerms`. Convex stores
@@ -507,13 +443,3 @@ pnpm lint
    pins everything to IPFS as a single bundle CID, calls Story’s Dispute Module
    (UMA arbitration), anchors the payload to Constellation, and owners monitor
    the status from the dashboard disputes inbox.
-
-## 10. Deploying to production
-
-- Provision hosted Constellation, Story RPC, and Convex services.
-- Deploy the Motoko canister to ICP mainnet (or an enterprise subnet) and
-  register the `lexlink-btc` key with threshold signing.
-- Build and deploy the Next.js application using `pnpm build` or your preferred
-  platform (Vercel, Fly.io, etc.).
-
-LexLink provides a unified surface for Story Protocol licensing, ICP ckBTC escrow, and Constellation compliance evidence—ready for real integrations.
