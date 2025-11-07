@@ -323,16 +323,16 @@ export function renderMediaPreview({
 
   if (!imageSrc) {
     return (
-        <div
-          className={cn(
-            mediaHeightClass,
-            'flex items-center justify-center bg-muted/40 text-xs text-muted-foreground'
-          )}
-        >
-          Artwork unavailable
-        </div>
-      )
-    }
+      <div
+        className={cn(
+          mediaHeightClass,
+          'flex items-center justify-center bg-muted/40 text-xs text-muted-foreground'
+        )}
+      >
+        Artwork unavailable
+      </div>
+    )
+  }
 
   return (
     <Image

@@ -71,7 +71,9 @@ export function UsersTable({ users, currentPrincipal }: Props) {
                 <TableCell className='text-sm'>
                   <div className='flex flex-col gap-1'>
                     {user.principal && (
-                      <span className='font-mono text-xs'>{user.principal}</span>
+                      <span className='font-mono text-xs'>
+                        {user.principal}
+                      </span>
                     )}
                     {user.address && (
                       <span className='font-mono text-xs text-muted-foreground'>

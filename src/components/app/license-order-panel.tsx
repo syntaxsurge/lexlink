@@ -398,7 +398,7 @@ export function LicenseOrderPanel({
                 <div className='absolute bottom-4 left-4 right-4'>
                   <div className='rounded-2xl border border-white/20 bg-black/40 p-4 text-white shadow-lg backdrop-blur'>
                     <p className='text-sm font-semibold'>{selectedIp.title}</p>
-                    <p className='mt-1 text-xs text-white/70 line-clamp-2'>
+                    <p className='mt-1 line-clamp-2 text-xs text-white/70'>
                       {selectedIp.description}
                     </p>
                   </div>
@@ -497,9 +497,7 @@ function DetailValue({
   const resolved =
     typeof value === 'string' && value.trim().length > 0 ? value.trim() : 'N/A'
   if (resolved === 'N/A') {
-    return (
-      <span className='font-mono text-xs text-muted-foreground'>N/A</span>
-    )
+    return <span className='font-mono text-xs text-muted-foreground'>N/A</span>
   }
 
   const isTruncated = resolved.length > maxLength
@@ -540,5 +538,9 @@ function DetailValue({
     )
   }
 
-  return <span className='break-all font-mono text-xs text-foreground'>{resolved}</span>
+  return (
+    <span className='break-all font-mono text-xs text-foreground'>
+      {resolved}
+    </span>
+  )
 }
