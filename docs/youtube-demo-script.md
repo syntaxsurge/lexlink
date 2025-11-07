@@ -67,7 +67,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 ## 7) Buyer’s My Licenses
 - On‑screen: `/dashboard/purchases` (buyer session).
 - Demo inputs: No input fields on this page.
-- **Voice‑over 7:** On the My Licenses page, see each claimed order with quick links to Story, Constellation, the C2PA archive, and the verifiable credential; the saved license wallet is shown.
+ - **Voice‑over 7:** From the Dashboard, open the My Licenses page from the sidebar to first see the saved license wallet captured at purchase; the My Licenses section lists each order with the Order ID and License wallet plus a License token link to the Story Protocol license page, a Constellation evidence link to the IntegrationNet transaction details, and a View receipt link to the Verify page showing the overview, settlement proof, evidence and artifacts, and the evidence payload; you can download the C2PA bundle and the verifiable credential (JSON) and open it to view the VC details for the purchased license.
 
 ## 8) Seller’s license management
 - On‑screen: Switch to the seller/operator session → `/dashboard/licenses`.
