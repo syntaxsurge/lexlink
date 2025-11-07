@@ -83,7 +83,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Evidence files: upload example files (e.g., screenshot.png, evidence.pdf)
   - Click “Raise dispute”
 - On‑screen: Show the returned Dispute ID and evidence bundle link.
-- **Voice‑over 9:** On the Report IP page, anyone can report misuse; evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module.
+- **Voice‑over 9:** On the Report IP page, anyone can report misuse; evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module—after raising the dispute, the page shows the Dispute ID, IP asset, evidence bundle, and transaction hash; click the transaction hash to view the transaction details confirming the dispute was raised, and click the IP asset to open its page and see the dispute section showing it is raised with no counter evidence yet from the owner.
 
 ## 10) Case Manager
 - On‑screen: `/dashboard/disputes` (owner/operator session).
