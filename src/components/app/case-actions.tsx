@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import Link from 'next/link'
+import { useMemo, useState, useTransition } from 'react'
 
 import {
   respondToDisputeAction,
@@ -20,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { storyScanBase } from '@/lib/story-links'
 
 type CaseActionsProps = {
   disputeId: string
@@ -44,6 +46,8 @@ export function CaseActions({
   resolvedAt,
   livenessDeadline
 }: CaseActionsProps) {
+  const storyNetwork =
+    (process.env.NEXT_PUBLIC_STORY_NETWORK as 'aeneid' | 'mainnet') ?? 'aeneid'
   const [respondOpen, setRespondOpen] = useState(false)
   const [respondPending, setRespondPending] = useState(false)
   const [resultMessage, setResultMessage] = useState<string | null>(null)
@@ -81,11 +85,11 @@ export function CaseActions({
     if (!result.ok) {
       setError(result.error)
     } else {
-      setResultMessage(`Response submitted · tx ${shorten(result.txHash)}`)
+      setResultMessage(result.txHash)
       setRespondOpen(false)
     }
     setRespondPending(false)
-    event.currentTarget.reset()
+    event.currentTarget.reset?.()
   }
 
   const handleSettle = () => {
@@ -94,7 +98,7 @@ export function CaseActions({
     startSettleTransition(async () => {
       try {
         const response = await settleDisputeAction(disputeId)
-        setResultMessage(`Settlement tx ${shorten(response.txHash)}`)
+        setResultMessage(response.txHash)
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Unable to settle dispute.'
@@ -210,7 +214,14 @@ export function CaseActions({
       </div>
       {resultMessage && (
         <div className='font-mono text-[11px] text-muted-foreground'>
-          {resultMessage}
+          <Link
+            href={`${storyScanBase(storyNetwork)}/tx/${resultMessage}`}
+            target='_blank'
+            rel='noreferrer'
+            className='inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline'
+          >
+            {resultMessage}
+          </Link>
         </div>
       )}
       {error && <div className='text-[11px] text-destructive'>{error}</div>}
