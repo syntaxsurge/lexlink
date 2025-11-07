@@ -11,31 +11,57 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 2) Secure sign‑in
 - On‑screen: `/signin` → Sign in with Internet Identity.
-- Demo inputs: Click “Sign in with Internet Identity” and complete the popup; no text fields.
+- Demo inputs:
+  - Click “Sign in with Internet Identity” and complete the popup
+  - No text fields
 - **Voice‑over 2:** Authentication uses Internet Identity. The server verifies the delegation and persists your principal and role in Convex.
 
 ## 3) Register IP (manual)
 - On‑screen: `/dashboard/ip` → “Register Story IP Asset”.
-- Demo inputs: Title: Neon District Theme; Description: Original audio track with neon‑lit cityscape cover art; cinematic synthwave ambience; licensed for commercial use with derivatives allowed; Created at: leave default; Cover image URL: https://cdn2.suno.ai/image_large_8bcba6bc-3f60-4921-b148-f32a59086a4c.jpeg; Primary media URL: https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3; Media type: auto‑detected as audio/mpeg (mp3); License price (BTC): 0.001; Royalty share (%): 10; Commercial use: checked; Derivatives allowed: checked.
+- Demo inputs:
+  - Title: Neon District Theme
+  - Description: Original audio track with neon‑lit cityscape cover art; cinematic synthwave ambience; licensed for commercial use with derivatives allowed
+  - Created at: leave default
+  - Cover image URL: https://cdn2.suno.ai/image_large_8bcba6bc-3f60-4921-b148-f32a59086a4c.jpeg
+  - Primary media URL: https://cdn1.suno.ai/dcd3076f-3aa5-400b-ba5d-87d30f27c311.mp3
+  - Media type: auto‑detected as audio/mpeg (mp3)
+  - License price (BTC): 0.001
+  - Royalty share (%): 10
+  - Commercial use: checked
+  - Derivatives allowed: checked
 - On‑screen: Optionally expand “Advanced metadata” to preview Tags, Creators, Lineage, and Attributes, then collapse it and proceed without changes.
 - On‑screen: Click “Register IP Asset”; after success, copy the IP ID and open the Story explorer link.
 - **Voice‑over 3:** Open the IP Registry page, paste the cover image and primary media URLs, confirm the app auto‑detects the media type as audio/mpeg (mp3), set License price to 0.001 BTC and Royalty to 10%, leave Commercial use and Derivatives allowed checked, click Advanced metadata to preview Tags, Creators, Lineage, and Attributes then collapse without changes, and click Register IP Asset to complete.
 
 ## 4) Create IP via AI Studio
 - On‑screen: `/dashboard/ai` → LexLink AI Studio.
-- Demo inputs: Prompt: Design an album cover featuring neon‑lit architecture reflected on rain‑soaked streets, cyberpunk synthwave aesthetic, 4k, cinematic lighting, vibrant magenta and teal palette; Title: Neon District Suite; Description: Futuristic album artwork depicting a neon‑lit cityscape with rain reflections and cinematic lighting; licensed for commercial use with derivatives allowed; License price (BTC): 0.001; Royalty share (%): 10; Commercial use: checked; Derivatives allowed: checked.
+- Demo inputs:
+  - Prompt: Design an album cover featuring neon‑lit architecture reflected on rain‑soaked streets, cyberpunk synthwave aesthetic, 4k, cinematic lighting, vibrant magenta and teal palette
+  - Title: Neon District Suite
+  - Description: Futuristic album artwork depicting a neon‑lit cityscape with rain reflections and cinematic lighting; licensed for commercial use with derivatives allowed
+  - License price (BTC): 0.001
+  - Royalty share (%): 10
+  - Commercial use: checked
+  - Derivatives allowed: checked
 - On‑screen: Click “Generate & Register”, then after completion copy the IP ID and open the Story explorer link.
 - **Voice‑over 4:** Open the AI Studio page, enter the prompt, title, and description, set price to 0.001 BTC and royalty to 10%, keep Commercial use and Derivatives allowed checked, then click Generate & Register—here the AI automatically generates the media and registers the IP asset based on your prompt, pins metadata to IPFS, and mirrors it in Convex.
 
 ## 5) List the asset for sale
 - On‑screen: `/dashboard/licenses` → “Generate ckBTC Invoice”.
-- Demo inputs: Select “Neon District Suite – 0.001000 ckBTC” from the dropdown; click “Generate ckBTC invoice”.
+- Demo inputs:
+  - Select “Neon District Suite – 0.001000 ckBTC” from the dropdown
+  - Click “Generate ckBTC invoice”
 - On‑screen: After submission, find the new entry under Pending Payments and click “Open invoice”.
 - **Voice‑over 5:** Select the IP to invoice; each order derives a deterministic ICRC‑1 subaccount for ckBTC escrow and saves a shareable payment link.
 
 ## 6) Buyer checkout and wallet capture
 - On‑screen: Open the shared link `/pay/[orderId]` as the buyer session.
-- Demo inputs: Enter license wallet 0x1111111111111111111111111111111111111111; check “Remember this wallet for future purchases”; click “Connect Internet Identity”, then click “Pay now”; pay the shown price (expected 0.00100000 ckTESTBTC on testnet).
+- Demo inputs:
+  - License wallet (EVM): 0x1111111111111111111111111111111111111111
+  - Check “Remember this wallet for future purchases”
+  - Click “Connect Internet Identity”
+  - Click “Pay now”
+  - Amount: pay the shown price (expected 0.00100000 ckTESTBTC on testnet)
 - **Voice‑over 6:** Buyers authenticate with Internet Identity, set a license wallet, and pay with ckBTC from the browser; the page auto‑refreshes on ledger updates, and once funded the server mints the Story license token, pins a C2PA bundle and verifiable credential, and anchors Constellation evidence.
 
 ## 7) Buyer’s My Licenses
@@ -50,7 +76,13 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 
 ## 9) Public “Report IP”
 - On‑screen: Header → “Report IP” or the button from an invoice → `/report`.
-- Demo inputs: Use the dropdown to select the IP (autofills ipId) or paste the copied ipId; set tag to improper usage (IMPROPER_USAGE); note “Suspected unauthorized repost on social media; link below”; source URL https://example.com/infringing-post; leave evidence files empty; click “Raise dispute”.
+- Demo inputs:
+  - Select the IP (autofills ipId) or paste the copied ipId
+  - Dispute tag: improper usage (IMPROPER_USAGE)
+  - Note: Suspected unauthorized repost on social media; link below
+  - Source URL: https://example.com/infringing-post
+  - Evidence files: leave empty
+  - Click “Raise dispute”
 - On‑screen: Show the returned Dispute ID and evidence bundle link.
 - **Voice‑over 9:** Anyone can report misuse; evidence is pinned to IPFS as a single bundle and submitted through Story’s Dispute Module.
 
