@@ -24,16 +24,6 @@ import {
   type StoryNetwork
 } from '@/lib/story-links'
 
-const MAINNET_MEMPOOL = 'https://mempool.space'
-const TESTNET_MEMPOOL = 'https://mempool.space/testnet'
-
-function explorerBase(network?: string | null) {
-  if (!network) return null
-  if (network === 'mainnet') return MAINNET_MEMPOOL
-  if (network.includes('mainnet')) return MAINNET_MEMPOOL
-  return TESTNET_MEMPOOL
-}
-
 function statusStyles(status: string) {
   switch (status) {
     case 'finalized':

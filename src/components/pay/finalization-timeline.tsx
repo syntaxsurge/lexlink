@@ -208,7 +208,6 @@ export function FinalizationTimeline({
   }, [
     constellationEnabled,
     constellationNetwork,
-    invoice.constellationAnchoredAt,
     invoice.constellationExplorerUrl,
     invoice.constellationTx
   ])
@@ -493,11 +492,9 @@ export function FinalizationTimeline({
     invoice.finalizedAt,
     invoice.licenseTermsId,
     invoice.mintTo,
-    invoice.orderId,
-    invoice.tokenOnChainId,
+    normalizedConstellationStatus,
     invoice.vcHash,
     licenseMinted,
-    normalizedConstellationStatus,
     paymentComplete,
     paymentDetails,
     storyChainId,

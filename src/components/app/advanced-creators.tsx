@@ -10,16 +10,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
-type CreatorField = {
-  name: string
-  wallet: string
-  role?: string
-  pct: number
-  description?: string
-  socialPlatform?: string
-  socialUrl?: string
-}
-
 type AdvancedCreatorsProps = {
   fieldName?: string
   className?: string

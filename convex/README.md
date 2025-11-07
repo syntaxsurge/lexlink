@@ -16,8 +16,8 @@ Functions:
   - `list` – fetch all license orders.
   - `get` – fetch a license order by `orderId`.
 - `insert` – insert a pending order with an allocated ckBTC escrow target.
-- `markCompleted` – update a license with the ckBTC settlement reference, attestation hash,
-    Constellation transaction hash, and minted Story token ID.
+- `markCompleted` – update a license with the ckBTC settlement reference,
+  attestation hash, Constellation transaction hash, and minted Story token ID.
 
 The Next.js server actions call these functions via `ConvexHttpClient`; no code
 generation is required.

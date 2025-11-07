@@ -4,11 +4,7 @@ import Link from 'next/link'
 
 import { Download, ExternalLink } from 'lucide-react'
 
-import {
-  loadBuyerCkbtcBalance,
-  loadBuyerProfile,
-  loadBuyerPurchases
-} from '@/app/dashboard/actions'
+import { loadBuyerProfile, loadBuyerPurchases } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -30,17 +26,10 @@ import {
   type StoryNetwork
 } from '@/lib/story-links'
 
-function short(value: string | null | undefined, length = 10) {
-  if (!value) return '—'
-  if (value.length <= length) return value
-  return `${value.slice(0, length)}…`
-}
-
 export default async function PurchasesPage() {
-  const [purchases, profile, balance] = await Promise.all([
+  const [purchases, profile] = await Promise.all([
     loadBuyerPurchases(),
-    loadBuyerProfile(),
-    loadBuyerCkbtcBalance()
+    loadBuyerProfile()
   ])
 
   const storyNetwork =

@@ -59,11 +59,6 @@ export const RELATIONSHIP_TYPE_VALUES = RELATIONSHIP_GROUPS.flatMap(group => [
   ...group.values
 ]) as readonly string[]
 
-type RelationshipField = {
-  parentIpId: string
-  type: string
-}
-
 type AdvancedRelationshipsProps = {
   fieldName?: string
   className?: string

@@ -29,6 +29,7 @@ import {
 import { formatTokenAmount, hexToUint8Array } from '@/lib/ic/ckbtc/utils'
 import { fetchAttestation } from '@/lib/icp'
 import { uploadBytes, uploadJson, ipfsGatewayUrl } from '@/lib/ipfs'
+import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 import {
   getStoryClient,
   getDefaultLicenseTerms,
@@ -452,7 +453,7 @@ function parseDisputeId(value: string): bigint {
   }
   try {
     return BigInt(value)
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Invalid disputeId – expected a numeric identifier.')
   }
 }
@@ -894,8 +895,6 @@ async function downloadAssetFromUrl(url: string) {
     lastError instanceof Error ? lastError.message : 'Unknown network failure'
   throw new Error(`Unable to download asset ${url}: ${message}`)
 }
-
-import { IPFS_GATEWAYS } from '@/lib/ipfs-gateways'
 
 function resolveCandidateAssetUrls(source: string): string[] {
   const candidates = new Set<string>()
@@ -2911,7 +2910,11 @@ export async function loadInvoicePublic(orderId: string) {
   if (!receipt) {
     return null
   }
-  const { vcDocument, evidencePayload, ...publicInvoice } = receipt
+  const {
+    vcDocument: _vcDocument,
+    evidencePayload: _evidencePayload,
+    ...publicInvoice
+  } = receipt
   return publicInvoice
 }
 
