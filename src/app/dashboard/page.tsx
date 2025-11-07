@@ -54,6 +54,18 @@ function formatDate(ms: number) {
   return new Date(ms).toLocaleString()
 }
 
+function takeMostRecent<T>(
+  items: T[],
+  getTimestamp: (item: T) => number | undefined,
+  limit = 3
+) {
+  return [...items]
+    .sort(
+      (a, b) => (getTimestamp(b) ?? 0) - (getTimestamp(a) ?? 0)
+    )
+    .slice(0, limit)
+}
+
 const network = (env.NEXT_PUBLIC_STORY_NETWORK as StoryNetwork) ?? 'aeneid'
 const constellationNetwork =
   (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
@@ -200,6 +212,26 @@ export default async function OverviewPage() {
     (license: LicenseRecord) => license.status === 'finalized'
   )
   const disputeInbox = disputes?.inbox ?? []
+  const recentPendingOrders = takeMostRecent(
+    pendingOrders,
+    order => order.updatedAt ?? order.createdAt,
+    3
+  )
+  const recentDisputes = takeMostRecent(
+    disputeInbox,
+    dispute => dispute.resolvedAt ?? dispute.respondedAt ?? dispute.createdAt,
+    3
+  )
+  const recentFinalizedOrders = takeMostRecent(
+    finalizedOrders,
+    order => order.finalizedAt ?? order.updatedAt ?? order.createdAt,
+    3
+  )
+  const recentAuditEvents = takeMostRecent(
+    auditTrail,
+    event => event.createdAt,
+    3
+  )
   const averageCompliance = finalizedOrders.length
     ? Math.round(
         finalizedOrders.reduce(
@@ -259,7 +291,7 @@ export default async function OverviewPage() {
                   </p>
                 </div>
               )}
-              {pendingOrders.slice(0, 5).map(order => (
+              {recentPendingOrders.map(order => (
                 <div
                   key={order.orderId}
                   className='flex items-center justify-between rounded-lg border border-border/60 bg-background/70 px-3 py-2.5 text-sm transition-colors hover:bg-accent/50'
@@ -305,7 +337,7 @@ export default async function OverviewPage() {
                   </p>
                 </div>
               )}
-              {disputeInbox.slice(0, 3).map((dispute: DisputeRecord) => {
+              {recentDisputes.map((dispute: DisputeRecord) => {
                 const disputeExplorerUrl =
                   dispute.constellationExplorerUrl &&
                   dispute.constellationExplorerUrl.length > 0
@@ -375,7 +407,7 @@ export default async function OverviewPage() {
                 No completed licenses yet.
               </p>
             )}
-            {finalizedOrders.slice(0, 3).map(order => {
+            {recentFinalizedOrders.map(order => {
               const orderExplorerUrl =
                 order.constellationExplorerUrl &&
                 order.constellationExplorerUrl.length > 0
@@ -478,7 +510,7 @@ export default async function OverviewPage() {
                 No activity recorded.
               </p>
             )}
-            {auditTrail.map(event => (
+            {recentAuditEvents.map(event => (
               <EventItem key={event.eventId} event={event} />
             ))}
           </CardContent>
