@@ -258,17 +258,17 @@ export function LicenseOrderPanel({
         )}
       </CardContent>
       {createdOrder && (
-        <CardFooter className='flex flex-col gap-5 border-t border-primary/30 bg-primary/5'>
-          <div className='rounded-2xl border border-primary/30 bg-background/90 p-4 shadow-sm'>
-            <div className='flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between'>
+        <CardFooter className='mt-2 flex flex-col gap-6 border-t border-primary/30 bg-primary/5 pt-6'>
+          <div className='rounded-3xl border border-primary/40 bg-gradient-to-r from-primary/10 via-background to-background p-5 shadow-inner'>
+            <div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
               <div>
-                <p className='text-sm font-semibold text-primary'>Invoice ready</p>
-                <p className='text-xs text-muted-foreground'>
+                <p className='text-base font-semibold text-primary'>Invoice ready</p>
+                <p className='text-sm text-muted-foreground'>
                   Share the payment page or copy the link below to collect ckBTC.
                 </p>
               </div>
-              <div className='flex flex-wrap items-center gap-2'>
-                <Button asChild size='sm' className='gap-2'>
+              <div className='flex flex-wrap items-center gap-3'>
+                <Button asChild size='sm' className='gap-2 rounded-full px-4'>
                   <Link
                     href={`/pay/${createdOrder.orderId}`}
                     target='_blank'
@@ -284,13 +284,14 @@ export function LicenseOrderPanel({
                   variant='outline'
                   onClick={handleCopyLink}
                   disabled={!shareLink}
+                  className='rounded-full px-4'
                 >
                   {copied ? 'Link copied' : 'Copy share link'}
                 </Button>
               </div>
             </div>
           </div>
-          <div className='grid w-full gap-4 md:grid-cols-2 lg:grid-cols-4'>
+          <div className='grid w-full gap-5 md:grid-cols-2 lg:grid-cols-4'>
             {[
               { label: 'Order ID', value: createdOrder.orderId },
               { label: 'Escrow account', value: createdOrder.btcAddress },
@@ -302,12 +303,12 @@ export function LicenseOrderPanel({
             ].map(detail => (
               <div
                 key={detail.label}
-                className='rounded-2xl border border-primary/20 bg-background/95 p-3 text-xs'
+                className='rounded-3xl border border-border/70 bg-card/80 p-4 text-xs shadow-sm'
               >
                 <p className='text-[11px] uppercase tracking-wide text-muted-foreground'>
                   {detail.label}
                 </p>
-                <p className='mt-2 break-all rounded-lg border border-primary/10 bg-primary/5 px-3 py-2 font-mono text-[11px] text-foreground'>
+                <p className='mt-3 break-all rounded-2xl border border-border/50 bg-background/90 px-4 py-3 font-mono text-[11px] text-foreground shadow-inner'>
                   {detail.value}
                 </p>
               </div>
