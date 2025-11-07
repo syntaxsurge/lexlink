@@ -173,24 +173,16 @@ export default async function PurchasesPage() {
                       <dl className='grid gap-2 text-sm'>
                         <div className='flex items-start gap-2'>
                           <dt className='min-w-[100px] text-muted-foreground'>Order ID:</dt>
-                          <dd className='flex-1'>
-                            <TextDialog
-                              title='Order ID'
-                              content={order.orderId}
-                              truncateLength={16}
-                            />
+                          <dd className='flex-1 break-all font-mono text-xs text-foreground'>
+                            {order.orderId}
                           </dd>
                         </div>
 
                         {order.mintTo && (
                           <div className='flex items-start gap-2'>
                             <dt className='min-w-[100px] text-muted-foreground'>License Wallet:</dt>
-                            <dd className='flex-1'>
-                              <TextDialog
-                                title='License Wallet Address'
-                                content={order.mintTo}
-                                truncateLength={20}
-                              />
+                            <dd className='flex-1 break-all font-mono text-xs text-foreground'>
+                              {order.mintTo}
                             </dd>
                           </div>
                         )}
@@ -222,7 +214,7 @@ export default async function PurchasesPage() {
                                 rel='noreferrer'
                                 className='inline-flex items-center gap-1 break-all font-mono text-xs text-primary underline-offset-4 hover:underline'
                               >
-                                {short(order.constellationTx, 20)}
+                                {order.constellationTx}
                                 <ExternalLink className='h-3 w-3' />
                               </Link>
                             </dd>
