@@ -65,7 +65,7 @@ export function SiteHeader() {
             className='group flex items-center gap-3 text-lg font-semibold leading-none'
           >
             <Image
-              src='/images/lexlink-logo.png'
+              src='/images/lexlink-logo-solid-bg.png'
               alt='LexLink logo'
               width={40}
               height={40}
