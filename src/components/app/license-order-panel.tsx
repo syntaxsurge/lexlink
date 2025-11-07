@@ -209,7 +209,7 @@ export function LicenseOrderPanel({
                 {selectedIp.tags && selectedIp.tags.length > 0 && (
                   <div className='mt-4 flex flex-wrap gap-2'>
                     {selectedIp.tags.slice(0, 4).map(tag => (
-                      <Badge key={tag} variant='secondary' className='bg-background'>
+                      <Badge key={tag} variant='outline' className='bg-background'>
                         #{tag}
                       </Badge>
                     ))}

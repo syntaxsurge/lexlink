@@ -65,18 +65,21 @@ function statusStyles(status: string) {
   }
 }
 
-type LicensesPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>
-}
-
-export default async function LicensesPage({ searchParams }: LicensesPageProps) {
+export default async function LicensesPage({
+  searchParams
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { ips, licenses } = await loadDashboardData()
   const ckbtcEscrowPrincipal =
     env.CKBTC_MERCHANT_PRINCIPAL ??
     env.NEXT_PUBLIC_ICP_ESCROW_CANISTER_ID ??
     ''
+  const resolvedSearchParams = (await searchParams) ?? {}
   const focusedIpId =
-    typeof searchParams?.ip === 'string' ? searchParams.ip : undefined
+    typeof resolvedSearchParams.ip === 'string'
+      ? resolvedSearchParams.ip
+      : undefined
 
   const pendingOrders = licenses.filter(order =>
     ['pending', 'funded', 'confirmed'].includes(order.status)
