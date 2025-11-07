@@ -72,7 +72,7 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
 ## 8) Seller’s license management
 - On‑screen: Switch to the seller/operator session → `/dashboard/licenses`.
 - Demo inputs: No input fields on this page.
-- **Voice‑over 8:** On the Licenses page, review pending invoices, automatic ckBTC finalization, and a chronological history; each row links to settlement references and explorers.
+- **Voice‑over 8:** Back in the seller’s browser session, open the Licenses page to review pending invoices, automatic ckBTC finalization, and the chronological order history; each row links to the settlement reference, Story explorer, and Constellation explorer.
 
 ## 9) Public “Report IP”
 - On‑screen: Header → “Report IP” or the button from an invoice → `/report`.
