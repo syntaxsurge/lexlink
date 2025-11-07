@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer'
 
 import Link from 'next/link'
 
-import { ExternalLink, Share2 } from 'lucide-react'
+import { ExternalLink, Share2, FileText, Clock } from 'lucide-react'
 
 import { loadDashboardData } from '@/app/dashboard/actions'
 import { LicenseOrderPanel } from '@/components/app/license-order-panel'
@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import {
   Table,
   TableBody,
@@ -89,17 +90,53 @@ export default async function LicensesPage({
   const ipTitleLookup = new Map(ips.map(ip => [ip.ipId, ip.title]))
 
   return (
-    <div className='space-y-6'>
+    <div className='space-y-10'>
+      {/* Hero Section */}
+      <section className='relative overflow-hidden rounded-[40px] border border-border/60 bg-gradient-to-br from-emerald-500/10 via-card to-background p-10 shadow-2xl'>
+        <div className='absolute left-0 top-0 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl' />
+        <div className='absolute bottom-4 right-6 h-48 w-48 rounded-full bg-primary/20 blur-3xl' />
+        <div className='relative z-10 space-y-4'>
+          <Badge
+            variant='outline'
+            className='w-fit border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700 dark:text-emerald-400'
+          >
+            <FileText className='mr-2 h-3 w-3' />
+            License Management
+          </Badge>
+          <div className='space-y-2'>
+            <h1 className='text-4xl font-bold tracking-tight text-foreground'>
+              License Orders & Invoices
+            </h1>
+            <p className='max-w-2xl text-base text-muted-foreground'>
+              Create license orders, share ckBTC invoices with buyers, and track
+              automated settlement across Story Protocol and Constellation
+              Network.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <LicenseOrderPanel ips={ips} defaultIpId={focusedIpId} />
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Pending Payments</CardTitle>
-          <CardDescription>
-            Share payment targets with buyers. ckBTC invoices finalize
-            automatically once the escrow ledger receives the transfer.
-          </CardDescription>
+
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-amber-500/10 to-background p-3 shadow-lg'>
+              <Clock className='h-6 w-6 text-amber-600 dark:text-amber-400' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>
+                Pending Payments
+              </CardTitle>
+              <CardDescription className='text-sm'>
+                Share payment targets with buyers. ckBTC invoices finalize
+                automatically once the escrow ledger receives the transfer
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='pt-6'>
           <div className='space-y-4'>
             {pendingOrders.length === 0 && (
               <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center'>
@@ -238,14 +275,25 @@ export default async function LicensesPage({
         </CardContent>
       </Card>
 
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Invoice History</CardTitle>
-          <CardDescription>
-            Chronological ledger of all license invoices with settlement status.
-          </CardDescription>
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 to-background p-3 shadow-lg'>
+              <FileText className='h-6 w-6 text-primary' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>
+                Invoice History
+              </CardTitle>
+              <CardDescription className='text-sm'>
+                Chronological ledger of all license invoices with settlement
+                status
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='pt-6'>
           <div className='overflow-x-auto'>
             <Table>
               <TableHeader>
@@ -320,15 +368,25 @@ export default async function LicensesPage({
         </CardContent>
       </Card>
 
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Finalized Licenses</CardTitle>
-          <CardDescription>
-            Story license tokens, C2PA bundles, and verifiable credentials for
-            completed sales.
-          </CardDescription>
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-emerald-500/10 to-background p-3 shadow-lg'>
+              <Clock className='h-6 w-6 text-emerald-600 dark:text-emerald-400' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>
+                Finalized Licenses
+              </CardTitle>
+              <CardDescription className='text-sm'>
+                Story license tokens, C2PA bundles, and verifiable credentials
+                for completed sales
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='pt-6'>
           <div className='overflow-x-auto'>
             <Table>
               <TableHeader>
@@ -450,19 +508,35 @@ export default async function LicensesPage({
         </CardContent>
       </Card>
 
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Completed Evidence Bundles</CardTitle>
-          <CardDescription>
-            Download C2PA archives and verifiable credentials for downstream
-            verification.
-          </CardDescription>
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 to-background p-3 shadow-lg'>
+              <FileText className='h-6 w-6 text-primary' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>
+                Completed Evidence Bundles
+              </CardTitle>
+              <CardDescription className='text-sm'>
+                Download C2PA archives and verifiable credentials for downstream
+                verification
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className='space-y-3'>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='space-y-3 pt-6'>
           {finalizedOrders.length === 0 && (
-            <p className='text-sm text-muted-foreground'>
-              No bundles generated yet.
-            </p>
+            <div className='rounded-2xl border-2 border-dashed border-border/60 bg-gradient-to-br from-muted/30 to-background p-12 text-center'>
+              <FileText className='mx-auto mb-4 h-12 w-12 text-muted-foreground/50' />
+              <p className='text-base font-medium text-foreground'>
+                No bundles generated yet
+              </p>
+              <p className='mt-2 text-sm text-muted-foreground'>
+                Completed licenses will appear here with downloadable evidence
+              </p>
+            </div>
           )}
           {finalizedOrders.map(order => {
             if (!order.c2paArchiveUri || !order.vcDocument) {

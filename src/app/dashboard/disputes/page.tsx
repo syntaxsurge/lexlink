@@ -1,7 +1,13 @@
 import Link from 'next/link'
 import { ReactNode } from 'react'
 
-import { ExternalLink, ShieldAlert } from 'lucide-react'
+import {
+  ExternalLink,
+  ShieldAlert,
+  FileCheck,
+  Sparkles,
+  AlertTriangle
+} from 'lucide-react'
 
 import { loadDashboardData, type DisputeRecord } from '@/app/dashboard/actions'
 import { CaseActions } from '@/components/app/case-actions'
@@ -14,6 +20,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TextDialog } from '@/components/ui/text-dialog'
 import {
@@ -76,29 +83,58 @@ export default async function DisputesPage({ searchParams }: CasesPageProps) {
     'inbox'
 
   return (
-    <div className='space-y-6'>
-      <div className='flex flex-wrap items-center justify-between gap-4'>
-        <div className='space-y-1'>
-          <h1 className='text-2xl font-semibold'>Case Manager</h1>
-          <p className='text-sm text-muted-foreground'>
-            Independent reporters raise disputes through Story’s UMA-backed
-            arbitration policy. Respond with evidence, monitor deadlines, and
-            settle tagged assets once liveness expires.
-          </p>
+    <div className='space-y-10'>
+      {/* Hero Section */}
+      <section className='relative overflow-hidden rounded-[40px] border border-border/60 bg-gradient-to-br from-rose-500/10 via-card to-background p-10 shadow-2xl'>
+        <div className='absolute left-0 top-0 h-64 w-64 rounded-full bg-rose-500/20 blur-3xl' />
+        <div className='absolute bottom-4 right-6 h-48 w-48 rounded-full bg-amber-400/20 blur-3xl' />
+        <div className='relative z-10 space-y-4'>
+          <Badge
+            variant='outline'
+            className='w-fit border-rose-500/30 bg-rose-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-rose-700 dark:text-rose-400'
+          >
+            <FileCheck className='mr-2 h-3 w-3' />
+            Case Manager
+          </Badge>
+          <div className='space-y-2'>
+            <h1 className='text-4xl font-bold tracking-tight text-foreground'>
+              Dispute Resolution
+            </h1>
+            <p className='max-w-2xl text-base text-muted-foreground'>
+              Independent reporters raise disputes through Story's UMA-backed
+              arbitration policy. Respond with evidence, monitor deadlines, and
+              settle tagged assets once liveness expires.
+            </p>
+          </div>
+          <div className='pt-2'>
+            <Button asChild className='rounded-full'>
+              <Link href='/report'>
+                <AlertTriangle className='mr-2 h-4 w-4' />
+                Report Misuse
+              </Link>
+            </Button>
+          </div>
         </div>
-        <Button asChild>
-          <Link href='/report'>Report misuse</Link>
-        </Button>
-      </div>
+      </section>
 
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Public intake</CardTitle>
-          <CardDescription>
-            Share the public form so reporters can submit immutable evidence.
-          </CardDescription>
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 to-background p-3 shadow-lg'>
+              <Sparkles className='h-6 w-6 text-primary' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>
+                Public Intake
+              </CardTitle>
+              <CardDescription className='text-sm'>
+                Share the public form so reporters can submit immutable evidence
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='pt-6'>
           <div className='flex flex-col gap-3 rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground'>
             <p>
               Anyone signed in with Internet Identity can submit evidence at{' '}
@@ -132,15 +168,33 @@ export default async function DisputesPage({ searchParams }: CasesPageProps) {
         </TabsList>
         {tabs.map(tab => (
           <TabsContent key={tab.id} value={tab.id}>
-            <Card className='border-border/60 bg-card/60'>
-              <CardHeader>
-                <CardTitle>{tab.label}</CardTitle>
-                <CardDescription>{tab.description}</CardDescription>
+            <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+              <CardHeader className='space-y-4 pb-6'>
+                <div className='flex items-start gap-3'>
+                  <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-rose-500/10 to-background p-3 shadow-lg'>
+                    <ShieldAlert className='h-6 w-6 text-rose-600 dark:text-rose-400' />
+                  </div>
+                  <div className='space-y-1'>
+                    <CardTitle className='text-2xl font-bold'>
+                      {tab.label}
+                    </CardTitle>
+                    <CardDescription className='text-sm'>
+                      {tab.description}
+                    </CardDescription>
+                  </div>
+                </div>
               </CardHeader>
-              <CardContent>
+              <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+              <CardContent className='pt-6'>
                 {tab.cases.length === 0 ? (
-                  <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center text-sm text-muted-foreground'>
-                    No cases in this queue yet.
+                  <div className='rounded-2xl border-2 border-dashed border-border/60 bg-gradient-to-br from-muted/30 to-background p-12 text-center'>
+                    <ShieldAlert className='mx-auto mb-4 h-12 w-12 text-muted-foreground/50' />
+                    <p className='text-base font-medium text-foreground'>
+                      No cases in this queue
+                    </p>
+                    <p className='mt-2 text-sm text-muted-foreground'>
+                      Active disputes will appear here
+                    </p>
                   </div>
                 ) : (
                   <div className='space-y-4'>

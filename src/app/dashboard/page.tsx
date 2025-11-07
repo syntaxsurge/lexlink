@@ -20,7 +20,6 @@ import {
 } from '@/app/dashboard/actions'
 import { CkbtcBalanceCard } from '@/components/app/ckbtc-balance-card'
 import { OperatorTopUpPanel } from '@/components/app/operator-topup-panel'
-import { PrincipalSummary } from '@/components/app/principal-summary'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -226,7 +225,7 @@ function EventItem({ event }: { event: AuditEventRecord }) {
 }
 
 export default async function OverviewPage() {
-  const [{ principal, ips, licenses, disputes }, auditTrail, ckbtcSnapshot] =
+  const [{ ips, licenses, disputes }, auditTrail, ckbtcSnapshot] =
     await Promise.all([
       loadDashboardData(),
       loadAuditTrail(8),
@@ -294,8 +293,6 @@ export default async function OverviewPage() {
           </div>
         </div>
       </section>
-
-      <PrincipalSummary principal={principal} />
 
       {/* Metric Cards - All 3 in one row on desktop */}
       <div className='grid gap-6 md:grid-cols-3'>

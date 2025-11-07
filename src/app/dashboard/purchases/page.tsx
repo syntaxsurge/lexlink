@@ -2,7 +2,13 @@ import { Buffer } from 'node:buffer'
 
 import Link from 'next/link'
 
-import { Download, ExternalLink } from 'lucide-react'
+import {
+  Download,
+  ExternalLink,
+  ShoppingBag,
+  User,
+  Sparkles
+} from 'lucide-react'
 
 import { loadBuyerProfile, loadBuyerPurchases } from '@/app/dashboard/actions'
 import { Badge } from '@/components/ui/badge'
@@ -14,6 +20,7 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import {
   constellationExplorerUrl,
   type ConstellationNetworkId
@@ -40,16 +47,50 @@ export default async function PurchasesPage() {
     (env.CONSTELLATION_NETWORK as ConstellationNetworkId) ?? 'integrationnet'
 
   return (
-    <div className='space-y-6'>
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>Buyer Profile</CardTitle>
-          <CardDescription>
-            Your default license wallet and payment information for this
-            session.
-          </CardDescription>
+    <div className='space-y-10'>
+      {/* Hero Section */}
+      <section className='relative overflow-hidden rounded-[40px] border border-border/60 bg-gradient-to-br from-emerald-500/10 via-card to-background p-10 shadow-2xl'>
+        <div className='absolute left-0 top-0 h-64 w-64 rounded-full bg-emerald-400/20 blur-3xl' />
+        <div className='absolute bottom-4 right-6 h-48 w-48 rounded-full bg-primary/20 blur-3xl' />
+        <div className='relative z-10 space-y-4'>
+          <Badge
+            variant='outline'
+            className='w-fit border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] text-emerald-700 dark:text-emerald-400'
+          >
+            <ShoppingBag className='mr-2 h-3 w-3' />
+            My Purchases
+          </Badge>
+          <div className='space-y-2'>
+            <h1 className='text-4xl font-bold tracking-tight text-foreground'>
+              License Purchases
+            </h1>
+            <p className='max-w-2xl text-base text-muted-foreground'>
+              View all your acquired licenses, download C2PA bundles and
+              verifiable credentials, and track settlement status across chains.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-primary/10 to-background p-3 shadow-lg'>
+              <User className='h-6 w-6 text-primary' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>
+                Buyer Profile
+              </CardTitle>
+              <CardDescription className='text-sm'>
+                Your default license wallet and payment information for this
+                session
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className='grid gap-4'>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='grid gap-4 pt-6'>
           <div className='rounded-lg border border-border/60 bg-muted/30 p-4 text-sm'>
             <p className='text-xs uppercase tracking-wide text-muted-foreground'>
               Default License Wallet
@@ -66,20 +107,32 @@ export default async function PurchasesPage() {
         </CardContent>
       </Card>
 
-      <Card className='border-border/60 bg-card/60'>
-        <CardHeader>
-          <CardTitle>My Licenses</CardTitle>
-          <CardDescription>
-            Every invoice you claimed with this Internet Identity session.
-          </CardDescription>
+      <Card className='rounded-3xl border-2 border-border/60 bg-gradient-to-br from-card via-background to-card shadow-xl'>
+        <CardHeader className='space-y-4 pb-6'>
+          <div className='flex items-start gap-3'>
+            <div className='rounded-2xl border border-border/60 bg-gradient-to-br from-emerald-500/10 to-background p-3 shadow-lg'>
+              <Sparkles className='h-6 w-6 text-emerald-600 dark:text-emerald-400' />
+            </div>
+            <div className='space-y-1'>
+              <CardTitle className='text-2xl font-bold'>My Licenses</CardTitle>
+              <CardDescription className='text-sm'>
+                Every invoice you claimed with this Internet Identity session
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <Separator className='bg-gradient-to-r from-transparent via-border/50 to-transparent' />
+        <CardContent className='pt-6'>
           <div className='space-y-4'>
             {purchases.length === 0 && (
-              <div className='rounded-lg border border-dashed border-border/60 bg-muted/30 p-8 text-center'>
-                <p className='text-sm text-muted-foreground'>
-                  No purchases recorded yet. When you pay an invoice, it will
-                  appear here with Story and Constellation links.
+              <div className='rounded-2xl border-2 border-dashed border-border/60 bg-gradient-to-br from-muted/30 to-background p-12 text-center'>
+                <ShoppingBag className='mx-auto mb-4 h-12 w-12 text-muted-foreground/50' />
+                <p className='text-base font-medium text-foreground'>
+                  No purchases yet
+                </p>
+                <p className='mt-2 text-sm text-muted-foreground'>
+                  When you pay an invoice, it will appear here with Story and
+                  Constellation links
                 </p>
               </div>
             )}
