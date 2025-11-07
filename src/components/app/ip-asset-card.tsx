@@ -79,27 +79,42 @@ export function IpAssetCard({
       )}
     >
       <CardHeader className='space-y-3'>
-        <div className='relative overflow-hidden rounded-xl border border-border/60 bg-muted/30'>
+        <div className='relative overflow-hidden rounded-2xl border border-border/60 bg-muted/30'>
           {renderMediaPreview({
             mediaType: asset.mediaType,
             mediaSources,
             imageSrc: activeImageUrl,
             onImageError: handleImageError
           })}
-          {asset.aiMetadata ? (
-            <Badge className='absolute left-3 top-3 border border-primary/40 bg-primary/20 text-primary-foreground backdrop-blur'>
-              AI Generated
+          <div className='pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20' />
+          <div className='absolute left-3 top-3 flex flex-wrap gap-2'>
+            {asset.aiMetadata ? (
+              <Badge className='border border-white/30 bg-black/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow'>
+                AI Generated
+              </Badge>
+            ) : null}
+            {asset.commercialUse ? (
+              <Badge className='border border-white/30 bg-black/70 px-3 py-1 text-[11px] uppercase tracking-wide text-white shadow'>
+                Commercial
+              </Badge>
+            ) : (
+              <Badge className='border border-white/30 bg-black/70 px-3 py-1 text-[11px] uppercase tracking-wide text-white shadow'>
+                Personal
+              </Badge>
+            )}
+          </div>
+          <div className='absolute right-3 top-3 flex flex-col items-end gap-2'>
+            <Badge
+              className={cn(
+                'border border-white/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white shadow',
+                asset.derivativesAllowed
+                  ? 'bg-emerald-500/80 text-white'
+                  : 'bg-amber-600/80 text-white'
+              )}
+            >
+              {asset.derivativesAllowed ? 'Derivatives OK' : 'Derivatives Locked'}
             </Badge>
-          ) : null}
-          {asset.derivativesAllowed ? (
-            <Badge className='absolute right-3 top-3 border border-emerald-500/40 bg-emerald-500/10 text-emerald-500 backdrop-blur'>
-              Derivatives OK
-            </Badge>
-          ) : (
-            <Badge className='absolute right-3 top-3 border border-amber-500/40 bg-amber-500/10 text-amber-500 backdrop-blur'>
-              Derivatives Locked
-            </Badge>
-          )}
+          </div>
         </div>
         <CardTitle className='line-clamp-2 text-xl font-semibold text-foreground'>
           {asset.title}
