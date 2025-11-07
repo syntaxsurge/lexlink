@@ -97,23 +97,14 @@ A factual, click-by-click walkthrough of the current LexLink build. Each segment
   - Click “View on Story” to open the IP asset page and confirm the dispute number and counter‑evidence hash
   - Click “View in UMA” to open the UMA Oracle page for the dispute
 - On‑screen: Show the case timeline updated with the counter evidence and the response transaction details.
-- **Voice‑over 10:** Navigate as the IP owner to the Case Manager page, open the reported case, add counter evidence by entering a brief note and uploading an example file, submit it, then reopen the case and click the response transaction; use “View on Story” to confirm the dispute number and counter‑evidence hash on the IP page, and “View in UMA” to jump to the UMA Oracle entry; liveness and resolution status remain visible throughout.
+- **Voice‑over 10:** Navigate as the IP owner to the Case Manager page, open the reported case, add counter evidence by entering a brief note and uploading an example file, submit it, then reopen the case and click the response transaction; use “View on Story” to confirm the dispute number and counter‑evidence hash on the IP page, and “View in UMA” to jump to the UMA Oracle entry.
 
 ## 11) Compliance and audit
 - On‑screen: `/dashboard/compliance`.
 - Demo inputs: No input fields on this page.
 - **Voice‑over 11:** On the Compliance page, a searchable audit ledger lists principals, resource IDs, and payload JSON for registrations, invoices, settlements, and disputes.
 
-## 12) Settings
-- On‑screen: `/dashboard/settings`.
-- Demo inputs: No input fields to type for this demo.
-- **Voice‑over 12:** On the Settings page, see the current Internet Identity principal and role; operators can manage team roles.
-
 ## 13) Gallery and marketplace
 - On‑screen: `/gallery` then `/marketplace`.
 - Demo inputs: No input fields on these pages.
 - **Voice‑over 13:** On the Gallery and Marketplace pages, the gallery surfaces registered media and attribution; the marketplace highlights price and royalty splits with direct Story links so buyers can initiate orders.
-
-## 14) How creators earn
-- On‑screen: Show an IP’s royalty and minting settings (from IP detail cards and Licenses order builder).
-- **Voice‑over 14:** From the IP details and Licenses builder, revenue comes from per‑license minting and ongoing royalties encoded in PIL terms; disputes can require bonds and upheld claims reflect across licensing flows.
